@@ -1,6 +1,6 @@
 // Auto-Paint tile walls: exterior Null ring → wall tiles + finish (orient / corners).
-// Independent of Generate Map / generators/* (those stay frozen).
-import { pickWeighted, weightedIds } from '../generators/weightedChoice.js'
+// Independent of Legacy Map Generator / generators/* (frozen).
+import { pickWeighted, weightedIds } from './weightedChoice.js'
 import { NULL_TILE, getTile } from '../mapFormat.js'
 import { resolveAutoPaintTileId } from './templatePalette.js'
 import { collectFloorKeys, exteriorUnderlayKeys, floorIdsForRuleset, parseCellKey } from './topology.js'

@@ -1,10 +1,9 @@
-// Template 32: exterior Null → templateWall underlay, then 128/64/32 tip packing.
+// Template 32: exterior Null → underlay, then 128/64/32 tip packing.
 import { NULL_TILE, cellKey } from '../mapFormat.js'
+import { WORLD_WALL_UNDERLAY } from './constants.js'
 import { placePackedWallPieces } from './placeWallRuns.js'
 import { pieceKitFromRuleset, resolveAutoPaintTileId } from './templatePalette.js'
 import { collectFloorKeys, exteriorUnderlayKeys, floorIdsForRuleset, parseCellKey } from './topology.js'
-
-const TEMPLATE_WALL_UNDERLAY = 'templateWall'
 
 export function tipKeyOf(position) {
   return `${position.x},${position.y}`
@@ -16,7 +15,7 @@ export function tipKeyOf(position) {
  */
 export function assembleWallsFromFloors(map, ruleset, { regionId = 'region-1', random = Math.random } = {}) {
   const floorIds = floorIdsForRuleset(ruleset)
-  const underlayId = ruleset.underlayWallTile || TEMPLATE_WALL_UNDERLAY
+  const underlayId = ruleset.underlayWallTile || WORLD_WALL_UNDERLAY
   const prev = map.autoPaint ?? null
   const prevRegion = prev?.regions?.find((entry) => entry.id === regionId) ?? null
   const manualUnderlay = new Set(prevRegion?.manualUnderlayKeys ?? [])
@@ -108,4 +107,4 @@ export function assembleWallsFromFloors(map, ruleset, { regionId = 'region-1', r
   }
 }
 
-export { TEMPLATE_WALL_UNDERLAY, cellKey }
+export { WORLD_WALL_UNDERLAY, cellKey }

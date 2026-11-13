@@ -3,7 +3,7 @@
 Source: `docs/editor-authoring-audit.md` (2026-10-18 matrix; UI/shell updates through **2026-11-11**)
 Scope: What Dev Edit (Map Editor + sub-editors) can author, save, reload, and playtest vs what still needs JSON/content-file edits.
 
-**Current state (2026-11-11, `572dd04`):** Auto-Paint is the new map-construction path (rulesets + floor→wall assembly + in-tool Generate Map). Frozen Generate Map / Generator Editor / `generators/*` stay for existing maps. Full-screen Tools editors use a top **File** menu (Save/Load for that editor’s data; objectives/objects use map Save/Load). Template Pieces live under Assets → Tiles; multi-brush paint for tiles and templates. Details: `docs/auto-paint.md`, `docs/tiles.md`.
+**Current state (2026-11-13):** New map-construction path has two functions sharing rulesets: **Generate New Map** (full build) and **Auto-Paint** (paint floors / rebuild walls). Frozen **Legacy Map Generator** (`generators/*`) stays for existing maps. Full-screen Tools editors use a top **File** menu (Save/Load for that editor’s data; objectives/objects use map Save/Load). Template Pieces live under Assets → Tiles; multi-brush paint for tiles and templates. Details: `docs/auto-paint.md`, `docs/tiles.md`.
 
 --------------------------------------------------------------------------------
 UI SHELL (2026-10-21 layout; menus refreshed 2026-11)
@@ -19,12 +19,12 @@ Layout matches the Mission Editor mockup chrome (ed-shell).
           Weather FX, Grid, Grid options…, View scale…,
           Overview / Layers / Levels windows
     Tools: Objective / Object / Conversation / Character Library /
-           Generator Editor / Auto-Paint Ruleset Editor / Story Wording
+           Legacy Map Generator / World Generation Ruleset / Story Wording
     Test: Play, Toggle Enemies Active
     Help: Keyboard Shortcuts…, About STA Builder
 
   Slim toolbar — Animate, Grid (+ size select + options), Overview, Layers, Levels
-                 (file ops and Tools editors live in the menu; Generate Map /
+                 (file ops and Tools editors live in the menu; Legacy Map Generator /
                   Name / Episode / Card also on Properties → Map)
 
   Left — Assets (EditorPalette)
@@ -57,11 +57,11 @@ Layout matches the Mission Editor mockup chrome (ed-shell).
                      Layers (active / visibility / lock), Levels (elevation deferred)
 
   Full-screen sub-editors — Conversation, Object, Objective, Story,
-                            Character Library, Generator Editor,
-                            Auto-Paint Ruleset Editor
+                            Character Library, Legacy Map Generator,
+                            World Generation Ruleset
                             (shared ed-shell; each has top File menu for that
                             editor’s data via `editorSubMenus.js`)
-    Auto-Paint Ruleset: File Save/Load ruleset + Generate Map; toolbar
+    World Generation Ruleset: File Save/Load ruleset + Generate New Map; toolbar
       Rules / Map view toggles (left palette stays); Grid uses main editor
       show/size/options settings
 
@@ -84,7 +84,7 @@ definitions.
 
 Baseline audit (2026-10-18): 58 features — 41 Complete / 7 Partial / 7 Hardcoded /
 2 Missing / 0 Broken / 1 N/A. Since then (not re-counted in the audit matrix):
-Auto-Paint Ruleset Editor + Generate Map, Template Piece catalogue paint /
+World Generation Ruleset + Generate New Map, Template Piece catalogue paint /
 authoring, multi-brush, Bulkhead 32 wall tiles, sub-editor File menus, map
 layers / Null / floorUnder (already noted 2026-10-21).
 
@@ -144,15 +144,15 @@ Map shell (Properties → Map)
   - Resize / size presets
   - Location, biome, weather
   - Ambient light (0–100) and ambient colour (darkness veil tint)
-  - Generate Map / Name / Card; generate-hazards toggle
+  - Legacy Map Generator / Name / Card; generate-hazards toggle
       Frozen path: Starship Deck / Space Station / Derelict / Template Deck
       etc. via `generators/*` (do not edit for Auto-Paint work)
       Starship Deck / Space Station / Derelict use full bulkheads
       (thin halfBulkhead generation paused; half walls remain palette
       hand-place tiles — see docs/tiles.md)
       Template Deck: tip-anchored Template Piece walls (locked placer)
-      Deck tile styles: Tools → Generator Editor
-  - New construction path: Tools → Auto-Paint Ruleset Editor → Generate Map
+      Deck tile styles: Tools → Legacy Map Generator
+  - New construction path: Tools → World Generation Ruleset → Generate New Map
       (see §8 Auto-Paint)
 
 Episode (Properties → Map)
@@ -162,7 +162,7 @@ Episode (Properties → Map)
 Template Pieces (Assets → Tiles)
   - Tip-anchored pieces from `templatePieces.json` (32px tip grid preferred)
   - Paint / Move / multi-brush; rotation; DEV catalogue CRUD
-  - Used by Template Deck Generate Map and Auto-Paint Template 32 packing
+  - Used by Template Deck Legacy Map Generator and Auto-Paint Template 32 packing
 
 Markers
   - Area labels
@@ -322,29 +322,22 @@ Hardcoded
   - Global, not per-episode
 
 
-7) GENERATOR EDITOR (Vite DEV) — frozen for Auto-Paint work
+7) LEGACY MAP GENERATOR (Vite DEV) — locked read-only style browser
 ------------------------------
-  - Tools → Generator Editor
-  - File: Save / Load styles; Preview Generate Map
-  - Edits deck Generate Map styles for Starship Deck, Research Lab,
-    Alien Vessel via sprite pickers (floor / wall / corner / door / crate /
-    machinery / hazard); Template Deck style → templateDeckStyle.json
-  - Corner: optional wall sprite placed at every L/T junction after generate
-  - Variations for the style’s Wall tile: share + multi-select panel/tile
-    fitting sprites (geometric corners stay plain, then Corner applies)
-  - Save → deckGenerators.json + generatedWallVariants.json
-  - Preview on open map when Location matches (same as Generate Map)
-  - Derelict inherits Starship Deck paint; station / Klingon / New Location
-    still code-only
-  - Do not change `generators/*` / Template Deck placer to “fix” Auto-Paint;
-    use Auto-Paint packing instead
+  - Tools → Legacy Map Generator
+  - Browse + Preview only (Save / role edits locked)
+  - Deck styles for Starship Deck, Research Lab, Alien Vessel; Template Deck
+    style → templateDeckStyle.json (frozen on disk)
+  - Preview on open map when Location matches
+  - Do not change `generators/*` for World Generation work; Generate New Map
+    uses `src/maps/autoPaint/deckLayout.js` (owned copy)
 
 
-8) AUTO-PAINT RULESET EDITOR (Vite DEV) — current generator path
+8) WORLD GENERATION RULESET (Vite DEV) — current generator path
 ---------------------------------------
-  - Tools → Auto-Paint Ruleset Editor
-  - File: Load from Disk / Save Ruleset / Revert / Generate Map / Back
-  - Toolbar: Rules | Map view toggles; Save / Revert / Generate Map /
+  - Tools → World Generation Ruleset
+  - File: Load from Disk / Save Ruleset / Revert / Generate New Map / Back
+  - Toolbar: Rules | Map view toggles; Save / Revert / Generate New Map /
     Show all; Grid + size + options (shared with main Dev Edit)
   - Left rail always visible: ruleset pick, label, environment, Template
     Pieces palette (same catalogue as Assets → Tiles); Show all adds
@@ -352,7 +345,7 @@ Hardcoded
   - Rules view: floor / wall / corner / hull / doorway role slots
     (drops resolve Template Pieces → wall/floor tiles)
   - Map view: open map board inside this tool (does not jump to main Dev Edit)
-  - Generate Map: applies draft in memory, runs Auto-Paint layout into the
+  - Generate New Map: applies draft in memory, runs Auto-Paint layout into the
     open document, switches to Map view
       Template 32: deck room grid + `templateWall` underlay + doorways +
       floorUnder + **128 / 64 / 32** tip packing (`placeWallRuns.js`)
@@ -366,7 +359,7 @@ Hardcoded
 
 Sub-editor File menus (all Tools full-screens)
   - Shared `subEditorFileMenus` / `mapEmbeddedEditorMenus`
-  - Conversation / Story / Generator / Auto-Paint / Character: own data Save/Load
+  - Conversation / Story / Legacy Map Generator / World Generation Ruleset / Character: own data Save/Load
   - Objective / Object: Load Map / Save Map / Save Map As (map-embedded)
 
 --------------------------------------------------------------------------------
@@ -382,9 +375,9 @@ Complete
   4  Location / biome / weather
   5  Ambient light (+ ambient colour; Selection emissive / emit colour)
   6  Episode name / card
-  7  Generate Map / Name / Card (frozen locations; Template Deck included)
-  7b Deck generator styles (Generator Editor; three deck Locations + Template Deck style)
-  7c Auto-Paint Ruleset Editor + Generate Map (128/64/32 packing; Rules/Map views)
+  7  Legacy Map Generator / Name / Card (frozen locations; Template Deck included)
+  7b Deck generator styles (Legacy Map Generator; three deck Locations + Template Deck style)
+  7c World Generation Ruleset + Generate New Map (128/64/32 packing; Rules/Map views)
   7d Auto-Paint floor brush / rebuild / promote / suppress wall cells
   8  Area labels
   9  Player starts (≤8) + facing
@@ -451,8 +444,8 @@ N/A
 Missing / blocking
   - New item / hazard / destructible TYPE definitions (not just placements)
   - Custom standalone Combat roster (encounters.json)
-  - New frozen Generate Map Location types / station-cave-surface generator params
-    (deck styles only in Generator Editor; Auto-Paint still uses shared deck grid)
+  - New frozen Legacy Map Generator Location types / station-cave-surface generator params
+    (deck styles only in Legacy Map Generator; Auto-Paint still uses shared deck grid)
   - Auto-Paint-native room layouts, smarter door frames, props/furnishings
   - Elevation / gizmos (Levels window still a placeholder)
 
@@ -488,13 +481,15 @@ EASY-TO-MISREAD WORKFLOWS
    - Emission Colour tints soft floor/wall spill (animations[].emitColour)
    - Scroll to Emission overlays for Emissive + Colour on lit tiles
 
-6) Auto-Paint Generate Map ≠ frozen Generate Map
-   - Tools → Auto-Paint Ruleset Editor → Generate Map uses Auto-Paint packing
-   - Properties → Map → Generate Map / Generator Editor still use frozen
-     `generators/*` (including Template Deck’s locked placer)
-   - Do not edit frozen generators to fix Auto-Paint wall visuals
+6) Generate New Map ≠ Auto-Paint ≠ Legacy Map Generator
+   - Tools → World Generation Ruleset → Generate New Map = full new layout + packing
+     (`autoPaint/` only — no imports from `generators/*`)
+   - Edit → Toggle / Rebuild Auto-Paint = paint or rebuild walls on the current footprint
+   - Properties → Map → Legacy Map Generator (run) / Tools → Legacy Map Generator (locked styles)
+     still use frozen `generators/*`
+   - Do not edit frozen generators to fix World Generation / Auto-Paint visuals
 
-7) Rules vs Map in Auto-Paint Ruleset Editor
+7) Rules vs Map in World Generation Ruleset
    - Rules / Map toolbar buttons switch the right pane only
    - Left Template Pieces palette stays; Grid settings are shared with Dev Edit
    - Back to Map exits to the main board (generated map already on the document)
@@ -512,7 +507,7 @@ WHAT STILL NEEDS A CONTENT-FILE EDIT
   - Shared challenge library (until adopt) → challenges.json
   - Fallback NPCs when map has none     → npcs.json
   - New tile art / flipbook frames      → art + makeTileFrames / tileEffects.json
-  - (DEV UI exists) Auto-Paint rulesets → autoPaintRulesets.json via Ruleset Editor
+  - (DEV UI exists) World Generation Rulesets → autoPaintRulesets.json via World Generation Ruleset
   - (DEV UI exists) Template Pieces     → templatePieces.json via Assets palette
 
 --------------------------------------------------------------------------------

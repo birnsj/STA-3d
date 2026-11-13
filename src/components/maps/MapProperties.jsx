@@ -155,13 +155,13 @@ export default function MapProperties({
       </PropertySection>
 
       <PropertySection id="generate" title="Generate">
-        <ScaleSlider label="Room size" title="How big Generate Map makes rooms." min="70" value={roomScale} onChange={onRoomScale} />
-        <ScaleSlider label="Building size" title="How big Generate Map makes buildings and city blocks." min="100" value={buildingScale} onChange={onBuildingScale} />
+        <ScaleSlider label="Room size" title="How big Legacy Map Generator makes rooms." min="70" value={roomScale} onChange={onRoomScale} />
+        <ScaleSlider label="Building size" title="How big Legacy Map Generator makes buildings and city blocks." min="100" value={buildingScale} onChange={onBuildingScale} />
         <button type="button" className="me-button me-generate" onClick={() => edit({ ...map, name: randomMapName(map) })}>
           Generate Name
         </button>
-        <button type="button" className="me-button me-generate" title="Builds a new map. Nothing is saved until you press Save." onClick={onGenerateMap}>
-          Generate Map
+        <button type="button" className="me-button me-generate" title="Builds a new map with the frozen location generators. Nothing is saved until you press Save." onClick={onGenerateMap}>
+          Legacy Map Generator
         </button>
         <label className="me-check">
           <input type="checkbox" checked={generateHazards} onChange={(event) => onGenerateHazards?.(event.target.checked)} />

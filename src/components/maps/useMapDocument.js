@@ -124,8 +124,8 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     const next = settleWeather(changed)
     if (rebuildable) return onGenerate(next)
     edit(next)
-    if (next.mapType !== map.mapType) setStatus(`Location set to ${generatorFor(next.mapType).label}. Generate Map builds a new one of this type.`)
-    else if (next.biome !== map.biome) setStatus(`Biome set to ${biomeFor(next.biome).label}. Generate Map builds a new map in it.`)
+    if (next.mapType !== map.mapType) setStatus(`Location set to ${generatorFor(next.mapType).label}. Legacy Map Generator builds a new one of this type.`)
+    else if (next.biome !== map.biome) setStatus(`Biome set to ${biomeFor(next.biome).label}. Legacy Map Generator builds a new map in it.`)
   }
   const onBiome = (biome) => changeSetup({ ...map, biome })
   const onSize = (sizeId) => {
@@ -147,7 +147,8 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
   const onGenerate = async (source = map) => {
     const operation = beginMapDocumentOperation(guardRef.current)
     const proceed =
-      onlySetupChanged || (await confirmDiscard('The open map has unsaved changes. Generating replaces it, and those changes will be lost.', 'Generate'))
+      onlySetupChanged ||
+      (await confirmDiscard('The open map has unsaved changes. Legacy Map Generator replaces it, and those changes will be lost.', 'Generate'))
     if (!proceed || !isMapDocumentOperationCurrent(guardRef.current, operation)) return
     let taken = maps
     if (canSaveMaps) {
@@ -175,13 +176,13 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     setGenerated(true)
   }
 
-  // Auto-Paint Ruleset Editor → Generate Map: replace the open document with a floor + Auto-Paint wall layout.
-  // Does not call the frozen Generate Map / generators/* path.
+  // World Generation Ruleset → Generate New Map: full layout + wall packing (separate from Auto-Paint paint/rebuild).
+  // Does not call the frozen Legacy Map Generator / generators/* path.
   const onGenerateAutoPaint = async (rulesetId) => {
     const operation = beginMapDocumentOperation(guardRef.current)
     const proceed =
       onlySetupChanged ||
-      (await confirmDiscard('The open map has unsaved changes. Generating replaces it, and those changes will be lost.', 'Generate'))
+      (await confirmDiscard('The open map has unsaved changes. Generate New Map replaces it, and those changes will be lost.', 'Generate'))
     if (!proceed || !isMapDocumentOperationCurrent(guardRef.current, operation)) return false
     const result = generateAutoPaintMap(map, rulesetId, Math.random)
     if (result.error) {
@@ -195,7 +196,7 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     replaceMap(
       next,
       null,
-      `Generated Auto-Paint map (${label}).${detail} Not saved yet: press Save to keep it.`,
+      `Generate New Map (${label}).${detail} Not saved yet: press Save to keep it.`,
       { unsaved: true },
     )
     setCleanMap(next)

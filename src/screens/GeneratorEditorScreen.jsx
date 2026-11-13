@@ -25,7 +25,9 @@ import { getTile, PALETTE_GROUPS, TILES } from '../maps/mapFormat.js'
 import { TEMPLATE_PIECES } from '../maps/templatePieces.js'
 import { canEditWallVariants, saveWallVariantSet } from '../maps/wallVariantFiles.js'
 
-// Dev Generator Editor: sprite pickers default to the Location palette (+ tiles on the open map); Show all = catalogue.
+// Legacy Map Generator style browser — locked read-only (World Generation owns new construction).
+const LEGACY_MAP_GENERATOR_LOCKED = true
+// Sprite pickers default to the Location palette (+ tiles on the open map); Show all = catalogue.
 const PALETTE_BY_DECK = {
   starshipDeck: ['starship'],
   laboratory: ['laboratory'],
@@ -160,7 +162,8 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
   const variantDirty = !isTemplate && Boolean(wallId) && !wallVariantEqual(effectiveVariants, variantSavedForWall)
   const dirty = styleDirty || variantDirty
   const canPreview = typeof onPreview === 'function' && mapType === selectedId
-  const canSave = canEditDeckGenerators || canEditWallVariants || canEditTemplateDeckStyle
+  const canSave =
+    !LEGACY_MAP_GENERATOR_LOCKED && (canEditDeckGenerators || canEditWallVariants || canEditTemplateDeckStyle)
   const sharePct = Math.round(clampShare(isTemplate ? templateDraft.fittingChance : variantDraft.share) * 100)
 
   const mapTileIds = useMemo(() => tilesOnMap(map), [map])
@@ -194,6 +197,7 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
   }
 
   const setField = (key, value) => {
+    if (LEGACY_MAP_GENERATOR_LOCKED) return
     if (isTemplate) {
       setTemplateDraft((current) => ({ ...current, [key]: value }))
       return
@@ -203,6 +207,7 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
   }
 
   const setVariantField = (key, value) => {
+    if (LEGACY_MAP_GENERATOR_LOCKED) return
     if (!wallId) return
     setVariantDrafts((current) => ({
       ...current,
@@ -211,6 +216,10 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
   }
 
   const save = async () => {
+    if (LEGACY_MAP_GENERATOR_LOCKED) {
+      setStatus('Legacy Map Generator is locked. Use World Generation Ruleset for new construction.')
+      return
+    }
     try {
       const messages = []
       if (isTemplate) {
@@ -279,6 +288,11 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
   }
 
   const preview = () => {
+    if (LEGACY_MAP_GENERATOR_LOCKED) {
+      // Locked: preview saved styles only (no draft edits).
+      onPreview?.(selectedId)
+      return
+    }
     if (isTemplate) setTemplateDeckStyleLocal(templateDraft)
     else {
       setDeckStyleLocal(selectedId, effectiveStyle)
@@ -299,6 +313,7 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
   }
 
   const toggleCorner = (on) => {
+    if (LEGACY_MAP_GENERATOR_LOCKED) return
     setCornerOn(on)
     if (!on) setField('corner', null)
     else if (!draft.corner) {
@@ -377,14 +392,14 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
 
   return (
     <EditorSubScreen
-      title="Generator Editor"
+      title="Legacy Map Generator"
       menus={subEditorFileMenus({
-        load: true,
-        save: true,
-        revert: true,
+        load: !LEGACY_MAP_GENERATOR_LOCKED,
+        save: !LEGACY_MAP_GENERATOR_LOCKED,
+        revert: !LEGACY_MAP_GENERATOR_LOCKED,
         loadLabel: 'Reload Saved',
-        saveLabel: 'Save Generator',
-        extraFileItems: [{ id: 'preview', label: 'Preview Generate Map' }],
+        saveLabel: 'Save Legacy Styles',
+        extraFileItems: [{ id: 'preview', label: 'Preview Legacy Map Generator' }],
       })}
       onMenuAction={onMenuAction}
       toolbar={
@@ -392,10 +407,21 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
           <button type="button" className="me-button" onClick={discardAndBack}>
             {dirty ? 'Back (discard)' : 'Back to Map'}
           </button>
-          <button type="button" className="me-button" disabled={!canSave || !dirty} onClick={save}>
+          <button
+            type="button"
+            className="me-button"
+            disabled={LEGACY_MAP_GENERATOR_LOCKED || !canSave || !dirty}
+            onClick={save}
+            title={LEGACY_MAP_GENERATOR_LOCKED ? 'Legacy Map Generator is locked.' : undefined}
+          >
             Save
           </button>
-          <button type="button" className="me-button" disabled={!dirty} onClick={revert}>
+          <button
+            type="button"
+            className="me-button"
+            disabled={LEGACY_MAP_GENERATOR_LOCKED || !dirty}
+            onClick={revert}
+          >
             Revert
           </button>
           <button
@@ -404,12 +430,12 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
             disabled={!canPreview}
             title={
               canPreview
-                ? 'Run Generate Map on the open document with these settings.'
+                ? 'Run Legacy Map Generator on the open document with these settings.'
                 : 'Open a map whose Location matches the selected deck (left list).'
             }
             onClick={preview}
           >
-            Preview Generate Map
+            Preview Legacy Map Generator
           </button>
           <button
             type="button"
@@ -421,10 +447,12 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
           </button>
           <span className="me-text">
             {status ||
-              (showAllTiles
-                ? 'Full tile catalogue. Drag from Palette onto a role slot. Right-click a selected tile to remove it.'
-                : `${locationTiles.length} Location tiles. Drag from Palette onto a role slot. Right-click a selected tile to remove it.`)}
-            {!canSave && ' Dev server required to save.'}
+              (LEGACY_MAP_GENERATOR_LOCKED
+                ? 'Locked read-only. Browse styles and Preview; use World Generation Ruleset for new construction.'
+                : showAllTiles
+                  ? 'Full tile catalogue. Drag from Palette onto a role slot. Right-click a selected tile to remove it.'
+                  : `${locationTiles.length} Location tiles. Drag from Palette onto a role slot. Right-click a selected tile to remove it.`)}
+            {!LEGACY_MAP_GENERATOR_LOCKED && !canSave && ' Dev server required to save.'}
           </span>
         </>
       }
@@ -463,7 +491,7 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
           {isTemplate ? (
             <>
               <p className="ge-lead">
-                <strong>Generate Map</strong> builds the room grid, then places Template Piece walls. Underlay tiles stay
+                <strong>Legacy Map Generator</strong> builds the room grid, then places Template Piece walls. Underlay tiles stay
                 for pathing; walls are the Template Pieces kit below.
               </p>
               <section className="ge-block">
@@ -528,7 +556,7 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
           ) : (
             <>
               <p className="ge-lead">
-                These tiles are what <strong>Generate Map</strong> paints for this Location. Pick the basics first, then turn
+                These tiles are what <strong>Legacy Map Generator</strong> paints for this Location. Pick the basics first, then turn
                 on any wall extras you want. Drag from the Palette, or click inside a slot.
               </p>
 

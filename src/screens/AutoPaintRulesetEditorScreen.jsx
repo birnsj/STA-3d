@@ -16,7 +16,7 @@ import {
   weightedIds,
 } from '../maps/autoPaint/rulesets.js'
 import { pieceIdForAutoPaintTile, resolveAutoPaintTileId } from '../maps/autoPaint/templatePalette.js'
-import { normalizeWeightedEntries } from '../maps/generators/weightedChoice.js'
+import { normalizeWeightedEntries } from '../maps/autoPaint/weightedChoice.js'
 import { getTemplatePiece } from '../maps/templatePieces.js'
 import {
   canEditAutoPaintRulesets,
@@ -31,7 +31,7 @@ import {
   templatePieceCatalogueEpochOf,
 } from '../maps/templatePieces.js'
 
-// Tools → Auto-Paint Ruleset Editor. Palette = Dev Edit Template Pieces catalogue (one file). Wall roles place tiles.
+// Tools → World Generation Ruleset. Palette = Dev Edit Template Pieces catalogue (one file). Wall roles place tiles.
 
 const FLOOR_FIELD = {
   key: 'defaultTile',
@@ -136,7 +136,7 @@ export default function AutoPaintRulesetEditorScreen({
 
   const openRuleset = (id) => {
     if (dirty && id !== selectedId) {
-      const leave = window.confirm('Discard unsaved Auto-Paint ruleset changes?')
+      const leave = window.confirm('Discard unsaved World Generation Ruleset changes?')
       if (!leave) return
     }
     const next = cloneRuleset(getAutoPaintRuleset(id) ?? rulesets[0])
@@ -161,7 +161,7 @@ export default function AutoPaintRulesetEditorScreen({
 
   const discardAndBack = () => {
     if (dirty) {
-      const leave = window.confirm('Discard unsaved Auto-Paint ruleset changes?')
+      const leave = window.confirm('Discard unsaved World Generation Ruleset changes?')
       if (!leave) return
     }
     onBack?.()
@@ -169,7 +169,7 @@ export default function AutoPaintRulesetEditorScreen({
 
   const onSave = async () => {
     if (!canSave) {
-      const message = 'Auto-Paint rulesets save only in the Vite / Electron dev app.'
+      const message = 'World Generation Rulesets save only in the Vite / Electron dev app.'
       setStatus(message)
       onStatus?.(message)
       return
@@ -182,7 +182,7 @@ export default function AutoPaintRulesetEditorScreen({
       setSelectedId(next.id)
       setDraft(next)
       setSaved(next)
-      const message = `Saved Auto-Paint ruleset “${next.label}”.`
+      const message = `Saved World Generation Ruleset “${next.label}”.`
       setStatus(message)
       onStatus?.(message)
     } catch (error) {
@@ -214,7 +214,7 @@ export default function AutoPaintRulesetEditorScreen({
       if (!ok) return
       setViewMode('map')
       const label = draft.label || selectedId
-      const message = `Generated Auto-Paint map (${label}). Still in Ruleset Editor — Back to Map when done.`
+      const message = `Generate New Map (${label}). Still in World Generation Ruleset — Back to Map when done.`
       setStatus(message)
       onStatus?.(message)
     } finally {
@@ -277,7 +277,7 @@ export default function AutoPaintRulesetEditorScreen({
     return out
   }, [templateItems, showAll])
 
-  // Keep Template Piece ids so Generate Map uses the exact piece from the slot (not a collapsed wall32).
+  // Keep Template Piece ids so Generate New Map uses the exact piece from the slot (not a collapsed wall32).
   const resolveDropToRole = (asset) => {
     if (!asset) return null
     if (asset.kind === 'piece' && getTemplatePiece(asset.id)) return asset.id
@@ -307,7 +307,7 @@ export default function AutoPaintRulesetEditorScreen({
 
   const loadFromDisk = async () => {
     if (dirty) {
-      const leave = window.confirm('Discard unsaved Auto-Paint ruleset changes and reload from disk?')
+      const leave = window.confirm('Discard unsaved World Generation Ruleset changes and reload from disk?')
       if (!leave) return
     }
     setBusy(true)
@@ -318,7 +318,7 @@ export default function AutoPaintRulesetEditorScreen({
       setSelectedId(next.id)
       setDraft(next)
       setSaved(next)
-      const message = `Loaded Auto-Paint rulesets from disk (“${next.label}”).`
+      const message = `Loaded World Generation Rulesets from disk (“${next.label}”).`
       setStatus(message)
       onStatus?.(message)
     } catch (error) {
@@ -341,7 +341,7 @@ export default function AutoPaintRulesetEditorScreen({
 
   return (
     <EditorSubScreen
-      title="Auto-Paint Ruleset Editor"
+      title="World Generation Ruleset"
       className="ap-ruleset-editor"
       menus={subEditorFileMenus({
         load: true,
@@ -349,7 +349,7 @@ export default function AutoPaintRulesetEditorScreen({
         revert: true,
         loadLabel: 'Load from Disk',
         saveLabel: 'Save Ruleset',
-        extraFileItems: [{ id: 'generateMap', label: 'Generate Map' }],
+        extraFileItems: [{ id: 'generateMap', label: 'Generate New Map' }],
       })}
       onMenuAction={onMenuAction}
       toolbar={
@@ -370,7 +370,7 @@ export default function AutoPaintRulesetEditorScreen({
             className={`me-button${viewMode === 'map' ? ' is-on' : ''}`}
             aria-pressed={viewMode === 'map'}
             disabled={!map}
-            title={map ? 'Show the open map board' : 'Generate a map first'}
+            title={map ? 'Show the open map board' : 'Run Generate New Map first'}
             onClick={() => setViewMode('map')}
           >
             Map
@@ -385,10 +385,10 @@ export default function AutoPaintRulesetEditorScreen({
             type="button"
             className="me-button"
             disabled={busy || typeof onGenerateMap !== 'function'}
-            title="Build an Auto-Paint map and show it in Map view."
+            title="Generate a new map from the current ruleset and show it in Map view."
             onClick={generateMap}
           >
-            Generate Map
+            Generate New Map
           </button>
           <button
             type="button"
@@ -509,7 +509,7 @@ export default function AutoPaintRulesetEditorScreen({
             <p className="ce-heading">{draft.label}</p>
             <p className="ge-lead">
               Drag Template Pieces into the roles. Hover shows <strong>footprint</strong> (corner = 32×32, straight 32 =
-              64×32, long = 128×32) — not the tile sprite box. Template 32 Generate Map places those pieces tip-anchored.
+              64×32, long = 128×32) — not the tile sprite box. Template 32 Generate New Map places those pieces tip-anchored.
               Show all adds Starship wall tiles for larger true cell walls.
             </p>
 

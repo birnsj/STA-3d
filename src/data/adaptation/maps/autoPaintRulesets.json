@@ -11,16 +11,8 @@
       "floors": {
         "defaultTile": [
           {
-            "id": "floor",
-            "weight": 0.333
-          },
-          {
-            "id": "tplStarshipDoorway32",
-            "weight": 0.333
-          },
-          {
-            "id": "tplStarshipDoorway",
-            "weight": 0.333
+            "id": "tplStarshipFloor",
+            "weight": 1
           }
         ],
         "variants": []

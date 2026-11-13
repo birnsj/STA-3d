@@ -1,5 +1,5 @@
 // Template 32 wall packing for Auto-Paint: 128 + 64 + 32 (corner stub).
-// Independent of generators/templateDeck.js (frozen). Tip grid unit = 32px.
+// Independent of Legacy templateDeck.js (frozen). Tip grid unit = 32px.
 //
 // Geometry (tile units; 1 = 64px underlay cell; tip grid step = 0.5):
 // - Tip is the +X/+Y corner of the footprint; box extends toward −X/−Y.
@@ -9,10 +9,11 @@
 // - Arms from −X / −Y therefore leave a 0.5-cell gap to that post; +X / +Y meet flush.
 // - Junction fills use tips (x+0.5,y+1) and (x+1,y+0.5) on those same edges — never
 //   tipAlongX/Y (collides with the corner tip) and never the axis-swapped half tips.
-import { pickWeighted, primaryId } from '../generators/weightedChoice.js'
+import { pickWeighted, primaryId } from './weightedChoice.js'
 import { NULL_TILE, normalizeTemplateRotation } from '../mapFormat.js'
 import { snapTemplatePiecePosition, TEMPLATE_PIECE_CELL_PX } from '../mapEdits.js'
 import { getTemplatePiece, templatePieceFootprint } from '../templatePieces.js'
+import { WORLD_WALL_UNDERLAY } from './constants.js'
 import {
   AUTO_PAINT_DOOR_TIP_UNITS,
   AUTO_PAINT_DOORWAY_PIECE,
@@ -25,7 +26,7 @@ export const WALL_LEN_LONG = 128 // tip units: 4 (= 2 underlay cells)
 export const WALL_LEN_SHORT = 64 // tip units: 2 (= 1 underlay cell)
 export const WALL_LEN_STUB = 32 // tip units: 1 (corner post as a 32-long)
 
-const UNDERLAY = 'templateWall'
+const UNDERLAY = WORLD_WALL_UNDERLAY
 const TIP_EPS = 1e-6
 
 function tipKeyOf(position) {

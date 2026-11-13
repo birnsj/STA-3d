@@ -1,13 +1,16 @@
 # Auto-Paint
 
-**New map-construction generator** for painting floor footprints and assembling walls. Independent of Generate Map and the Generator Editor — those stay frozen so existing game maps keep working.
+**New map-construction path** (fully separate from **Legacy Map Generator** / `generators/*` — no shared generator code). Two separate functions share the same rulesets:
 
-Editor overview / menu placement: `docs/editor-authoring-summary.md` (§8 Auto-Paint; Tools File menus).
+- **Generate New Map** — builds a full floor plan + walls from the ruleset.
+- **Auto-Paint** — paint floors by hand; walls rebuild from the footprint (also Rebuild Auto-Paint Walls).
+
+Editor overview / menu placement: `docs/editor-authoring-summary.md` (§8 World Generation Ruleset; Tools File menus).
 
 ## Current behaviour
 
-1. **Tools → Auto-Paint Ruleset Editor** — palette is the Dev Edit **Template Pieces** catalogue (`templatePieces.json`). Default ruleset **Template 32** stores **Template Piece ids** in wall roles (straight / long / corner / door frame; optional hull). Hover shows piece **footprint** (corner 32×32). **Show all** adds Starship wall tiles for larger true cell walls. Save → `autoPaintRulesets.json` (`/__autopaint`).
-2. **Generate Map** — builds into the open map and shows it in **Map** view (left palette stays; **Rules** / **Map** toggles). Grid settings are shared with main Dev Edit. Template 32: deck room grid + `templateWall` underlay + **96-wide** openings (two floor cells; **3× Doorway 32** + Corner 32 leftover) + wall runs with **Corner 32 end caps** on every free edge + floorUnder + **128 / 64 / 32** packing (`placeWallRuns.js`). Does not call frozen `placeTemplateWalls`.
+1. **Tools → World Generation Ruleset** — palette is the Dev Edit **Template Pieces** catalogue (`templatePieces.json`). Default ruleset **Template 32** stores **Template Piece ids** in wall roles (straight / long / corner / door frame; optional hull). Hover shows piece **footprint** (corner 32×32). **Show all** adds Starship wall tiles for larger true cell walls. Save → `autoPaintRulesets.json` (`/__autopaint`).
+2. **Generate New Map** (in World Generation Ruleset) — builds into the open map and shows it in **Map** view (left palette stays; **Rules** / **Map** toggles). Grid settings are shared with main Dev Edit. Template 32: deck room grid + `templateWall` underlay + **96-wide** openings (two floor cells; **3× Doorway 32** + Corner 32 leftover) + wall runs with **Corner 32 end caps** on every free edge + floorUnder + **128 / 64 / 32** packing (`placeWallRuns.js`). Does not call frozen `placeTemplateWalls`.
 3. **Edit → Toggle Auto-Paint** — paint floors; walls rebuild from the footprint.
 4. **Edit → Rebuild Auto-Paint Walls** — regenerate auto walls from current floors.
 
@@ -45,6 +48,6 @@ Openings are **96px** (three Doorway 32 tips) on a **two-cell** floor gap — no
 
 Props / furnishings, Auto-Paint-native layouts beyond the shared deck grid.
 
-## Frozen (do not edit for Auto-Paint)
+## Frozen / locked
 
-Generate Map locations, Generator Editor, Template Deck generator (`src/maps/generators/*`), `templateDeckStyle`.
+Legacy Map Generator (Tools → Legacy Map Generator) is **read-only**. Location generators live in `src/maps/generators/*` and `templateDeckStyle` — do not edit them for World Generation work. Generate New Map uses `src/maps/autoPaint/deckLayout.js` (owned copy of the old deck room grid).

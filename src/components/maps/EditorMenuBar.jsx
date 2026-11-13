@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-// File / Edit / View / Tools / Test / Help. Generate Map / Name / Episode / Card live on the Properties Map tab (and toolbar).
+// File / Edit / View / Tools / Test / Help. Legacy Map Generator / Name / Episode / Card live on the Properties Map tab (and toolbar).
 
 const MENUS = [
   {
@@ -56,8 +56,8 @@ const MENUS = [
       { id: 'objects', label: 'Object Editor' },
       { id: 'conversations', label: 'Conversation Editor' },
       { id: 'characters', label: 'Character Library' },
-      { id: 'generators', label: 'Generator Editor' },
-      { id: 'autoPaintRuleset', label: 'Auto-Paint Ruleset Editor' },
+      { id: 'generators', label: 'Legacy Map Generator' },
+      { id: 'autoPaintRuleset', label: 'World Generation Ruleset' },
       { id: 'story', label: 'Story Wording' },
     ],
   },

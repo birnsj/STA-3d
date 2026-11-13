@@ -1,4 +1,4 @@
-// Dev Auto-Paint Ruleset Editor: saves rulesets into autoPaintRulesets.json via /__autopaint.
+// Dev World Generation Ruleset: saves rulesets into autoPaintRulesets.json via /__autopaint.
 import { requestJson } from '../files/jsonHttp.js'
 import {
   listAutoPaintRulesets,

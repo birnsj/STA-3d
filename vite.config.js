@@ -180,7 +180,7 @@ const templateDeckStyleEndpoint = () =>
   quietDataEndpoint('template-deck-style-endpoint', '/__template-deck-style', TEMPLATE_DECK_STYLE_FILE, putTemplateDeckStyle)
 // Generator Editor: Generate Map wall fittings (share / panel / tile variants).
 const wallVariantsEndpoint = () => quietDataEndpoint('wall-variants-endpoint', '/__wall-variants', WALL_VARIANTS_FILE, putWallVariantSet)
-// Auto-Paint Ruleset Editor: construction rulesets (independent of Generate Map).
+// World Generation Ruleset: construction rulesets (independent of Legacy Map Generator).
 const autoPaintEndpoint = () => quietDataEndpoint('auto-paint-endpoint', '/__autopaint', AUTO_PAINT_RULESETS_FILE, applyAutoPaintChange)
 // The map editor's Story Wording saves the outro's story templates into missionLog.json.
 const storyEndpoint = () => quietDataEndpoint('story-endpoint', '/__story', MISSION_LOG_FILE, (file, body) => setStoryTemplates(file, body?.story))

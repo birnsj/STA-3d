@@ -8,7 +8,7 @@ import {
   primaryId,
   serializeWeighted,
   weightedIds,
-} from '../generators/weightedChoice.js'
+} from './weightedChoice.js'
 import { resolveAutoPaintTileId } from './templatePalette.js'
 
 export const AUTO_PAINT_ENVIRONMENTS = Object.freeze([

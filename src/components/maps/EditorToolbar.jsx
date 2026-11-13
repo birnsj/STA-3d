@@ -48,7 +48,7 @@ function IconGenerateCard() {
 }
 
 function IconGeneratorEditor() {
-  // Same 2×2 tile family as Generate Map, with a pencil on the last cell — edit the tiles generation uses.
+  // Same 2×2 tile family as Legacy Map Generator, with a pencil on the last cell — edit the tiles generation uses.
   return (
     <svg className="ed-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
       <path
@@ -60,11 +60,11 @@ function IconGeneratorEditor() {
 }
 
 const GENERATE_BUTTONS = [
-  { id: 'generateMap', label: 'Generate Map', Icon: IconGenerateMap, prop: 'onGenerateMap' },
+  { id: 'generateMap', label: 'Legacy Map Generator', Icon: IconGenerateMap, prop: 'onGenerateMap' },
   { id: 'generateName', label: 'Generate Name', Icon: IconGenerateName, prop: 'onGenerateName' },
   { id: 'generateEpisode', label: 'Generate Episode Name', Icon: IconGenerateEpisode, prop: 'onGenerateEpisode' },
   { id: 'generateCard', label: 'Generate Card', Icon: IconGenerateCard, prop: 'onGenerateCard' },
-  { id: 'generators', label: 'Generator Editor', Icon: IconGeneratorEditor, prop: 'onGeneratorEditor' },
+  { id: 'generators', label: 'Legacy Map Generator', Icon: IconGeneratorEditor, prop: 'onGeneratorEditor' },
 ]
 
 function SizeFields({ width, height, onResize }) {

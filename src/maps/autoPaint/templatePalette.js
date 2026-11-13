@@ -1,9 +1,8 @@
-// Bridge: Auto-Paint role ids (Template Piece or tile) ↔ packer kit / grid tiles.
+// Bridge: World Generation / Auto-Paint role ids (Template Piece or tile) ↔ packer kit / grid tiles.
 // Palette listing lives in templatePieces.js — do not duplicate it here.
-import { getTemplateDeckStyle } from '../generators/templateDeckStyles.js'
-import { normalizeWeightedEntries, primaryId, weightedIds } from '../generators/weightedChoice.js'
 import { getTile } from '../mapFormat.js'
 import { getTemplatePiece } from '../templatePieces.js'
+import { normalizeWeightedEntries, primaryId, weightedIds } from './weightedChoice.js'
 
 /** Legacy tile ids that mean Template 32 tip art (seed / older rulesets). */
 const TILE_TO_TEMPLATE_PIECE = Object.freeze({
@@ -80,14 +79,9 @@ function asWeightedPieces(raw) {
   return normalizeWeightedEntries(mapped, { allowEmpty: true })
 }
 
-function deckWeighted(key) {
-  return asWeightedPieces(getTemplateDeckStyle()[key])
-}
-
 /**
  * Packer kit from ruleset wall roles (weighted Template Piece lists).
- * Explicit empty/null stays empty (no Template Deck fill-in for doorFrame / hull / long).
- * Deck style is only a last-resort default for required straight / corner when missing.
+ * Missing straight/corner stay empty — no Legacy Template Deck style fill-in.
  */
 export function pieceKitFromRuleset(ruleset) {
   const walls = ruleset?.walls ?? {}
@@ -96,9 +90,9 @@ export function pieceKitFromRuleset(ruleset) {
   const hull = asWeightedPieces(walls.hull)
 
   return {
-    straight: straight.length ? straight : deckWeighted('straight'),
+    straight,
     straightLong: asWeightedPieces(walls.straightLong),
-    corner: corner.length ? corner : deckWeighted('corner'),
+    corner,
     hull,
     hullLong: hull.length ? asWeightedPieces(walls.hullLong) : [],
     hullCorner: asWeightedPieces(walls.hullCorner),

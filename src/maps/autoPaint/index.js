@@ -1,4 +1,4 @@
-// Auto-Paint: floor footprint → wall assembly. Independent of Generate Map / generators/*.
+// Auto-Paint + Generate New Map: World Generation path. Independent of Legacy Map Generator / generators/*.
 export {
   AUTO_PAINT_ENVIRONMENTS,
   AUTO_PAINT_WALL_MODES,
