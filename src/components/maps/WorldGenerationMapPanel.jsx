@@ -22,8 +22,7 @@ export default function WorldGenerationMapPanel({
   buildingScale = 100,
   onBuildingScale,
   onGenerateMap,
-  generateHazards = false,
-  onGenerateHazards,
+  generateBusy = false,
   cardTools = { canGenerate: false, busy: false, onGenerate: () => {} },
 }) {
   if (!map) {
@@ -59,8 +58,7 @@ export default function WorldGenerationMapPanel({
             buildingScale={buildingScale}
             onBuildingScale={onBuildingScale}
             onGenerateMap={onGenerateMap}
-            generateHazards={generateHazards}
-            onGenerateHazards={onGenerateHazards}
+            generateBusy={generateBusy}
             cardTools={cardTools}
             worldGeneration
             warnings={[]}

@@ -1523,6 +1523,39 @@
   background: var(--ed-border);
 }
 
+.ed-menu-flyout {
+  position: relative;
+}
+
+.ed-menu-flyout-trigger {
+  cursor: default;
+}
+
+.ed-menu-flyout-chevron {
+  color: var(--ed-muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ed-menu-submenu {
+  top: -2px;
+  left: 100%;
+  margin-left: 1px;
+  min-width: 160px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.ed-menu-item:disabled {
+  color: var(--ed-muted);
+  cursor: default;
+  opacity: 0.65;
+}
+
+.ed-menu-item:disabled:hover {
+  background: transparent;
+}
+
 .ed-toolbar.me-toolbar {
   position: relative;
   z-index: 50;

@@ -3,6 +3,7 @@ import { isDrawnCard } from '../../maps/episodeCards.js'
 import { canDrawEpisodeArt, drawEpisodeArt } from '../../maps/episodeArt.js'
 import { resizeMap } from '../../maps/mapEdits.js'
 import { canSaveMaps, deleteMap, listMaps, loadMap, saveMap } from '../../maps/mapFiles.js'
+import { listRecentMaps, noteRecentMap, pruneRecentMaps, removeRecentMap } from '../../maps/mapRecent.js'
 import { createNullMap, DEFAULT_BIOME, DEFAULT_MAP_TYPE, mapFileId } from '../../maps/mapFormat.js'
 import { generateAutoPaintMap, getAutoPaintRuleset } from '../../maps/autoPaint/index.js'
 import { seededRandom } from '../../rules/seededRandom.js'
@@ -43,6 +44,8 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
   const [dirty, setDirty] = useState(false)
   // The files in maps/ ([{ id, name, ... }]).
   const [maps, setMaps] = useState([])
+  // File → Open Recent (localStorage); pruned against maps/ whenever the list refreshes.
+  const [recentMaps, setRecentMaps] = useState(() => listRecentMaps())
   const [showLoad, setShowLoad] = useState(false)
   const [drawingCard, setDrawingCard] = useState(false)
   // Generate Map's Room size and Building size sliders, in percent of each generator's own sizes. Not saved with the map.
@@ -61,9 +64,17 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
   const [boardKey, setBoardKey] = useState(0)
   useEffect(() => {
     listMaps()
-      .then(setMaps)
+      .then((entries) => {
+        setMaps(entries)
+        setRecentMaps(pruneRecentMaps(entries))
+      })
       .catch((error) => setStatus(`Could not list maps: ${error.message}`))
   }, [setStatus])
+
+  const rememberRecent = (id, name) => {
+    if (!id) return
+    setRecentMaps(noteRecentMap({ id, name: name || id }))
+  }
   useEffect(() => {
     if (!notice) return undefined
     const timer = setTimeout(() => setNotice(null), 3000)
@@ -224,9 +235,14 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     if (!(await confirmDiscard()) || !isMapDocumentOperationCurrent(guardRef.current, operation)) return
     loadMap(id)
       .then((loaded) => {
-        if (isMapDocumentOperationCurrent(guardRef.current, operation)) replaceMap(loaded, id, `Loaded ${loaded.name}.`)
+        if (!isMapDocumentOperationCurrent(guardRef.current, operation)) return
+        replaceMap(loaded, id, `Loaded ${loaded.name}.`)
+        rememberRecent(id, loaded.name)
       })
-      .catch((error) => setStatus(`Could not load ${id}: ${error.message}`))
+      .catch((error) => {
+        setRecentMaps(removeRecentMap(id))
+        setStatus(`Could not load ${id}: ${error.message}`)
+      })
   }
   // The file is named after the map. previousId: the file to rename (the one this map was opened from), or null to
   // write a new file and leave any other alone.
@@ -264,6 +280,7 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
       setGenerated(false)
       setFileId(id)
       setDirty(false)
+      rememberRecent(id, named.name)
       setStatus(`Saved maps/${id}.json.`)
       setNotice({ id: Date.now(), text: `Saved maps/${id}.json` })
     } catch (error) {
@@ -301,6 +318,7 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
       const remaining = await deleteMap(deletingFileId)
       if (!isMapDocumentOperationCurrent(guardRef.current, operation)) return
       setMaps(remaining)
+      setRecentMaps(removeRecentMap(deletingFileId))
       replaceMap(blankMap(snapshot.mapType, snapshot.biome), null, `Deleted maps/${deletingFileId}.json.`)
     } catch (error) {
       setStatus(`Could not delete: ${error.message}`)
@@ -331,6 +349,7 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     fileId,
     dirty,
     maps,
+    recentMaps,
     boardKey,
     notice,
     drawingCard,

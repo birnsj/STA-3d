@@ -2,6 +2,7 @@ import missionLogData from '../../data/adaptation/exploration/missionLog.json'
 import { MAX_AWAY_TEAM } from '../../exploration/awayTeam.js'
 import { authoredDefinitionsFor } from '../../exploration/challengeObjects.js'
 import { DEFAULT_AMBIENT_COLOUR, FULL_LIGHT, getTile, isRotated, mapFileId } from '../../maps/mapFormat.js'
+import { listAutoPaintRulesets } from '../../maps/autoPaint/index.js'
 import { BIOME_WORLDS, BIOMES, LOCATION_GROUPS, MAP_GENERATORS, MAP_SIZES, randomMapName, sizeFor, sizeIdOf, usesBiome } from '../../maps/mapGenerators.js'
 import { isIndoors, weatherFor, weatherOptions } from '../../maps/mapWeather.js'
 import { randomEpisodeName } from '../../rules/locationNames.js'
@@ -39,8 +40,9 @@ export default function MapProperties({
   placingObjective,
   canSave,
   onGenerateMap,
-  generateHazards = false,
-  onGenerateHazards,
+  generateBusy = false,
+  rulesetId = null,
+  onRulesetId,
   onOpenObjective,
   onMapType,
   onBiome,
@@ -53,7 +55,7 @@ export default function MapProperties({
   onRoomScale,
   buildingScale,
   onBuildingScale,
-  /** When true (World Generation Ruleset Map panel), copy focuses on WG Generate Map. */
+  /** When true (World Generation Ruleset Map panel), ruleset is chosen in the left editor. */
   worldGeneration = false,
 }) {
   const objectives = map.objectives ?? []
@@ -61,6 +63,8 @@ export default function MapProperties({
   const biomeless = !usesBiome(map)
   const weatherList = weatherOptions(map)
   const sizeId = sizeIdOf(map)
+  const rulesets = listAutoPaintRulesets()
+  const activeRulesetId = rulesetId || rulesets[0]?.id || ''
 
   return (
     <div className="ed-map-props">
@@ -212,46 +216,50 @@ export default function MapProperties({
       <PropertySection
         id="generate"
         title="Generate"
-        tip={
-          worldGeneration
-            ? 'Room size feeds World Generation Generate Map (deck room span). Building size is for Legacy city/outdoor only. Use File → Generate Map (or the toolbar) to build.'
-            : 'Legacy Map Generator (frozen). Prefer Tools → World Generation Ruleset → Generate Map for new construction.'
-        }
-        defaultOpen={worldGeneration}
+        tip="World Generation builds a new layout from the active ruleset (room size, map type, biome, light, weather). Nothing is saved until you press Save. Legacy Map Generator is under Tools."
+        defaultOpen
       >
+        {!worldGeneration && rulesets.length > 0 && (
+          <label className="me-field">
+            Ruleset
+            <EditorSelect
+              className="me-select me-wide"
+              value={activeRulesetId}
+              aria-label="World Generation ruleset"
+              title="Which World Generation Ruleset Generate Map uses"
+              onChange={(event) => onRulesetId?.(event.target.value)}
+            >
+              {rulesets.map((ruleset) => (
+                <option key={ruleset.id} value={ruleset.id}>
+                  {ruleset.label || ruleset.id}
+                </option>
+              ))}
+            </EditorSelect>
+          </label>
+        )}
         <ScaleSlider
           label="Room size"
-          title={
-            worldGeneration
-              ? 'How large rooms are when World Generation Generate Map builds the deck grid (also used by Legacy Generate).'
-              : 'How big Legacy Map Generator makes rooms.'
-          }
+          title="How large rooms are when World Generation Generate Map builds the deck grid."
           min="70"
           value={roomScale}
           onChange={onRoomScale}
         />
         <ScaleSlider
           label="Building size"
-          title={
-            worldGeneration
-              ? 'Legacy city / outdoor Generate only. World Generation deck layouts do not place buildings.'
-              : 'How big Legacy Map Generator makes buildings and city blocks.'
-          }
+          title="Reserved for outdoor / city layouts. Deck Generate Map does not place buildings."
           min="100"
           value={buildingScale}
           onChange={onBuildingScale}
         />
-        {!worldGeneration && (
-          <>
-            <button type="button" className="me-button me-generate" title="Builds a new map with the frozen location generators. Nothing is saved until you press Save." onClick={onGenerateMap}>
-              Legacy Map Generator
-            </button>
-            <label className="me-check" title="When Legacy Generate runs, also scatter hazard tiles on the new map.">
-              <input type="checkbox" checked={generateHazards} onChange={(event) => onGenerateHazards?.(event.target.checked)} />
-              Generate hazards
-            </label>
-          </>
-        )}
+        <button
+          type="button"
+          className="me-button me-generate"
+          disabled={generateBusy || typeof onGenerateMap !== 'function'}
+          title="Build a new map with World Generation (new seed each press). Nothing is saved until you press Save."
+          onClick={onGenerateMap}
+        >
+          Generate Map
+        </button>
       </PropertySection>
 
       <PropertySection

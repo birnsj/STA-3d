@@ -250,9 +250,6 @@ export default function AutoPaintRulesetEditorScreen({
   onRoomScale,
   buildingScale = 100,
   onBuildingScale,
-  onLegacyGenerateMap,
-  generateHazards = false,
-  onGenerateHazards,
   cardTools = { canGenerate: false, busy: false, onGenerate: () => {} },
   onBack,
   onPlay,
@@ -975,9 +972,8 @@ export default function AutoPaintRulesetEditorScreen({
         onRoomScale={onRoomScale}
         buildingScale={buildingScale}
         onBuildingScale={onBuildingScale}
-        onGenerateMap={onLegacyGenerateMap}
-        generateHazards={generateHazards}
-        onGenerateHazards={onGenerateHazards}
+        onGenerateMap={generateMap}
+        generateBusy={busy}
         cardTools={cardTools}
       />
       <EditorGridOptions

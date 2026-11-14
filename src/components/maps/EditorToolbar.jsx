@@ -3,8 +3,8 @@ import { MAX_SIZE, MIN_SIZE } from '../../maps/mapFormat.js'
 import { EDITOR_GRID_SIZES } from './editorGrid.js'
 import EditorSelect from './EditorSelect.jsx'
 
-// Slim toolbar under the menu bar. Tools editors + generate actions as icon buttons
-// (same commands as Tools / Properties Map). Icons are metaphors, not labels.
+// Slim toolbar under the menu bar. Tools editors as icon buttons
+// (same commands as Tools). Generate Map lives in Properties. Icons are metaphors, not labels.
 
 function Icon({ children }) {
   return (
@@ -95,18 +95,6 @@ function IconStory() {
   )
 }
 
-/** Run Legacy Map Generator — dice on a map grid. */
-function IconRunLegacyMap() {
-  return (
-    <Icon>
-      <path
-        fill="currentColor"
-        d="M1.5 1.5h6v6h-6v-6Zm1.2 1.2v3.6h3.6V2.7H2.7ZM9.2 2.2h5.3v5.3H9.2V2.2Zm1.3 1.3v2.7h2.7V3.5h-2.7ZM3.5 9.5h2v2h-2v-2Zm4.2 0h2v2h-2v-2Zm4.2 0h2v2h-2v-2ZM3.5 12.8h2v2h-2v-2Zm4.2 0h2v2h-2v-2Zm4.2 0h2v2h-2v-2Z"
-      />
-    </Icon>
-  )
-}
-
 const TOOL_BUTTONS = [
   { id: 'objectives', label: 'Objective Editor', Icon: IconObjectives, prop: 'onObjectives' },
   { id: 'objects', label: 'Object Editor', Icon: IconObjects, prop: 'onObjects' },
@@ -115,10 +103,6 @@ const TOOL_BUTTONS = [
   { id: 'generators', label: 'Legacy Map Generator', Icon: IconLegacyGenerator, prop: 'onGeneratorEditor' },
   { id: 'autoPaintRuleset', label: 'World Generation Ruleset', Icon: IconWorldGen, prop: 'onAutoPaintRuleset' },
   { id: 'story', label: 'Story Wording', Icon: IconStory, prop: 'onStory' },
-]
-
-const GENERATE_BUTTONS = [
-  { id: 'generateMap', label: 'Run Legacy Map Generator', Icon: IconRunLegacyMap, prop: 'onGenerateMap' },
 ]
 
 function SizeFields({ width, height, onResize }) {
@@ -200,7 +184,6 @@ export default function EditorToolbar({
   onGridOptions,
   animateTiles,
   onAnimateTiles,
-  onGenerateMap,
   onObjectives,
   onObjects,
   onConversations,
@@ -223,9 +206,6 @@ export default function EditorToolbar({
     onGeneratorEditor,
     onAutoPaintRuleset,
     onStory,
-  }
-  const generateActions = {
-    onGenerateMap,
   }
 
   return (
@@ -325,7 +305,6 @@ export default function EditorToolbar({
         <SizeFields width={map.width} height={map.height} onResize={onResize} />
         <div className="ed-toolbar-end">
           <IconButtonRow label="Tools" buttons={TOOL_BUTTONS} actions={toolActions} />
-          <IconButtonRow label="Generate" buttons={GENERATE_BUTTONS} actions={generateActions} />
           <label className="me-check" title="The green or red footprint while placing an inventory object.">
             <input type="checkbox" checked={placementPreview} onChange={(event) => onPlacementPreview(event.target.checked)} /> Placement box
           </label>

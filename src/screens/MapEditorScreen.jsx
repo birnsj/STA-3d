@@ -236,6 +236,12 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   }
 
   const onMenuAction = async (id) => {
+    // File → Open Recent → map id (EditorMenuBar recent:* items).
+    if (typeof id === 'string' && id.startsWith('recent:')) {
+      const mapId = id.slice('recent:'.length)
+      if (!mapId || mapId === 'none') return undefined
+      return doc.onLoad(mapId)
+    }
     switch (id) {
       case 'new':
         return doc.onNew()
@@ -473,9 +479,6 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           onRoomScale={doc.setRoomScale}
           buildingScale={doc.buildingScale}
           onBuildingScale={doc.setBuildingScale}
-          onLegacyGenerateMap={() => doc.onGenerate()}
-          generateHazards={doc.generateHazards}
-          onGenerateHazards={doc.setGenerateHazards}
           cardTools={{ canGenerate: canDrawEpisodeArt, busy: doc.drawingCard, onGenerate: onGenerateCard }}
           onBack={() => setAutoPaintRulesetEditor(false)}
           onPlay={onPlay}
@@ -507,9 +510,13 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     revealEpisodeCard,
     placingObjective: tools.placingObjective,
     canSave: canSaveMaps,
-    onGenerateMap: () => doc.onGenerate(),
-    generateHazards: doc.generateHazards,
-    onGenerateHazards: doc.setGenerateHazards,
+    onGenerateMap: async () => {
+      const rulesetId = tools.autoPaintRulesetId
+      const ok = await doc.onGenerateAutoPaint(rulesetId)
+      if (ok) tools.enableAutoPaintTool(rulesetId)
+    },
+    rulesetId: tools.autoPaintRulesetId,
+    onRulesetId: tools.setAutoPaintRulesetId,
     onOpenObjective: (index) => setObjectiveEditor({ index }),
     onMapType: doc.onMapType,
     onBiome: doc.onBiome,
@@ -563,6 +570,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
       <EditorTips rootRef={shellRef} enabled={showTooltips} />
       <EditorMenuBar
         onAction={onMenuAction}
+        recentMaps={doc.recentMaps}
         checks={{
           placeTiles: placing,
           move: tools.moving,
@@ -602,7 +610,6 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
         onGridOptions={() => setShowGridOptions(true)}
         animateTiles={animateTiles}
         onAnimateTiles={setAnimateTiles}
-        onGenerateMap={doc.onGenerate}
         onObjectives={() => setObjectiveEditor({ index: 0 })}
         onObjects={() => setObjectEditor({ id: tools.selectedObjectId ?? null })}
         onConversations={() => setConversationEditor({ id: null })}
