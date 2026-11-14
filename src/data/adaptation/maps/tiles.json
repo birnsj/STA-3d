@@ -1,6 +1,6 @@
 {
   "notes": [
-    "Shared tile catalogue for map files (maps/*.json) and the map editor palette. What every field and tile family means, and the design decisions behind them: docs/tiles.md. Next free symbol: ź (allocation order in docs/tiles.md)."
+    "Shared tile catalogue for map files (maps/*.json) and the map editor palette. What every field and tile family means, and the design decisions behind them: docs/tiles.md. Next free symbol: Ž (allocation order in docs/tiles.md)."
   ],
   "imageSize": {
     "width": 64,
@@ -5208,7 +5208,7 @@
     {
       "id": "templateWall",
       "layer": "ground",
-      "symbol": "Ģ",
+      "symbol": "Ż",
       "label": "Template Wall Underlay",
       "solid": false,
       "blocksSight": true,

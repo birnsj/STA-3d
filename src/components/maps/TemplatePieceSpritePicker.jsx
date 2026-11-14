@@ -9,7 +9,8 @@ import {
 import { getTemplatePiece } from '../../maps/templatePieces.js'
 import { templatePieceThumbTitle } from './assetThumbTitle.js'
 import { GE_ASSET_DRAG_TYPE, readGeAssetDrag } from './geAssetDrag.js'
-import { contextMenuPlacement, GeThumbDeleteConfirm, GeThumbDeleteMenu } from './GeThumbContextMenu.jsx'
+import { contextMenuPlacement } from './contextMenuPlacement.js'
+import { GeThumbDeleteConfirm, GeThumbDeleteMenu } from './GeThumbContextMenu.jsx'
 import TemplatePieceThumbnail from './TemplatePieceThumbnail.jsx'
 
 // Generator Editor Template Piece role slot: assigned pieces only. Drag from Palette to add; right-click to remove.

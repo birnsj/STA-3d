@@ -5,7 +5,7 @@ import { getReachableTiles } from '../src/combat/movementSystem.js'
 import { isClear, isClearLine, RADIUS } from '../src/exploration/navigation.js'
 import { placePackedWallPieces, pieceKitFromRuleset, resolveAutoPaintRuleset } from '../src/maps/autoPaint/index.js'
 import { createNullMap } from '../src/maps/mapFormat.js'
-import { circleHitsTemplateWalls } from '../src/maps/templatePieces.js'
+import { circleHitsTemplateWalls, templatePieceGivesCover } from '../src/maps/templatePieces.js'
 
 function underlayMap(cells, pieces) {
   const map = createNullMap({ name: 'edge', width: 10, height: 10 })
@@ -136,5 +136,29 @@ describe('templateWall edge collision', () => {
     assert.equal(isClear(packed, { x: 5, y: 4.5 }, RADIUS), true)
     assert.ok(isClearLine(packed, { x: 4, y: 3 }, { x: 4, y: 5 }))
     assert.ok(isClearLine(packed, { x: 5, y: 3 }, { x: 5, y: 5 }))
+  })
+})
+
+describe('Template Piece collision cache and solid props', () => {
+  const placement = (pieceId, x, y) => ({ id: pieceId + x + y, pieceId, position: { x, y }, rotation: 0, scale: 1, order: 0 })
+  const probe = { x: 4.6, y: 4.6 }
+
+  it('blocks on a solid outdoor prop but not on an outdoor floor overlay', () => {
+    assert.equal(circleHitsTemplateWalls(underlayMap([], [placement('tplOutdoorTree', 5, 5)]), probe, RADIUS), true)
+    assert.equal(circleHitsTemplateWalls(underlayMap([], [placement('tplOutdoorGrass', 5, 5)]), probe, RADIUS), false)
+  })
+
+  it('sees a new placement list immediately (edits return new arrays, so the cache must not go stale)', () => {
+    const before = underlayMap([], [])
+    assert.equal(circleHitsTemplateWalls(before, probe, RADIUS), false)
+    const after = { ...before, templatePiecePlacements: [placement('tplOutdoorTree', 5, 5)] }
+    assert.equal(circleHitsTemplateWalls(after, probe, RADIUS), true)
+    assert.equal(circleHitsTemplateWalls(before, probe, RADIUS), false)
+  })
+
+  it('still reports cover from the cached footprints', () => {
+    const map = underlayMap([], [placement('tplOutdoorTree', 5, 5)])
+    assert.equal(templatePieceGivesCover(map, { x: 4, y: 4 }), true)
+    assert.equal(templatePieceGivesCover(map, { x: 8, y: 8 }), false)
   })
 })

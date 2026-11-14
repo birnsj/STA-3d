@@ -69,7 +69,7 @@ function descriptionSpan(text, open, close) {
 }
 
 function withoutDescription(item) {
-  const { description, ...rest } = item
+  const { description: _description, ...rest } = item
   return rest
 }
 

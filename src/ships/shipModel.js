@@ -9,7 +9,6 @@ import spaceframeData from '../data/ships/spaceframes.json'
 import timeframes from '../data/ships/timeframes.json'
 import {
   appearanceDetailEqual,
-  emptyAppearanceDetail,
   getAppearanceOption,
   getFinishingPackageOption,
   isAppearanceOptionAvailable,
@@ -951,9 +950,6 @@ const FINISHING_LISTS = {
 
 const NAME_PREFIX = /^(?:U\.?\s*S\.?\s*S\.?|I\.?\s*K\.?\s*S\.?|I\.?\s*R\.?\s*W\.?)\s+/i
 const REGISTRY_PREFIX = /^(?:NX\/)?(?:NCC|NX)[-\s]+/i
-const PAREN_EXAMPLE = /([^,()]+?)\s*\(\s*(?:NX\/)?(?:NCC|NX)-([0-9][0-9A-Z-]*)/i
-const LEAD_EXAMPLE = /^\s*(?:NCC|NX)-([0-9][0-9A-Z-]*)\s+([^,]+)/i
-
 function classTraits(ship) {
   return getSpaceframeById(ship.spaceframeId)?.traits ?? []
 }
@@ -991,10 +987,6 @@ function parseNotableIdentities(frame) {
     }
   }
   return found
-}
-
-function notableIdentity(frame) {
-  return parseNotableIdentities(frame)[0] ?? null
 }
 
 export function getBridgeLayouts() {

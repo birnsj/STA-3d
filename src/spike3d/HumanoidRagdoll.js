@@ -259,9 +259,9 @@ export class HumanoidRagdoll {
    * Build ragdoll at the character's current world pose and knock it with impulse.
    * @param {THREE.Object3D} modelRoot procedural body root (world-updated)
    * @param {{ x:number,y:number,z:number }} impulse world-space impulse
-   * @param {{ x:number,y:number,z:number }|null} hitPoint optional world hit point
+   * @param {{ x:number,y:number,z:number }|null} _hitPoint optional world hit point (callers pass it; the impulse alone drives the knock today)
    */
-  activate(modelRoot, impulse, hitPoint = null) {
+  activate(modelRoot, impulse, _hitPoint = null) {
     this.disposeBodies()
     this.active = true
     this.settled = false

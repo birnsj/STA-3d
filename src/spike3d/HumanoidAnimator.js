@@ -319,7 +319,7 @@ function evalActionPose(clip, u) {
       hipYaw: 0,
       headPitch: lerp(deg(4), deg(2), up) + deg(2) * fireE * (1 - sinkE),
       headYaw: lerp(deg(4), deg(-2), up),
-      arm: [lerp(deg(10), deg(6), up), lerp(deg(-62), deg(-90), fireE * (1 - sinkE) + 0 * sinkE)],
+      arm: [lerp(deg(10), deg(6), up), lerp(deg(-62), deg(-90), fireE * (1 - sinkE))],
       elbow: [deg(14), lerp(deg(108), deg(10), fireE * (1 - sinkE))],
       shoulder: [deg(2), lerp(deg(-28), deg(-4), fireE * (1 - sinkE))],
       armSide: [0, lerp(deg(14), 0, fireE * (1 - sinkE))],

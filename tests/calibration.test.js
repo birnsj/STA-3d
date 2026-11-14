@@ -34,7 +34,8 @@ describe('calibration tileset', () => {
       groups.map((group) => group.label),
       ['Floors', 'Heights', 'Walls', 'Surfaces', 'Furniture'],
     )
-    assert.equal(PALETTE_GROUPS[0].id, 'starship')
+    // Group order is designer-authored (drag reorder); only require that the location groups are still there.
+    assert.ok(PALETTE_GROUPS.some((group) => group.id === 'starship'))
     assert.ok(groups[0].tiles.includes('null'))
     assert.equal(getTile('null').empty, true)
     for (const id of groups.flatMap((group) => group.tiles)) {

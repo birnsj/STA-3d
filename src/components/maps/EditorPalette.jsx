@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { bustImage } from './canvasTiles.js'
-import EditorContextMenu, { contextMenuPlacement } from './EditorContextMenu.jsx'
+import { contextMenuPlacement } from './contextMenuPlacement.js'
+import EditorContextMenu from './EditorContextMenu.jsx'
 import {
   canEditTiles,
   createTile,
@@ -205,8 +206,15 @@ export default function EditorPalette({
   const importTileIdRef = useRef(null)
   const q = query.trim().toLowerCase()
   const thumbCols = thumbColsForScale(thumbScale)
-  const GROUPS = useMemo(() => buildPaletteGroups(), [catalogueEpoch])
-  const pieceGroups = useMemo(() => templatePieceGroups(), [catalogueEpoch])
+  // The catalogues are module state that changes outside React; catalogueEpoch is the signal to rebuild.
+  const GROUPS = useMemo(() => {
+    void catalogueEpoch
+    return buildPaletteGroups()
+  }, [catalogueEpoch])
+  const pieceGroups = useMemo(() => {
+    void catalogueEpoch
+    return templatePieceGroups()
+  }, [catalogueEpoch])
   const refreshCatalogue = () => setCatalogueEpoch(tileCatalogueEpochOf() + templatePieceCatalogueEpochOf())
 
   const clearToolIfDeleted = (prefix, id) => {

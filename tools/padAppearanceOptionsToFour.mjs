@@ -5,7 +5,7 @@
  * Usage: node tools/padAppearanceOptionsToFour.mjs
  */
 import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const dataRoot = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'src', 'data', 'ships')

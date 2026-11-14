@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { appearanceArt, classArt, shipEmptyArt } from '../../ships/shipArtPaths.js'
 import { appearanceLayerPaths } from '../../ships/appearanceRules.js'
 
@@ -15,10 +15,14 @@ export default function ShipAppearancePreview({ ship, className = '' }) {
   const [failedBase, setFailedBase] = useState(false)
   const [failedLayers, setFailedLayers] = useState(() => new Set())
 
-  useEffect(() => {
+  // Forget earlier load failures when the hull or the set of layers changes (adjusted while rendering, not in an effect).
+  const artSignature = `${spaceframeId}|${layers.map((entry) => entry.file).join('|')}`
+  const [seenSignature, setSeenSignature] = useState(artSignature)
+  if (artSignature !== seenSignature) {
+    setSeenSignature(artSignature)
     setFailedBase(false)
     setFailedLayers(new Set())
-  }, [spaceframeId, layers.map((entry) => entry.file).join('|')])
+  }
 
   const shownBase = failedBase ? EMPTY : baseSrc
   const visibleLayers = layers.filter((entry) => !failedLayers.has(entry.file))

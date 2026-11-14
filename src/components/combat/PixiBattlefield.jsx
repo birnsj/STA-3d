@@ -143,20 +143,21 @@ export default function PixiBattlefield(props) {
     bigGroups,
   )
   const faded = useStableSet(fadeWholeBigObjects(fadeWholePanels(hidden, panels), bigGroups))
+  // Fade hysteresis: the Template Piece ids that were faded on the previous committed render (set in the layout
+  // effect further down), so a piece releases a little later than it engaged.
   const templateFadeMemory = useRef(new Set())
   const fadeFigures = units.filter(cutsWalls).map((unit) => ({ id: unit.id, position: shownPosition(unit) }))
+  // eslint-disable-next-line react/refs -- reads the previous render's result; it is only ever written after commit
   const fadedTemplateIds = templatePieceFadeIds(map, fadeFigures, templateFadeMemory.current, {
     mode: wallFadeMode,
     fadedCellKeys: faded,
   })
-  templateFadeMemory.current = fadedTemplateIds
   const spikeFadedRef = useRef(null)
+  // What the Spike3d overlay treats as faded (wall cells plus Template Piece ids); null when 3D is off.
+  let spikeFaded = null
   if (spike3d) {
-    const keys = new Set(faded)
-    for (const id of fadedTemplateIds) keys.add(id)
-    spikeFadedRef.current = keys
-  } else {
-    spikeFadedRef.current = null
+    spikeFaded = new Set(faded)
+    for (const id of fadedTemplateIds) spikeFaded.add(id)
   }
   // Template Piece walls: same GroundLootView draw path as exploration; not pickable in combat.
   const groundLoot = templatePieceSprites(map).map((sprite) => ({
@@ -334,7 +335,13 @@ export default function PixiBattlefield(props) {
     if (beamOut) effects.push({ id: `beam-away-${unit.id}`, kind: 'transporter', position: tileCentre(unit.position), direction: 'away', speed })
   }
 
-  figuresDebugRef.current = figures
+  // The Pixi scene, the Spike3d overlay and the debug layer read these refs every frame, so they are set right after
+  // each commit (before the next frame) rather than while rendering.
+  useLayoutEffect(() => {
+    figuresDebugRef.current = figures
+    spikeFadedRef.current = spikeFaded
+    templateFadeMemory.current = fadedTemplateIds
+  })
 
   // The scene reads the latest description every frame; pointer handlers read the latest targets.
   const revealed = useContext(MapRevealedContext)

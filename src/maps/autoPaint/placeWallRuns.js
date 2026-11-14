@@ -63,10 +63,6 @@ function isJunction(n, s, e, w) {
   return (n || s) && (e || w)
 }
 
-function isLCorner(n, s, e, w) {
-  return (n ? 1 : 0) + (s ? 1 : 0) + (e ? 1 : 0) + (w ? 1 : 0) === 2 && isJunction(n, s, e, w)
-}
-
 function cornerRotation(n, s, e, w) {
   if (n && e && !s && !w) return 0
   if (e && s && !w && !n) return 90

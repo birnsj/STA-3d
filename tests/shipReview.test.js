@@ -8,7 +8,6 @@ import {
   isShipComplete,
   departmentScore,
   getExampleClasses,
-  pickRefitsAndTalents,
   reviewScoreLabel,
   selectMissionProfile,
   selectMissionProfileTalent,

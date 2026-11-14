@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import useResettableState from '../useResettableState.js'
 import { canEditEffects, setOverlayEmissive, setOverlayEmitColour } from '../../maps/effectsFiles.js'
 import { DEFAULT_AMBIENT_COLOUR, FULL_LIGHT, getTile, imageSize } from '../../maps/mapFormat.js'
 import {
@@ -78,11 +79,9 @@ function FlagBox({ tile, box, onStatus }) {
 
 // Catalogue authoring layer (tiles.json / templatePieces.json `layer`).
 function LayerField({ entry, layerOf, saveLayer, canEdit, fileLabel, ariaLabel, onStatus }) {
-  const [value, setValue] = useState(() => layerOf(entry))
+  // Re-read the layer when another asset is selected or its saved layer changes.
+  const [value, setValue] = useResettableState(layerOf(entry), `${entry.id}|${entry.layer}`)
   const [saving, setSaving] = useState(false)
-  useEffect(() => {
-    setValue(layerOf(entry))
-  }, [entry.id, entry.layer])
   const change = (next) => {
     if (!LAYER_IDS.includes(next) || next === value) return
     setSaving(true)

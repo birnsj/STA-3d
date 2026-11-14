@@ -1,6 +1,7 @@
 // Sheet preview for SpriteSheetsScreen: PNG on an extended iso floor, wheel zoom at cursor, left-drag pan.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import EditorSelect from './EditorSelect.jsx'
+import useResettableState from '../useResettableState.js'
 import { getSpriteMetrics } from '../../rules/appearance.js'
 import { inferCharacterSheetGrid, resolvePreviewAnimation } from '../../rules/spriteCatalogue.js'
 import { spriteUrl } from '../../maps/spriteFiles.js'
@@ -126,11 +127,8 @@ export default function SpriteSheetPreview({
   const zoomRef = useRef(1)
   const stageRef = useRef({ width: 0, height: 0, sheetW: 0, sheetH: 0 })
   const [stage, setStage] = useState({ width: 0, height: 0, sheetW: 0, sheetH: 0 })
-  const [failed, setFailed] = useState(false)
-  const [inferredGrid, setInferredGrid] = useState(null)
-  // Preview playhead 0..frames-1; scrub or Pause freezes; Play resumes from the current frame.
-  const [animFrame, setAnimFrame] = useState(0)
-  const [animPlaying, setAnimPlaying] = useState(true)
+  // The last painted layout, kept in state (layoutRef is for event handlers) so rendering never reads a ref.
+  const [sheetLayout, setSheetLayout] = useState(null)
   const animPlaybackRef = useRef({
     scrubbing: false,
     playing: true,
@@ -142,16 +140,22 @@ export default function SpriteSheetPreview({
   const [zoom, setZoom] = useState(1)
   const [fit, setFit] = useState(1)
   const src = spriteUrl(path, version)
-  const grid = character?.grid ?? inferredGrid
   // Stable dep so parent re-renders do not reload the PNG (grid is a new object each enrich).
   const gridKey = character?.grid
     ? `${character.grid.columns}x${character.grid.rows}@${character.grid.resolution}:${character.grid.frame?.width}x${character.grid.frame?.height}`
     : `infer:${path}`
+  // A new sheet starts without the last one's load failure or inferred grid; the load effect fills them in again.
+  const sheetKey = [src, gridKey, path]
+  const [failed, setFailed] = useResettableState(false, sheetKey)
+  const [inferredGrid, setInferredGrid] = useResettableState(null, sheetKey)
+  const grid = character?.grid ?? inferredGrid
   const sheetAnim = useMemo(() => {
     const base = animation ? resolvePreviewAnimation(path, animation, grid, character) : null
     if (!base) return null
     // Editor-only: Loop checkbox forces repeat even when the sheet anim is once/hold.
     return loop ? { ...base, play: 'loop' } : base
+    // Deliberately keyed on the grid's cell layout below, not the `grid` object: it is a new object on every enrich.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     animation,
     path,
@@ -166,6 +170,11 @@ export default function SpriteSheetPreview({
     grid?.anchor?.x,
     grid?.anchor?.y,
   ])
+  // Preview playhead 0..frames-1; scrub or Pause freezes; Play resumes from the current frame. Both start over
+  // whenever the animation effect below restarts (same inputs as its dependency list).
+  const animKey = [sheetAnim, src, facing, animation, version, path, loop, character?.isMask]
+  const [animFrame, setAnimFrame] = useResettableState(0, animKey)
+  const [animPlaying, setAnimPlaying] = useResettableState(true, animKey)
   const setZoomBoth = (next) => {
     zoomRef.current = next
     setZoom(next)
@@ -216,6 +225,7 @@ export default function SpriteSheetPreview({
     const layout = paintSheet(sheetCanvasRef.current, image, paintGrid, path, highlight)
     if (!layout) return
     layoutRef.current = layout
+    setSheetLayout(layout)
     const nextStage = { width: layout.stageW, height: layout.stageH, sheetW: layout.sheetW, sheetH: layout.sheetH }
     stageRef.current = nextStage
     setStage(nextStage)
@@ -244,8 +254,7 @@ export default function SpriteSheetPreview({
   useEffect(() => {
     let cancelled = false
     let retries = 0
-    setFailed(false)
-    setInferredGrid(null)
+    // failed / inferredGrid were already reset for this sheet (sheetKey), before this effect ran.
     sheetImageRef.current = null
     const paintWhenReady = (image) => {
       if (cancelled) return
@@ -277,6 +286,9 @@ export default function SpriteSheetPreview({
     return () => {
       cancelled = true
     }
+    // Loads and paints only when the file or its grid changes, never for parent re-renders; the painter reads the
+    // current props and refs when it runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, gridKey, path])
 
   // Re-tint the sheet grid when Anim changes without reloading the PNG or resetting zoom.
@@ -288,6 +300,8 @@ export default function SpriteSheetPreview({
     } catch {
       /* keep prior paint */
     }
+    // Repaints only when the highlighted frames change, not on every render or load-failure flip.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetAnim?.start, sheetAnim?.frames, sheetAnim?.name, animation])
 
   useEffect(() => {
@@ -361,8 +375,6 @@ export default function SpriteSheetPreview({
     playback.baseFrame = 0
     playback.frame = 0
     playback.playStart = performance.now()
-    setAnimFrame(0)
-    setAnimPlaying(true)
     loadImage(src).then((image) => {
       if (cancelled) return
       const canvas = animCanvasRef.current
@@ -409,7 +421,7 @@ export default function SpriteSheetPreview({
       cancelled = true
       cancelAnimationFrame(frameId)
     }
-  }, [sheetAnim, src, facing, animation, version, path, loop, character?.isMask])
+  }, [sheetAnim, src, facing, animation, version, path, loop, character?.isMask, setAnimFrame, setAnimPlaying])
 
   const animFrameCount = Math.max(1, sheetAnim?.frames ?? 1)
   const onAnimScrub = (value) => {
@@ -484,7 +496,7 @@ export default function SpriteSheetPreview({
   const clip =
     !grid && !strip && stage.sheetW > 0
       ? tileClipBox(
-          layoutRef.current ?? floorLayout(stage.sheetW, stage.sheetH, null, path),
+          sheetLayout ?? floorLayout(stage.sheetW, stage.sheetH, null, path),
           path,
         )
       : null

@@ -9,7 +9,7 @@
     "Fitting / prop / console / biobed pieces include animation.overlay emission frames (blink). Art via scripts/makeTemplatePieces.mjs",
     "cover / fade match counterpart Starship tiles; animation.emissive / emitColour match wall overlay Properties (saved via /__templates).",
     "Dimension Kit (tplDim*): solid-but-lit AA size/footprint tests. Separate from Starship templates and Calibration tiles. Art via scripts/makeDimensionKit.mjs.",
-    "Outdoor Template 32 (tplOutdoor*): overlay copies of curated outdoor tiles (buildings, roads, trees, fields). Reuses existing tile PNG paths — no new art. Tag outdoor. Group: Outdoor Template 32.",
+    "Outdoor Template 32 (tplOutdoor*): overlay copies of curated outdoor tiles (roads, fields, trees, props) that reuse the tile PNGs — no new art. Pieces with solid: true block movement like their tile (templatePieces.isTemplateWallCollider); walls are the baked 32-thick kit from scripts/makeOutdoorTemplatePieces.mjs. Tag outdoor; group Outdoor Template 32.",
     "Outdoor Template 32 walls (tplOutdoor*Wall32*): 32 thick (64 / 128 run); corner post 32×32. Faces match outdoor builtWall tiles (prefab / barn / city / timber / stone / ruin). Art via scripts/makeOutdoorTemplatePieces.mjs. Floors/props remain tile-art overlays."
   ],
   "pieces": [
@@ -13519,7 +13519,8 @@
       },
       "height": 22,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorMud",
@@ -13563,7 +13564,8 @@
       },
       "height": 3,
       "cover": false,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorReeds",
@@ -13586,7 +13588,8 @@
       },
       "height": 20,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorFence",
@@ -13609,7 +13612,8 @@
       },
       "height": 12,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorTree",
@@ -13633,7 +13637,8 @@
       },
       "height": 88,
       "cover": true,
-      "fade": true
+      "fade": true,
+      "solid": true
     },
     {
       "id": "tplOutdoorBroadleaf",
@@ -13657,7 +13662,8 @@
       },
       "height": 88,
       "cover": true,
-      "fade": true
+      "fade": true,
+      "solid": true
     },
     {
       "id": "tplOutdoorPine",
@@ -13681,7 +13687,8 @@
       },
       "height": 96,
       "cover": true,
-      "fade": true
+      "fade": true,
+      "solid": true
     },
     {
       "id": "tplOutdoorAcacia",
@@ -13705,7 +13712,8 @@
       },
       "height": 68,
       "cover": true,
-      "fade": true
+      "fade": true,
+      "solid": true
     },
     {
       "id": "tplOutdoorBush",
@@ -13728,7 +13736,8 @@
       },
       "height": 16,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorRock",
@@ -13751,7 +13760,8 @@
       },
       "height": 30,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorMossRock",
@@ -13774,7 +13784,8 @@
       },
       "height": 30,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorLog",
@@ -13797,7 +13808,8 @@
       },
       "height": 10,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorSilo",
@@ -13821,7 +13833,8 @@
       },
       "height": 92,
       "cover": true,
-      "fade": true
+      "fade": true,
+      "solid": true
     },
     {
       "id": "tplOutdoorHayBale",
@@ -13844,7 +13857,8 @@
       },
       "height": 12,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorPlanter",
@@ -13867,7 +13881,8 @@
       },
       "height": 14,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorFountain",
@@ -13890,7 +13905,8 @@
       },
       "height": 18,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorTent",
@@ -13913,7 +13929,8 @@
       },
       "height": 26,
       "cover": true,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorCampfire",
@@ -13936,7 +13953,8 @@
       },
       "height": 8,
       "cover": false,
-      "fade": false
+      "fade": false,
+      "solid": true
     },
     {
       "id": "tplOutdoorSensorMast",
@@ -13960,7 +13978,8 @@
       },
       "height": 92,
       "cover": true,
-      "fade": true
+      "fade": true,
+      "solid": true
     },
     {
       "id": "tplOutdoorPrefabWall32",

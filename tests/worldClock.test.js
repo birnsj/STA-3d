@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { createWorldTickCadence, takeWorldTick, WORLD_TICK_MS } from '../src/exploration/worldClock.js'
+import { createWorldTickCadence, takeWorldTick, WORLD_TICK_MAX_SECONDS, WORLD_TICK_MS } from '../src/exploration/worldClock.js'
 
 describe('world clock cadence', () => {
   it('caps high-refresh animation frames while preserving elapsed real time', () => {
@@ -13,8 +13,8 @@ describe('world clock cadence', () => {
     assert.ok(Math.abs(second - WORLD_TICK_MS / 1000) < 1e-9)
   })
 
-  it('passes a delayed frame as one elapsed step for the reducer to clamp consistently', () => {
+  it('clamps a delayed frame to one capped step so a long pause is not one huge move', () => {
     const cadence = createWorldTickCadence(100)
-    assert.equal(takeWorldTick(cadence, 1100), 1)
+    assert.equal(takeWorldTick(cadence, 1100), WORLD_TICK_MAX_SECONDS)
   })
 })

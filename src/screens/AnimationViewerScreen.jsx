@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import EditorMenuBar from '../components/maps/EditorMenuBar.jsx'
 import EditorTips from '../components/maps/EditorTips.jsx'
 import EditorViewScale from '../components/maps/EditorViewScale.jsx'
@@ -9,7 +9,6 @@ import {
   animationViewerGroups,
   clipPlayMode,
   clipSeconds,
-  defaultAnimationSetId,
   listAnimationSets,
 } from '../spike3d/clips.js'
 import AnimationPreview from '../spike3d/AnimationPreview.jsx'
@@ -106,6 +105,12 @@ function defaultHairFor(species, gender) {
   return appearanceData.defaultHair?.[`${species}-${gender}`] ?? appearanceData.defaultHair?.[gender] ?? 'short'
 }
 
+// Keeps the chosen clip if the set has it; otherwise idle, else the first clip ('' when the set has none).
+function keptOrDefaultClip(current, allClips) {
+  if (!allClips.length) return ''
+  return allClips.includes(current) ? current : (allClips.find((name) => name === 'idle') ?? allClips[0])
+}
+
 function matchesQuery(text, q) {
   if (!q) return true
   return String(text ?? '')
@@ -148,15 +153,16 @@ function ClipGroup({ group, open, onToggle, selected, onSelect }) {
 
 export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewScale }) {
   const animationSets = useMemo(() => listAnimationSets(), [])
-  const [animSetId, setAnimSetId] = useState(() => defaultAnimationSetId())
+  // Starts on the set the starting species (human) uses, as picking a species does below.
+  const [animSetId, setAnimSetId] = useState(() => animationSetIdForSpecies('human'))
   const groups = useMemo(() => animationViewerGroups(animSetId), [animSetId])
   const allClips = useMemo(() => groups.flatMap((g) => g.clips.map((c) => c.name)), [groups])
-  const [selected, setSelected] = useState('idle')
-  const [open, setOpen] = useState(() => new Set())
+  const [selected, setSelected] = useState(() => keptOrDefaultClip('idle', allClips))
+  const [open, setOpen] = useState(() => new Set(groups.map((g) => g.id)))
   const [clipTab, setClipTab] = useState('move')
   const [query, setQuery] = useState('')
   const [showViewScale, setShowViewScale] = useState(false)
-  const [playing, setPlaying] = useState(true)
+  const [playing, setPlaying] = useState(() => allClips.length > 0)
   const [progress, setProgress] = useState(0)
   const [species, setSpecies] = useState('human')
   const [gender, setGender] = useState('male')
@@ -181,27 +187,32 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
   const attachmentFileRef = useRef(null)
   const shellRef = useRef(null)
 
-  useEffect(() => {
+  // The three resets below follow a pick (species/gender, then the anim set it implies) and are adjusted while
+  // rendering rather than in effects, so no frame shows the old hair, set or clip list. The starting values above
+  // already match what each reset would produce on first render.
+  const hairKey = `${species}|${gender}`
+  const [seenHairKey, setSeenHairKey] = useState(hairKey)
+  if (hairKey !== seenHairKey) {
+    setSeenHairKey(hairKey)
     setHairStyle(defaultHairFor(species, gender))
-  }, [species, gender])
+  }
 
-  // Species picks appearance; humanoids share one anim set, monsters use another.
-  useEffect(() => {
+  // Species picks appearance; humanoids share one anim set, monsters use another. A hand-picked set sticks until the
+  // species changes again.
+  const [seenSpecies, setSeenSpecies] = useState(species)
+  if (species !== seenSpecies) {
+    setSeenSpecies(species)
     setAnimSetId(animationSetIdForSpecies(species))
-  }, [species])
+  }
 
-  useEffect(() => {
+  const [seenAnimSetId, setSeenAnimSetId] = useState(animSetId)
+  if (animSetId !== seenAnimSetId) {
+    setSeenAnimSetId(animSetId)
     setOpen(new Set(groups.map((g) => g.id)))
-    if (!allClips.length) {
-      setSelected('')
-      setPlaying(false)
-      setProgress(0)
-      return
-    }
-    setSelected((current) => (allClips.includes(current) ? current : allClips.find((n) => n === 'idle') ?? allClips[0]))
+    setSelected((current) => keptOrDefaultClip(current, allClips))
     setProgress(0)
-    setPlaying(true)
-  }, [animSetId, groups, allClips])
+    setPlaying(allClips.length > 0)
+  }
 
   const appearance = useMemo(() => {
     const base = resolveSpike3dAppearance({

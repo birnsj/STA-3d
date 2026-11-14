@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import '../../styles/ships/serviceRecord.css'
 import HelpTip from '../../components/HelpTip.jsx'
 import { useInfoTip } from '../../components/useInfoTip.js'
+import useResettableState from '../../components/useResettableState.js'
 import { useWholeCardCarousel } from '../../components/wholeCardCarousel.js'
 import ShipArt from '../../components/ships/ShipArt.jsx'
 import ShipScreenFooter from '../../components/ships/ShipScreenFooter.jsx'
@@ -207,10 +208,21 @@ export default function ServiceRecordScreen({
     ? (title ?? (selected.namesake ? 'Name the battle or war.' : selected.name))
     : null
   const [tab, setTab] = useState('history')
-  const [draft, setDraft] = useState(ship.serviceRecordDetail ?? '')
+  // The detail draft restarts from the saved text only when a different service record is chosen, so typing is never
+  // overwritten by the saved text catching up.
+  const [draft, setDraft] = useResettableState(ship.serviceRecordDetail ?? '', ship.serviceRecordId)
   const [focusEventId, setFocusEventId] = useState(null)
   const [focusHonorId, setFocusHonorId] = useState(null)
-  const [focusTraitId, setFocusTraitId] = useState(null)
+  // The focused Trait card is forgotten whenever anything that builds the cards changes.
+  const traitCardsKey = [
+    ship.spaceframeId,
+    ship.serviceRecordId,
+    ship.serviceRecordDetail,
+    (ship.serviceNotableEventIds ?? []).join(','),
+    ship.serviceReputationId,
+    (ship.serviceHonorIds ?? []).join(','),
+  ].join('|')
+  const [focusTraitId, setFocusTraitId] = useResettableState(null, traitCardsKey)
 
   const traitCards = buildTraitCards(ship)
   const specialStatus = serviceSpecialRuleStatus(ship)
@@ -223,21 +235,6 @@ export default function ServiceRecordScreen({
   const activeTab = TABS.find((entry) => entry[0] === tab) ?? TABS[0]
   const noneSelected = !ship.serviceRecordId
   const tip = useInfoTip()
-
-  useEffect(() => {
-    setDraft(ship.serviceRecordDetail ?? '')
-  }, [ship.serviceRecordId])
-
-  useEffect(() => {
-    setFocusTraitId(null)
-  }, [
-    ship.spaceframeId,
-    ship.serviceRecordId,
-    ship.serviceRecordDetail,
-    ship.serviceNotableEventIds,
-    ship.serviceReputationId,
-    ship.serviceHonorIds,
-  ])
 
   const leftList = (() => {
     if (tab === 'history') {

@@ -32,28 +32,9 @@ function holdingHazard(figure) {
   )
 }
 
-/**
- * figures: board figures that may carry hazardOverlay / hitGlow (exploration or combat).
- * Renders above the Spike3d canvas inside the SVG viewBox.
- */
-export default function Spike3dCharacterFx({ figures }) {
-  const [, setFrame] = useState(0)
-  const heldRef = useRef(new Map())
-  const glowStartedRef = useRef(new Map())
-
-  useEffect(() => {
-    let id = 0
-    const tick = () => {
-      setFrame((n) => (n + 1) % 1_000_000)
-      id = requestAnimationFrame(tick)
-    }
-    id = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(id)
-  }, [])
-
-  const now = performance.now()
-  const held = heldRef.current
-  const glowStarted = glowStartedRef.current
+// What to draw this frame, from the board figures. `held` (the hazard a downed figure keeps showing) and
+// `glowStarted` (when each hit glow began) are the frame loop's own memory, updated here as it runs.
+function buildMarks(figures, now, held, glowStarted) {
   const liveGlowKeys = new Set()
   const marks = []
 
@@ -92,6 +73,37 @@ export default function Spike3dCharacterFx({ figures }) {
   for (const key of [...glowStarted.keys()]) {
     if (!liveGlowKeys.has(key)) glowStarted.delete(key)
   }
+  return marks
+}
+
+/**
+ * figures: board figures that may carry hazardOverlay / hitGlow (exploration or combat).
+ * Renders above the Spike3d canvas inside the SVG viewBox.
+ *
+ * The marks are worked out in the animation-frame loop (they depend on the clock) and kept in state, so rendering
+ * stays a pure drawing of them. A change to `figures` shows on the next frame.
+ */
+export default function Spike3dCharacterFx({ figures }) {
+  const [marks, setMarks] = useState([])
+  const figuresRef = useRef(figures)
+  // The frame loop reads the latest figures from here rather than restarting whenever they change.
+  useEffect(() => {
+    figuresRef.current = figures
+  })
+
+  useEffect(() => {
+    const held = new Map()
+    const glowStarted = new Map()
+    let id = 0
+    const tick = () => {
+      const next = buildMarks(figuresRef.current, performance.now(), held, glowStarted)
+      // Nothing to show before and after: keep the same state so the board does not re-render every frame for nothing.
+      setMarks((previous) => (previous.length === 0 && next.length === 0 ? previous : next))
+      id = requestAnimationFrame(tick)
+    }
+    id = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(id)
+  }, [])
 
   return (
     <g className="spike3d-character-fx" pointerEvents="none">

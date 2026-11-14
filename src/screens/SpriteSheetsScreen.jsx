@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import SpriteSheetPreview from '../components/maps/SpriteSheetPreview.jsx'
+import useResettableState from '../components/useResettableState.js'
 import {
   bumpSpriteCache,
   canEditSprites,
@@ -83,21 +84,22 @@ export default function SpriteSheetsScreen({ onBack }) {
   const [loopPreview, setLoopPreview] = useState(true)
   const [busy, setBusy] = useState(false)
   const [typeId, setTypeId] = useState('characters')
-  const [openSubgroups, setOpenSubgroups] = useState(() => new Set())
   const fileRef = useRef(null)
 
-  const loadList = async () => {
-    try {
-      const list = await listSpriteFiles()
-      const enriched = list.map(enrichSpriteEntry)
-      setEntries(enriched)
-      setSelectedPath((current) => current ?? enriched[0]?.path ?? null)
-      if (!enriched.length) setStatus('No PNGs found under public/art/sprites/.')
-    } catch (error) {
-      setStatus(error.message || String(error))
-      setEntries([])
-    }
-  }
+  // A promise chain, not an async body, so the state is set from the callbacks and never inside the effect that starts it.
+  const loadList = () =>
+    listSpriteFiles().then(
+      (list) => {
+        const enriched = list.map(enrichSpriteEntry)
+        setEntries(enriched)
+        setSelectedPath((current) => current ?? enriched[0]?.path ?? null)
+        if (!enriched.length) setStatus('No PNGs found under public/art/sprites/.')
+      },
+      (error) => {
+        setStatus(error.message || String(error))
+        setEntries([])
+      },
+    )
 
   useEffect(() => {
     loadList()
@@ -114,10 +116,10 @@ export default function SpriteSheetsScreen({ onBack }) {
     return [...known, ...extras].filter((category) => category.count > 0 || !query.trim())
   }, [categories, query])
 
-  useEffect(() => {
-    if (!typeTabs.length) return
-    if (!typeTabs.some((tab) => tab.id === typeId)) setTypeId(typeTabs[0].id)
-  }, [typeTabs, typeId])
+  // The corrections below are adjusted while rendering (each guarded, so it settles after one pass) instead of in
+  // effects, so no frame shows a tab, folder list or preview that is about to be replaced.
+  // A filter that hides the chosen type moves to the first remaining one.
+  if (typeTabs.length && !typeTabs.some((tab) => tab.id === typeId)) setTypeId(typeTabs[0].id)
 
   const activeCategory = typeTabs.find((tab) => tab.id === typeId) ?? typeTabs[0] ?? null
   const subgroups = activeCategory?.subgroups ?? []
@@ -125,37 +127,29 @@ export default function SpriteSheetsScreen({ onBack }) {
   const activeTypeId = activeCategory?.id
   const subgroupIdsKey = subgroups.map((subgroup) => subgroup.id).join('|')
 
-  useEffect(() => {
-    if (!subgroupIdsKey) {
-      setOpenSubgroups(new Set())
-      return
-    }
-    const ids = subgroupIdsKey.split('|')
-    // Open every subgroup while filtering; otherwise the first folder in this type.
-    if (query.trim()) {
-      setOpenSubgroups(new Set(ids))
-      return
-    }
-    setOpenSubgroups(new Set([ids[0]]))
-  }, [activeTypeId, subgroupIdsKey, query])
+  // Open every subgroup while filtering; otherwise only the first folder in this type.
+  const subgroupIds = subgroupIdsKey ? subgroupIdsKey.split('|') : []
+  const startOpen = query.trim() ? subgroupIds : subgroupIds.slice(0, 1)
+  const [openSubgroups, setOpenSubgroups] = useResettableState(new Set(startOpen), `${activeTypeId}|${subgroupIdsKey}|${query}`)
 
   // Switching Characters → FX (etc.) should preview a file from that tab, not the previous selection.
-  useEffect(() => {
-    if (!activeCategory?.entries?.length) return
-    const inTab = activeCategory.entries.some((entry) => entry.path === selectedPath)
-    if (!inTab) setSelectedPath(activeCategory.entries[0].path)
-  }, [activeTypeId, activeCategory, selectedPath])
+  if (activeCategory?.entries?.length && !activeCategory.entries.some((entry) => entry.path === selectedPath)) {
+    setSelectedPath(activeCategory.entries[0].path)
+  }
 
   const selected = useMemo(() => entries.find((entry) => entry.path === selectedPath) ?? null, [entries, selectedPath])
 
-  useEffect(() => {
+  // Keep the chosen animation when the new file has it; otherwise its first one.
+  const [seenSelected, setSeenSelected] = useState(selected)
+  if (selected !== seenSelected) {
+    setSeenSelected(selected)
     if (!selected) {
       setAnimation(null)
-      return
+    } else {
+      const names = listPreviewAnimations(selected.path, selected.character)
+      setAnimation((current) => (names.includes(current) ? current : names[0] ?? null))
     }
-    const names = listPreviewAnimations(selected.path, selected.character)
-    setAnimation((current) => (names.includes(current) ? current : names[0] ?? null))
-  }, [selected])
+  }
 
   const toggleSubgroup = (id) =>
     setOpenSubgroups((current) => {

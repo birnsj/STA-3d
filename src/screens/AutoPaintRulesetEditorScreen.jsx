@@ -324,13 +324,15 @@ export default function AutoPaintRulesetEditorScreen({
 
   // Same live catalogues as Dev Edit Assets (templatePieces.json + tile palette groups).
   const catalogueEpoch = templatePieceCatalogueEpochOf() + tileCatalogueEpochOf()
-  const templateItems = useMemo(
-    () => editorTemplatePaletteItems({ includeDimension: showAll }),
-    [showAll, catalogueEpoch],
-  )
+  // The catalogues are module state that changes outside React; catalogueEpoch is the signal to rebuild.
+  const templateItems = useMemo(() => {
+    void catalogueEpoch
+    return editorTemplatePaletteItems({ includeDimension: showAll })
+  }, [showAll, catalogueEpoch])
 
   // Role options: tiles Template Pieces resolve to, plus (Show all) every Dev Edit tileset.
   const roleTiles = useMemo(() => {
+    void catalogueEpoch
     const byId = new Map()
     for (const item of templateItems) {
       const tileId = resolveAutoPaintTileId(item.id)
@@ -355,6 +357,7 @@ export default function AutoPaintRulesetEditorScreen({
   const tileOptions = (field, value) => withSelectedTiles(roleTiles.filter(field.filter), value)
 
   const paletteItems = useMemo(() => {
+    void catalogueEpoch
     if (!showAll) return templateItems
     // Show all: Template Pieces + every Dev Edit Assets tileset (Starship, Other, …).
     const tiles = editorPaletteTileItems()

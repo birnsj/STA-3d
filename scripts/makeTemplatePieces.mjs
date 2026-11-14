@@ -841,7 +841,7 @@ if (dimensionCount) {
 }
 if (outdoorCount) {
   notes.push(
-    'Outdoor Template 32 (tplOutdoor*): outdoor walls are 32-thick modular pieces (makeOutdoorTemplatePieces.mjs); floors/props may reuse outdoor tile art.',
+    'Outdoor Template 32 (tplOutdoor*): overlay copies of curated outdoor tiles (roads, fields, trees, props) that reuse the tile PNGs — no new art. Pieces with solid: true block movement like their tile (templatePieces.isTemplateWallCollider); walls are the baked 32-thick kit from scripts/makeOutdoorTemplatePieces.mjs. Tag outdoor; group Outdoor Template 32.',
   )
 }
 fs.writeFileSync(cataloguePath, `${JSON.stringify({ notes, pieces: [...pieces, ...keepOther] }, null, 2)}\n`)

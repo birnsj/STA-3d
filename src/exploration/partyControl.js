@@ -31,7 +31,11 @@ const giveWayWeight = (member, other, selectedIds) => {
   if (type === 'follow') return GIVE_WAY.follow
   if (type === 'point') return GIVE_WAY.point
   // Idle selected stander: still yield to a walker so they step back rather than the walker sliding off them.
-  if (type === 'none' && (other.order?.type === 'point' || other.order?.type === 'follow')) return GIVE_WAY.follow
+  // Never to their own followers, though: the formation slots hang off this character, so shoving them moves the slots,
+  // the followers chase the slots, and the whole group creeps along forever with nobody able to park.
+  if (type === 'none' && (other.order?.type === 'point' || other.order?.type === 'follow') && other.order.leaderId !== member.id) {
+    return GIVE_WAY.follow
+  }
   return 0
 }
 /** Step-back when shoved: never the selected character driving a point move. */

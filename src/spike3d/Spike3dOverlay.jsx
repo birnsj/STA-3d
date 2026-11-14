@@ -24,7 +24,10 @@ function mapSceneKey(map) {
 export default function Spike3dOverlay({ map, posesRef, svgRef, hostRef, frameRef, fadedRef }) {
   const canvasRef = useRef(null)
   const mapRef = useRef(map)
-  mapRef.current = map
+  // Latest map for the scene effect below to read when it (re)mounts. Declared first so it runs first on each commit.
+  useEffect(() => {
+    mapRef.current = map
+  })
   const sceneKey = mapSceneKey(map)
 
   useEffect(() => {

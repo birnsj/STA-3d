@@ -1,5 +1,5 @@
 // Generate Map size snap — same presets as Dev Edit Properties (mapSizes.json via sizeFor).
-import { MAP_SIZES, sizeFor, sizeIdOf } from '../mapGenerators.js'
+import { MAP_SIZES, sizeFor, sizeIdOf } from '../mapSizes.js'
 
 /**
  * Snap open-map size to the closest Dev Edit size preset for this location type.

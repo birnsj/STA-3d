@@ -45,7 +45,8 @@ describe('walk or run by distance (Prototype)', () => {
     assert.equal(ran.members.alpha.running, true)
     assert.ok(Math.abs(ran.members.alpha.position.x - start - MOVE.runSpeed) < 0.3, `ran ${ran.members.alpha.position.x - start} tiles in 1 s`)
 
-    const walked = run(moveTo(party, { x: start + 3, y: 4 }), 0.5)
+    // Just inside the run distance (tuned in partyControl.json), so this stays a walk if that value is retuned.
+    const walked = run(moveTo(party, { x: start + MOVE.runDistance - 0.1, y: 4 }), 0.25)
     assert.equal(walked.members.alpha.moving, true)
     assert.equal(walked.members.alpha.running, false)
   })
@@ -60,7 +61,8 @@ describe('walk or run by distance (Prototype)', () => {
 
   it('a follower hurrying to catch up a walking leader is not running', () => {
     const party = createPartyState(testMap(), team())
-    const walked = run(moveTo(party, { x: 6.5, y: 4 }), 0.3)
+    const lead = party.members.alpha.position
+    const walked = run(moveTo(party, { x: lead.x + MOVE.runDistance - 0.25, y: lead.y }), 0.3)
     assert.equal(walked.members.alpha.order.run, false)
     assert.equal(walked.members.beta.running, false)
   })

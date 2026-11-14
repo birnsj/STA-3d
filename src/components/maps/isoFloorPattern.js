@@ -260,7 +260,9 @@ function floorOrigin(layout, grid, spritePath) {
   const { marginX, marginY, tileW, tileH, scale, sheetW, sheetH } = layout
 
   if (grid?.columns >= 1 && grid?.rows >= 1 && grid.resolution > 0) {
-    const ax = (grid.anchor?.x ?? grid.frame?.width / 2 ?? TILE_W / 2) * grid.resolution
+    // Divide only when the frame width exists: undefined / 2 is NaN, which `??` would never replace.
+    const frameCentreX = grid.frame?.width != null ? grid.frame.width / 2 : TILE_W / 2
+    const ax = (grid.anchor?.x ?? frameCentreX) * grid.resolution
     const ay = (grid.anchor?.y ?? grid.frame?.height ?? TILE_W) * grid.resolution
     return { originX: marginX + ax, originY: marginY + ay, guides: null }
   }

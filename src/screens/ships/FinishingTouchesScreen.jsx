@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import '../../styles/ships/finishingTouches.css'
 import HelpTip from '../../components/HelpTip.jsx'
 import { useInfoTip } from '../../components/useInfoTip.js'
+import useResettableState from '../../components/useResettableState.js'
 import ShipAppearancePreview from '../../components/ships/ShipAppearancePreview.jsx'
 import ShipArt from '../../components/ships/ShipArt.jsx'
 import ShipScreenFooter from '../../components/ships/ShipScreenFooter.jsx'
@@ -212,11 +213,8 @@ function AppearanceWorkspace({
   const setting = settings.find((entry) => entry.id === settingId) ?? settings[0]
   const options = settingOptions(setting)
   const selectedId = selectedOptionId(ship, appearanceDetail, setting)
-  const [focusId, setFocusId] = useState(selectedId)
-
-  useEffect(() => {
-    setFocusId(selectedId)
-  }, [setting.id, selectedId])
+  // Focus returns to the chosen option when the setting changes or the choice does.
+  const [focusId, setFocusId] = useResettableState(selectedId, `${setting.id}|${selectedId}`)
 
   const focusedId = focusId || selectedId || options[0]?.id || null
   const focusedOption = options.find((entry) => entry.id === focusedId) ?? null
@@ -316,9 +314,10 @@ export default function FinishingTouchesScreen({
   onNext,
 }) {
   const [tab, setTab] = useState('identity')
-  const [nameDraft, setNameDraft] = useState(ship.shipName ?? '')
-  const [registryDraft, setRegistryDraft] = useState(ship.registry ?? '')
-  const [designationDraft, setDesignationDraft] = useState(ship.classDesignation ?? '')
+  // Each draft follows its saved value: typing edits the draft, and a change to the ship's value replaces it.
+  const [nameDraft, setNameDraft] = useResettableState(ship.shipName ?? '', ship.shipName)
+  const [registryDraft, setRegistryDraft] = useResettableState(ship.registry ?? '', ship.registry)
+  const [designationDraft, setDesignationDraft] = useResettableState(ship.classDesignation ?? '', ship.classDesignation)
   const [exteriorSettingId, setExteriorSettingId] = useState(EXTERIOR_SETTINGS[0].id)
   const [insigniaSettingId, setInsigniaSettingId] = useState(INSIGNIA_SETTINGS[0].id)
   const [surfaceSettingId, setSurfaceSettingId] = useState(SURFACE_SETTINGS[0].id)
@@ -332,18 +331,6 @@ export default function FinishingTouchesScreen({
   const registryMissing = needsRegistry && !ship.registry?.trim()
   const activeTab = TABS.find((entry) => entry.id === tab) ?? TABS[0]
   const classPreview = frame ? classArt(frame.id) : null
-
-  useEffect(() => {
-    setNameDraft(ship.shipName ?? '')
-  }, [ship.shipName])
-
-  useEffect(() => {
-    setRegistryDraft(ship.registry ?? '')
-  }, [ship.registry])
-
-  useEffect(() => {
-    setDesignationDraft(ship.classDesignation ?? '')
-  }, [ship.classDesignation])
 
   const commitDrafts = () => {
     onName(nameDraft)

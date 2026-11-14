@@ -132,6 +132,7 @@ export function templatePieceSpriteInfo(piece) {
   }
   const traits = [...(piece.tags ?? [])]
   if (piece.cover) traits.push('Cover')
+  if (piece.solid) traits.push('Solid')
   if (piece.fade) traits.push('Fade')
   const tags = piece.tags ?? []
   const group = tags.includes('dimension')
@@ -250,12 +251,23 @@ export function templatePieceWorldAabb(entry) {
   return { minX: tip.x - w, maxX: tip.x, minY: tip.y - d, maxY: tip.y, def }
 }
 
-/** Wall/structure Template Pieces (not floor/doorway underlays) — collision and minimap silhouettes. */
+const WALKABLE_TAGS = new Set(['floor', 'doorway', 'carpet', 'grating'])
+const STRUCTURE_TAGS = new Set(['wall', 'halfbulkhead', 'column', 'pillar'])
+
+/**
+ * Wall/structure Template Pieces (not floor/doorway underlays) — collision and minimap silhouettes.
+ * A piece can also opt in with `solid: true` (outdoor trees, rocks, deep water mirror their tile's `solid`).
+ * Runs on every movement check, so it avoids allocating.
+ */
 export function isTemplateWallCollider(def) {
-  const tags = new Set((def.tags ?? []).map((tag) => String(tag).toLowerCase()))
-  if (tags.has('floor') || tags.has('doorway') || tags.has('carpet') || tags.has('grating')) return false
-  if (tags.has('wall') || tags.has('halfbulkhead') || tags.has('column') || tags.has('pillar')) return true
-  return def.layer === 'walls'
+  if (def.solid === true) return true
+  let structure = false
+  for (const raw of def.tags ?? []) {
+    const tag = String(raw).toLowerCase()
+    if (WALKABLE_TAGS.has(tag)) return false
+    if (STRUCTURE_TAGS.has(tag)) structure = true
+  }
+  return structure || def.layer === 'walls'
 }
 
 export function circleHitsAabb(point, radius, box) {
@@ -267,12 +279,28 @@ export function circleHitsAabb(point, radius, box) {
   return dx * dx + dy * dy < radius * radius
 }
 
+// Footprint boxes for a map's placement list, built once per list. Map edits always return a new array
+// (mapEdits.js), so the array itself is the cache key; deleting a catalogue piece bumps the epoch and rebuilds.
+// Collision and cover run per movement sample, so rescanning and re-deriving every box each call was the cost.
+const NO_PLACEMENTS = []
+const worldBoxCache = new WeakMap()
+function worldBoxes(map) {
+  const placements = map.templatePiecePlacements ?? NO_PLACEMENTS
+  const cached = worldBoxCache.get(placements)
+  if (cached?.epoch === templatePieceCatalogueEpoch) return cached.boxes
+  const boxes = []
+  for (const entry of placements) {
+    const box = templatePieceWorldAabb(entry)
+    if (box) boxes.push(box)
+  }
+  worldBoxCache.set(placements, { epoch: templatePieceCatalogueEpoch, boxes })
+  return boxes
+}
+
 /** True when a circle overlaps any Template Piece wall/structure footprint (edge collision). */
 export function circleHitsTemplateWalls(map, point, radius) {
-  for (const entry of map.templatePiecePlacements ?? []) {
-    const box = templatePieceWorldAabb(entry)
-    if (!box || !isTemplateWallCollider(box.def)) continue
-    if (circleHitsAabb(point, radius, box)) return true
+  for (const box of worldBoxes(map)) {
+    if (isTemplateWallCollider(box.def) && circleHitsAabb(point, radius, box)) return true
   }
   return false
 }
@@ -281,11 +309,8 @@ export function circleHitsTemplateWalls(map, point, radius) {
 export function templatePieceGivesCover(map, position) {
   const cellX = Math.round(position.x)
   const cellY = Math.round(position.y)
-  for (const entry of map.templatePiecePlacements ?? []) {
-    const def = getTemplatePiece(entry.pieceId)
-    if (!def?.cover) continue
-    const box = templatePieceWorldAabb(entry)
-    if (!box) continue
+  for (const box of worldBoxes(map)) {
+    if (!box.def.cover) continue
     if (cellX >= Math.floor(box.minX) && cellX <= Math.floor(box.maxX) && cellY >= Math.floor(box.minY) && cellY <= Math.floor(box.maxY)) {
       return true
     }

@@ -69,10 +69,8 @@ export default function EditorSelect({
   const isOpen = open && !disabled
 
   useLayoutEffect(() => {
-    if (!isOpen) {
-      setPlacement(null)
-      return undefined
-    }
+    // Closed: nothing to measure. Rendering is already gated on isOpen, and reopening re-measures before paint.
+    if (!isOpen) return undefined
     const host = rootRef.current?.closest('.stage') ?? null
     const update = () => {
       const box = menuBoxFor(triggerRef.current, host)

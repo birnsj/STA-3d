@@ -2,15 +2,7 @@ import { memo, useEffect, useState } from 'react'
 import { MAX_MOMENTUM } from '../../rules/missionResources.js'
 import { playMomentumLossSound, playMomentumSound } from '../../audio/uiSounds.js'
 import { THREAT_EXPLAINED } from '../task/taskText.js'
-
-// Presentation only: Threat has no book max, so the HUD shows pressure bands instead of a filled meter.
-// Low 1–3, Rising 4–6 (enemies can buy meaningful spends; AI often holds ~4 for Avoid Injury), High 7+.
-export function threatBand(threat) {
-  if (threat <= 0) return { id: 'none', label: null }
-  if (threat <= 3) return { id: 'low', label: 'Low' }
-  if (threat <= 6) return { id: 'rising', label: 'Rising' }
-  return { id: 'high', label: 'High' }
-}
+import { threatBand } from './threatBand.js'
 
 const THREAT_BAND_TIP =
   `${THREAT_EXPLAINED}\n\nHUD bands (not a rules cap): Low 1–3, Rising 4–6, High 7+.`

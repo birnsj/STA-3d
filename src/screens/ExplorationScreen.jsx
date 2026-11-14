@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import { samePosition } from '../combat/battleMap.js'
 import { useDisplaySettings, useOpenSettings } from '../settings/DisplaySettingsContext.js'
 import ResourceIndicators from '../components/combat/ResourceIndicators.jsx'
 import ObjectivesPanel from '../components/combat/ObjectivesPanel.jsx'
 import useBeamIn from '../components/combat/useBeamIn.js'
 import usePendingObjectHit from '../components/usePendingObjectHit.js'
+import useResettableState from '../components/useResettableState.js'
 import ChallengePanel from '../components/exploration/ChallengePanel.jsx'
 import CharacterSheetPanel from '../components/exploration/CharacterSheetPanel.jsx'
 import CaptainsLogPanel from '../components/exploration/CaptainsLogPanel.jsx'
@@ -369,10 +369,8 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   // UI state: whether the open NPC's Info card shows; the NPC whose Attack is waiting for confirmation.
   const [npcInfoOpen, setNpcInfoOpen] = useState(false)
   // Destructible Structure / hazard card beside the ring (off by default so explosives don't cover the board).
-  const [destructibleInfoOpen, setDestructibleInfoOpen] = useState(false)
-  useEffect(() => {
-    setDestructibleInfoOpen(false)
-  }, [menuDestructibleId])
+  // Closed again whenever a different destructible's ring opens.
+  const [destructibleInfoOpen, setDestructibleInfoOpen] = useResettableState(false, menuDestructibleId)
   const [confirmAttackId, setConfirmAttackId] = useState(null)
   // UI state, for the open NPC or object ring (ringKey): the button last hovered and the member picked on its party band.
   // Opening another ring starts both afresh.
@@ -1050,10 +1048,10 @@ export default function ExplorationScreen({ savedCharacters, mapId, onBack, onEx
   const [phase, setPhase] = useState('setup')
   // UI state: the away team has beamed out; the report (or exit) plays outside MapFadeIn.
   const [missionEnded, setMissionEnded] = useState(false)
-  // flushSync: swap off MapFadeIn before paint so a finished beam-out never leaves a black frame.
-  const onOutro = useCallback(() => {
-    flushSync(() => setMissionEnded(true))
-  }, [])
+  // Exploration calls this from useLayoutEffect once the party has beamed out. A plain setState is enough: layout
+  // effects already commit before paint, so the parent swaps off MapFadeIn without a black frame. flushSync here would
+  // warn on React 19 ("flushSync was called from inside a lifecycle method").
+  const onOutro = useCallback(() => setMissionEnded(true), [])
   const { missionIntro: playIntro, missionOutro: playOutro } = useDisplaySettings()
   // The episode's own tracks (map.music) once its map is on: the intro, exploration, fights and the outro.
   useEpisodeMusic(state?.party.map.music ?? null)
@@ -1095,9 +1093,8 @@ export function ExplorationPlaytest({ map, characters, savedCharacters = [], ene
   const { missionIntro: playIntro, missionOutro: playOutro } = useDisplaySettings()
   const [intro, setIntro] = useState(playIntro)
   const [missionEnded, setMissionEnded] = useState(false)
-  const onOutro = useCallback(() => {
-    flushSync(() => setMissionEnded(true))
-  }, [])
+  // Same as ExplorationScreen.onOutro: layout-effect setState, no flushSync (React 19).
+  const onOutro = useCallback(() => setMissionEnded(true), [])
   if (intro) return <MissionIntro map={state.party.map} onBegin={() => setIntro(false)} />
   if (missionEnded) {
     return <MissionEndScreen state={state} exitLabel="Return to Editor" playOutro={playOutro} onExit={onExit} />

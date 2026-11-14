@@ -35,7 +35,6 @@ const AnimationViewerScreen = lazy(() => import('./screens/AnimationViewerScreen
 
 const { steps } = creationSteps
 
-const VIEWS = ['menu', 'shipBuilder', 'settings', 'creator', 'episodeSelect', 'combat', 'exploration', 'mapEditor', 'spriteSheets', 'animationViewer']
 // The prototypes Load Episode can open (a saved choice of one since removed falls back to the first).
 const EPISODE_MODES = ['combat', 'exploration']
 

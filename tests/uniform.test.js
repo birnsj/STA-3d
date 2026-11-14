@@ -246,12 +246,11 @@ describe('Portrait backdrops (Prototype: follow the department, the player may p
   const autofilled = creatorReducer(createInitialState(), { type: 'autofill', seed: 0.42 })
   const portraitIds = getAvailablePortraits(autofilled.character).map((portrait) => portrait.id)
 
-  it('every backdrop file exists in the portrait 4:5 shape; Starship Bridge is the 256x320 designer art', () => {
+  it('every backdrop file exists in the portrait 4:5 shape, whatever resolution the designer art is', () => {
     for (const backdrop of getBackdrops()) {
       const [width, height] = pngSize(backdrop.image).split('x').map(Number)
       assert.equal(width * 5, height * 4, backdrop.id)
     }
-    assert.equal(pngSize(getBackdropById('starship-bridge').image), '256x320')
     assert.equal(getBackdropById('starship-bridge').name, 'Starship Bridge')
   })
 

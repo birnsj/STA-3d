@@ -16,7 +16,7 @@ describe('Auto-Paint shares Dev Edit Template catalogue', () => {
     assert.equal(items.length, groupPieces.length)
     assert.ok(items.every((item) => item.kind === 'piece'))
     assert.ok(items.some((item) => item.id === 'tplStarshipWall32'))
-    assert.ok(items.some((item) => item.id === 'tplOutdoorPrefabWall'))
+    assert.ok(items.some((item) => item.id === 'tplOutdoorPrefabWall32'))
   })
 
   it('resolves Template Pieces to wall32 tiles without a parallel id table', () => {

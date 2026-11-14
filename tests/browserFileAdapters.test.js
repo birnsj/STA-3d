@@ -12,6 +12,8 @@ const ADAPTERS = [
   'src/maps/wallVariantFiles.js',
   'src/maps/effectsFiles.js',
   'src/maps/tileFiles.js',
+  // tileFiles imports spriteFiles, which also reads import.meta.env.DEV.
+  'src/maps/spriteFiles.js',
   'src/rules/itemFiles.js',
   'src/exploration/storyFiles.js',
 ]
@@ -175,7 +177,7 @@ describe('development-browser JSON file adapters', () => {
     assert.equal(calls.length, 0)
   })
 
-  it('keeps tile and story capability flags informational', async () => {
+  it('refuses tile writes without the DEV server, and keeps the story flag informational', async () => {
     answerWith((url) => response(url === '/__story' ? { objectiveActive: 'Changed.' } : {}))
     const tiles = await load('src/maps/tileFiles.js', { dev: false })
     const items = await load('src/rules/itemFiles.js', { dev: false })
@@ -183,9 +185,10 @@ describe('development-browser JSON file adapters', () => {
     assert.equal(tiles.canEditTiles, false)
     assert.equal(items.canEditItems, false)
     assert.equal(story.canEditStory, false)
-    await tiles.setTileFlag('floor', 'fade', false)
+    // Tile edits are gated (tileFiles.putTiles) so a production build fails loudly instead of calling a missing endpoint.
+    await assert.rejects(tiles.setTileFlag('floor', 'fade', false), /Vite DEV server/)
     await story.saveStoryTemplates({ objectiveActive: 'Changed.' })
-    assert.deepEqual(calls.map(({ url }) => url), ['/__tiles', '/__story'])
+    assert.deepEqual(calls.map(({ url }) => url), ['/__story'])
   })
 
   it('keeps authored-character HTTP errors and 204 handling distinct', async () => {

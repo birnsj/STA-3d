@@ -27,7 +27,8 @@ describe('Template Deck generator', () => {
         if (map.tiles[y][x] === TEMPLATE_WALL_UNDERLAY) {
           walls += 1
           assert.equal(getTile(map.tiles[y][x]).empty, true)
-          assert.equal(getTile(map.tiles[y][x]).solid, true)
+          // Movement uses Template Piece edge footprints (templatePieces.circleHitsTemplateWalls), not the whole cell.
+          assert.equal(getTile(map.tiles[y][x]).solid, false)
           assert.equal(getTile(map.tiles[y][x]).blocksSight, true)
         }
       }
