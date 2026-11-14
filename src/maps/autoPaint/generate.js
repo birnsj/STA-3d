@@ -69,13 +69,14 @@ export function generateAutoPaintMap(source, rulesetId, random = Math.random) {
 
   const floorUnder = { ...(layout.floorUnder ?? {}) }
   // Deck cuts two-tile doors; keep both cells (128 underlay) and line 96px with Doorway 32.
+  const doorCells = ruleset.pipeline?.doorCells ?? AUTO_PAINT_DOOR_CELLS
   shrinkDoorwaysToMaxCells(
     tiles,
     width,
     height,
     doorMark,
     WORLD_WALL_UNDERLAY,
-    AUTO_PAINT_DOOR_CELLS,
+    doorCells,
     (x, y) => {
       floorUnder[cellKey({ x, y })] = pickWeighted(floors, random) || floorId
     },
@@ -120,7 +121,12 @@ export function generateAutoPaintMap(source, rulesetId, random = Math.random) {
     music: source.music,
   }
 
-  map = placePackedWallPieces(map, kit, { doorKeys, random })
+  map = placePackedWallPieces(map, kit, {
+    doorKeys,
+    random,
+    pipeline: ruleset.pipeline,
+    adjacency: ruleset.adjacency,
+  })
 
   const placements = map.templatePiecePlacements ?? []
   const floorKeys = collectFloorKeys(map, floorIdsForRuleset(ruleset))

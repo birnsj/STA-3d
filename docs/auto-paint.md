@@ -9,7 +9,7 @@ Editor overview / menu placement: `docs/editor-authoring-summary.md` (§8 World 
 
 ## Current behaviour
 
-1. **Tools → World Generation Ruleset** — palette is the Dev Edit **Template Pieces** catalogue (`templatePieces.json`). Default ruleset **Template 32** stores **Template Piece ids** in wall roles (straight / long / corner / door frame; optional hull). Hover shows piece **footprint** (corner 32×32). **Show all** adds Starship wall tiles for larger true cell walls. Save → `autoPaintRulesets.json` (`/__autopaint`).
+1. **Tools → World Generation Ruleset** — palette is the Dev Edit **Template Pieces** catalogue (`templatePieces.json`). **Help** menu + **Flowchart** (pipeline settings) + role slots + **Adjacency rules** (per-ruleset wall↔wall and wall↔floor whitelists; empty = allow all). Edit Help copy in `src/data/adaptation/maps/worldGenerationWorkflow.js`. Pipeline / adjacency save on the ruleset. Default ruleset **Template 32** stores **Template Piece ids** in wall roles. Save → `autoPaintRulesets.json` (`/__autopaint`).
 2. **Generate New Map** (in World Generation Ruleset) — builds into the open map and shows it in **Map** view (left palette stays; **Rules** / **Map** toggles). Grid settings are shared with main Dev Edit. Template 32: deck room grid + `templateWall` underlay + **96-wide** openings (two floor cells; **3× Doorway 32** + Corner 32 leftover) + wall runs with **Corner 32 end caps** on every free edge + floorUnder + **128 / 64 / 32** packing (`placeWallRuns.js`). Does not call frozen `placeTemplateWalls`.
 3. **Edit → Toggle Auto-Paint** — paint floors; walls rebuild from the footprint.
 4. **Edit → Rebuild Auto-Paint Walls** — regenerate auto walls from current floors.

@@ -53,6 +53,10 @@
         "minGap": 1,
         "preferOpenings": true
       },
+      "adjacency": {
+        "wallWall": [],
+        "wallFloor": []
+      },
       "props": {
         "enabled": false,
         "rules": []

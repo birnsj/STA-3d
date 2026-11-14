@@ -1,0 +1,20 @@
+---
+description: World Generation is the active map-construction path; Legacy Map Generator is locked
+alwaysApply: true
+---
+
+# World Generation vs Legacy Map Generator
+
+**Active work:** World Generation Ruleset, Generate New Map, and Auto-Paint (paint / rebuild walls).
+
+Code and data live under `src/maps/autoPaint/`, World Generation Ruleset UI, and `autoPaintRulesets.json`.
+
+**Locked — do not edit for new features:**
+
+- Tools → Legacy Map Generator (read-only in UI)
+- Properties → Legacy Map Generator (frozen location generators)
+- `src/maps/generators/*`, `mapGenerators.js` location builders, `templateDeckStyle`, deck style JSON
+
+Do not change Legacy code to fix World Generation / Auto-Paint behaviour. Do not add imports from World Generation into Legacy, or from Legacy generators into `autoPaint/`.
+
+Shared map infrastructure only (map JSON, tiles, Template Pieces, Dev Edit shell) may be used by both; generator algorithms stay separate.

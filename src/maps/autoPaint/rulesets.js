@@ -1,6 +1,8 @@
 // Live Auto-Paint ruleset catalogue. Seeded from autoPaintRulesets.json; editor updates memory and persists via /__autopaint.
 // Wall / floor / door roles are weighted lists [{ id, weight }]; legacy strings load as equal weights.
 import seed from '../../data/adaptation/maps/autoPaintRulesets.json'
+import { WORLD_GENERATION_PIPELINE_DEFAULTS } from '../../data/adaptation/maps/worldGenerationWorkflow.js'
+import { resolveAdjacency } from './adjacency.js'
 import { TILES } from '../mapFormat.js'
 import { getTemplatePiece } from '../templatePieces.js'
 import {
@@ -46,8 +48,32 @@ const FALLBACK = Object.freeze({
     fittingChance: 0,
   },
   doors: { underlayTile: 'doorway', minGap: 1, preferOpenings: true },
+  pipeline: { ...WORLD_GENERATION_PIPELINE_DEFAULTS },
+  adjacency: { wallWall: [], wallFloor: [] },
   props: { enabled: false, rules: [] },
 })
+
+function resolvePipeline(raw) {
+  const src = raw && typeof raw === 'object' ? raw : {}
+  const num = (key, min, max) => {
+    const n = Number(src[key])
+    const fallback = WORLD_GENERATION_PIPELINE_DEFAULTS[key]
+    if (!Number.isFinite(n)) return fallback
+    return Math.min(max, Math.max(min, Math.round(n)))
+  }
+  return {
+    claimExteriorNull: src.claimExteriorNull !== false,
+    packLong: num('packLong', 64, 256),
+    packShort: num('packShort', 32, 128),
+    packStub: num('packStub', 32, 64),
+    doorCells: num('doorCells', 1, 4),
+    doorTipUnits: num('doorTipUnits', 1, 6),
+    placeJunctionCorners: src.placeJunctionCorners !== false,
+    junctionArmFills: src.junctionArmFills !== false,
+    trimRunAtJunction: src.trimRunAtJunction !== false,
+    cornerEndCaps: src.cornerEndCaps !== false,
+  }
+}
 
 const knownTile = (id) => typeof id === 'string' && TILES.some((tile) => tile.id === id)
 const knownRole = (id) => Boolean(resolveAutoPaintTileId(id) || getTemplatePiece(id))
@@ -130,6 +156,8 @@ export function resolveAutoPaintRuleset(raw = {}) {
       minGap: Number.isFinite(Number(doorsIn.minGap)) ? Math.max(1, Math.floor(Number(doorsIn.minGap))) : 1,
       preferOpenings: doorsIn.preferOpenings !== false,
     },
+    pipeline: resolvePipeline(base.pipeline),
+    adjacency: resolveAdjacency(base.adjacency),
     props: {
       enabled: Boolean(propsIn.enabled),
       rules: Array.isArray(propsIn.rules) ? propsIn.rules : [],
@@ -280,6 +308,11 @@ export function autoPaintRulesetsSnapshot() {
       doors: {
         ...entry.doors,
         underlayTile: serializeWeighted(entry.doors.underlayTile),
+      },
+      pipeline: { ...entry.pipeline },
+      adjacency: {
+        wallWall: entry.adjacency.wallWall.map((pair) => ({ ...pair })),
+        wallFloor: entry.adjacency.wallFloor.map((pair) => ({ ...pair })),
       },
     })),
   }

@@ -23,7 +23,8 @@ export function assembleWallsFromFloors(map, ruleset, { regionId = 'region-1', r
   const suppressedTips = new Set(prevRegion?.suppressedTipKeys ?? [])
 
   const floorKeys = collectFloorKeys(map, floorIds)
-  const fromNull = exteriorUnderlayKeys(map, floorKeys)
+  const claimExterior = ruleset.pipeline?.claimExteriorNull !== false
+  const fromNull = claimExterior ? exteriorUnderlayKeys(map, floorKeys) : []
   const underlayKeys = [...new Set([...fromNull, ...(prevRegion?.generatedUnderlayKeys ?? [])])]
     .filter((key) => !manualUnderlay.has(key))
     .filter((key) => {
@@ -79,7 +80,12 @@ export function assembleWallsFromFloors(map, ruleset, { regionId = 'region-1', r
       if (tiles[y][x] === 'doorway') doorKeys.add(cellKey({ x, y }))
     }
   }
-  const packed = placePackedWallPieces(working, kit, { doorKeys: [...doorKeys], random })
+  const packed = placePackedWallPieces(working, kit, {
+    doorKeys: [...doorKeys],
+    random,
+    pipeline: ruleset.pipeline,
+    adjacency: ruleset.adjacency,
+  })
   const generatedPieceIds = (packed.templatePiecePlacements ?? [])
     .filter((entry) => entry.autoPaint && !manualPieceIds.has(entry.id))
     .map((entry) => entry.id)

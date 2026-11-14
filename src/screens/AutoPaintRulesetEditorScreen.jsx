@@ -8,6 +8,9 @@ import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import { subEditorFileMenus } from '../components/maps/editorSubMenus.js'
 import GeSourcePalette from '../components/maps/GeSourcePalette.jsx'
 import TileSpritePicker from '../components/maps/TileSpritePicker.jsx'
+import WorldGenerationAdjacencyEditor from '../components/maps/WorldGenerationAdjacencyEditor.jsx'
+import WorldGenerationFlowchart from '../components/maps/WorldGenerationFlowchart.jsx'
+import WorldGenerationHelpDialog from '../components/maps/WorldGenerationHelpDialog.jsx'
 import {
   AUTO_PAINT_ENVIRONMENTS,
   getAutoPaintRuleset,
@@ -30,8 +33,10 @@ import {
   editorTemplatePaletteItems,
   templatePieceCatalogueEpochOf,
 } from '../maps/templatePieces.js'
+import { WORLD_GENERATION_HELP_TOPICS } from '../data/adaptation/maps/worldGenerationWorkflow.js'
 
 // Tools → World Generation Ruleset. Palette = Dev Edit Template Pieces catalogue (one file). Wall roles place tiles.
+// Help + flowchart copy/settings: edit worldGenerationWorkflow.js (not Legacy).
 
 const FLOOR_FIELD = {
   key: 'defaultTile',
@@ -117,6 +122,8 @@ export default function AutoPaintRulesetEditorScreen({
   onStatus,
 }) {
   const [epoch, setEpoch] = useState(0)
+  const [helpTopicId, setHelpTopicId] = useState(null)
+  const [flowNodeId, setFlowNodeId] = useState('floors')
   const rulesets = listAutoPaintRulesets()
   void epoch
   const [selectedId, setSelectedId] = useState(rulesets[0]?.id ?? 'template-32')
@@ -153,6 +160,12 @@ export default function AutoPaintRulesetEditorScreen({
     setDraft((current) => resolveAutoPaintRuleset({ ...current, floors: { ...current.floors, ...partial } }))
   const patchDoors = (partial) =>
     setDraft((current) => resolveAutoPaintRuleset({ ...current, doors: { ...current.doors, ...partial } }))
+  const patchPipeline = (partial) =>
+    setDraft((current) =>
+      resolveAutoPaintRuleset({ ...current, pipeline: { ...current.pipeline, ...partial } }),
+    )
+  const patchAdjacency = (adjacency) =>
+    setDraft((current) => resolveAutoPaintRuleset({ ...current, adjacency }))
 
   const revert = () => {
     setDraft(cloneRuleset(saved))
@@ -336,21 +349,37 @@ export default function AutoPaintRulesetEditorScreen({
     if (id === 'revert') return revert()
     if (id === 'generateMap') return generateMap()
     if (id === 'back') return discardAndBack()
+    if (id.startsWith('help:')) {
+      setHelpTopicId(id.slice('help:'.length))
+      return undefined
+    }
     return undefined
   }
+
+  const menus = [
+    ...subEditorFileMenus({
+      load: true,
+      save: true,
+      revert: true,
+      loadLabel: 'Load from Disk',
+      saveLabel: 'Save Ruleset',
+      extraFileItems: [{ id: 'generateMap', label: 'Generate New Map' }],
+    }),
+    {
+      id: 'help',
+      label: 'Help',
+      items: WORLD_GENERATION_HELP_TOPICS.map((topic) => ({
+        id: `help:${topic.id}`,
+        label: topic.label,
+      })),
+    },
+  ]
 
   return (
     <EditorSubScreen
       title="World Generation Ruleset"
       className="ap-ruleset-editor"
-      menus={subEditorFileMenus({
-        load: true,
-        save: true,
-        revert: true,
-        loadLabel: 'Load from Disk',
-        saveLabel: 'Save Ruleset',
-        extraFileItems: [{ id: 'generateMap', label: 'Generate New Map' }],
-      })}
+      menus={menus}
       onMenuAction={onMenuAction}
       toolbar={
         <>
@@ -508,10 +537,21 @@ export default function AutoPaintRulesetEditorScreen({
           <div className="ce-inspector">
             <p className="ce-heading">{draft.label}</p>
             <p className="ge-lead">
-              Drag Template Pieces into the roles. Hover shows <strong>footprint</strong> (corner = 32×32, straight 32 =
-              64×32, long = 128×32) — not the tile sprite box. Template 32 Generate New Map places those pieces tip-anchored.
-              Show all adds Starship wall tiles for larger true cell walls.
+              Flowchart: Pack pieces = lengths; Corners = visual assembly of wall thumbs. Role slots and Adjacency
+              (Palette drag pairs) are below. Help menu covers every step.
             </p>
+            <WorldGenerationFlowchart
+              draft={draft}
+              selectedNodeId={flowNodeId}
+              onSelectNode={setFlowNodeId}
+              onPipelineChange={patchPipeline}
+              onDoorsChange={patchDoors}
+              onWallsChange={patchWalls}
+              onOpenHelpTopic={setHelpTopicId}
+              resolveDropId={resolveDropToRole}
+              acceptId={roleIdAllowed}
+              titleForTile={roleThumbTitle}
+            />
 
             <section className="ge-block">
               <h3 className="ge-block-title">1. Floors</h3>
@@ -575,6 +615,14 @@ export default function AutoPaintRulesetEditorScreen({
                 onChange={onWeightedRoleChange((entries) => patchDoors({ underlayTile: entries }))}
               />
             </section>
+
+            <WorldGenerationAdjacencyEditor
+              draft={draft}
+              onAdjacencyChange={patchAdjacency}
+              resolveDropId={resolveDropToRole}
+              acceptId={roleIdAllowed}
+              titleForTile={roleThumbTitle}
+            />
           </div>
         </div>
       )}
@@ -590,6 +638,13 @@ export default function AutoPaintRulesetEditorScreen({
         showCentre={showCentre}
         onShowCentre={onShowCentre}
       />
+      {helpTopicId ? (
+        <WorldGenerationHelpDialog
+          topicId={helpTopicId}
+          onSelectTopic={setHelpTopicId}
+          onClose={() => setHelpTopicId(null)}
+        />
+      ) : null}
     </EditorSubScreen>
   )
 }

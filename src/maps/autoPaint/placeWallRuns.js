@@ -9,7 +9,8 @@
 // - Arms from −X / −Y therefore leave a 0.5-cell gap to that post; +X / +Y meet flush.
 // - Junction fills use tips (x+0.5,y+1) and (x+1,y+0.5) on those same edges — never
 //   tipAlongX/Y (collides with the corner tip) and never the axis-swapped half tips.
-import { pickWeighted, primaryId } from './weightedChoice.js'
+import { wallCandidateAllowed } from './adjacency.js'
+import { pickWeighted, primaryId, normalizeWeightedEntries } from './weightedChoice.js'
 import { NULL_TILE, normalizeTemplateRotation } from '../mapFormat.js'
 import { snapTemplatePiecePosition, TEMPLATE_PIECE_CELL_PX } from '../mapEdits.js'
 import { getTemplatePiece, templatePieceFootprint } from '../templatePieces.js'
@@ -149,54 +150,115 @@ function addPiece(list, usedIds, tips, tip, pieceId, rotation) {
  * Pack N underlay cells along a run into piece lengths.
  * One underlay cell = 64px = one short. Two cells = 128px = one long.
  */
-export function packUnderlayRun(cellCount) {
+function resolvePackLengths(pipeline) {
+  const long = Number(pipeline?.packLong) || WALL_LEN_LONG
+  const short = Number(pipeline?.packShort) || WALL_LEN_SHORT
+  const stub = Number(pipeline?.packStub) || WALL_LEN_STUB
+  return {
+    long,
+    short,
+    stub,
+    longTips: Math.max(1, Math.round(long / WALL_TIP_PX)),
+    shortTips: Math.max(1, Math.round(short / WALL_TIP_PX)),
+    stubTips: Math.max(1, Math.round(stub / WALL_TIP_PX)),
+  }
+}
+
+export function packUnderlayRun(cellCount, pipeline = null) {
+  const pack = resolvePackLengths(pipeline)
   const parts = []
   let n = Math.max(0, cellCount | 0)
-  while (n >= 2) {
-    parts.push({ cells: 2, len: WALL_LEN_LONG })
-    n -= 2
+  const longCells = Math.max(1, Math.round(pack.long / 64))
+  const shortCells = Math.max(1, Math.round(pack.short / 64))
+  while (n >= longCells) {
+    parts.push({ cells: longCells, len: pack.long })
+    n -= longCells
   }
-  if (n === 1) parts.push({ cells: 1, len: WALL_LEN_SHORT })
+  while (n >= shortCells) {
+    parts.push({ cells: shortCells, len: pack.short })
+    n -= shortCells
+  }
   return parts
 }
 
 /**
- * Pack tip-grid length (count of 32px segments) with 128 + 64 + 32.
- * Corner post covers a leftover 32.
+ * Pack tip-grid length (count of 32px segments) with long + short + stub.
+ * Corner post covers a leftover stub.
  */
-export function packTipCells(tipCells) {
+export function packTipCells(tipCells, pipeline = null) {
+  const pack = resolvePackLengths(pipeline)
   const parts = []
   let n = Math.max(0, tipCells | 0)
-  while (n >= 4) {
-    parts.push({ tipCells: 4, len: WALL_LEN_LONG })
-    n -= 4
+  while (n >= pack.longTips) {
+    parts.push({ tipCells: pack.longTips, len: pack.long })
+    n -= pack.longTips
   }
-  while (n >= 2) {
-    parts.push({ tipCells: 2, len: WALL_LEN_SHORT })
-    n -= 2
+  while (n >= pack.shortTips) {
+    parts.push({ tipCells: pack.shortTips, len: pack.short })
+    n -= pack.shortTips
   }
-  if (n === 1) parts.push({ tipCells: 1, len: WALL_LEN_STUB })
+  while (n >= pack.stubTips) {
+    parts.push({ tipCells: pack.stubTips, len: pack.stub })
+    n -= pack.stubTips
+  }
   return parts
 }
 
 /** Kit roles may be a piece id string or a weighted [{ id, weight }] list. */
-function resolveKitPiece(role, random) {
+function resolveKitPiece(role, random, adjacencyCtx = null) {
   if (!role) return null
-  if (typeof role === 'string') return role
-  return pickWeighted(role, random)
+  if (typeof role === 'string') {
+    if (adjacencyCtx && !wallCandidateAllowed(adjacencyCtx.adjacency, role, adjacencyCtx)) return null
+    return role
+  }
+  const entries = normalizeWeightedEntries(role, { allowEmpty: true })
+  if (!entries.length) return null
+  if (!adjacencyCtx?.adjacency) return pickWeighted(entries, random)
+  const allowed = entries.filter((entry) => wallCandidateAllowed(adjacencyCtx.adjacency, entry.id, adjacencyCtx))
+  // Prefer whitelist matches; if none, fall back so packing never leaves a hole.
+  return pickWeighted(allowed.length ? allowed : entries, random)
 }
 
-function pieceForLen(kit, len, onHull, random) {
+function pieceForLen(kit, len, onHull, random, pack = resolvePackLengths(), adjacencyCtx = null) {
   const pick = (...roles) => {
     for (const role of roles) {
-      const id = resolveKitPiece(role, random)
+      const id = resolveKitPiece(role, random, adjacencyCtx)
       if (id) return id
     }
     return null
   }
-  if (len === WALL_LEN_LONG) return onHull ? pick(kit.hullLong, kit.straightLong, kit.straight) : pick(kit.straightLong, kit.straight)
-  if (len === WALL_LEN_SHORT) return onHull ? pick(kit.hull, kit.straight) : pick(kit.straight)
+  if (len === pack.long) return onHull ? pick(kit.hullLong, kit.straightLong, kit.straight) : pick(kit.straightLong, kit.straight)
+  if (len === pack.short) return onHull ? pick(kit.hull, kit.straight) : pick(kit.straight)
   return onHull ? pick(kit.hullCorner, kit.corner) : pick(kit.corner)
+}
+
+function floorsBesideCell(tiles, floorUnder, width, height, x, y) {
+  const floors = []
+  const underKey = `${x},${y}`
+  if (floorUnder?.[underKey]) floors.push(floorUnder[underKey])
+  for (const [dx, dy] of [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ]) {
+    const nx = x + dx
+    const ny = y + dy
+    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue
+    const id = tiles[ny][nx]
+    if (!id || id === NULL_TILE || id === WORLD_WALL_UNDERLAY) continue
+    floors.push(id)
+  }
+  return floors
+}
+
+function adjacencyCtxFor(map, adjacency, x, y, neighborWalls = []) {
+  if (!adjacency) return null
+  return {
+    adjacency,
+    neighborWalls,
+    floors: floorsBesideCell(map.tiles, map.floorUnder, map.width, map.height, x, y),
+  }
 }
 
 /** Axis-aligned footprint AABB in tile units (tip = +X/+Y corner). */
@@ -342,7 +404,25 @@ function isJunctionCell(tiles, width, height, x, y) {
  * Pack one straight run: Bulkhead Corner 32 end caps on free edges, then 128/64/(32) for the middle.
  * Tip units that abut a junction are skipped — junction fills already cover that half-cell join.
  */
-function placeStraightRunWithEndCaps(list, usedIds, tips, tiles, width, height, run, consumed, keyOf, kit, random) {
+function placeStraightRunWithEndCaps(
+  list,
+  usedIds,
+  tips,
+  tiles,
+  width,
+  height,
+  run,
+  consumed,
+  keyOf,
+  kit,
+  random,
+  pack,
+  cornerEndCaps,
+  trimRunAtJunction,
+  pipeline,
+  map,
+  adjacency,
+) {
   const { alongX, cells } = run
   if (!cells.length) return list
   const first = cells[0]
@@ -358,42 +438,50 @@ function placeStraightRunWithEndCaps(list, usedIds, tips, tiles, width, height, 
     : !wallAt(tiles, width, height, last.x, last.y + 1)
   // Junction fills only on −X/−Y arms; those arms skip the tip that the fill already owns.
   // +X/+Y arms meet the SE corner flush and keep their full tip span.
-  const skipEndTipTowardJunction = alongX
-    ? isJunctionCell(tiles, width, height, last.x + 1, last.y)
-    : isJunctionCell(tiles, width, height, last.x, last.y + 1)
+  const skipEndTipTowardJunction =
+    trimRunAtJunction &&
+    (alongX
+      ? isJunctionCell(tiles, width, height, last.x + 1, last.y)
+      : isJunctionCell(tiles, width, height, last.x, last.y + 1))
 
   const tipUnits = cells.length * 2
   let cursor = 0
   let endExclusive = tipUnits - (skipEndTipTowardJunction ? 1 : 0)
   let remaining = Math.max(0, endExclusive - cursor)
-  const corner = pieceForLen(kit, WALL_LEN_STUB, onHull, random)
+  let prevPiece = null
+  const ctxAt = (cell) => adjacencyCtxFor(map, adjacency, cell.x, cell.y, prevPiece ? [prevPiece] : [])
+  const corner = pieceForLen(kit, pack.stub, onHull, random, pack, ctxAt(first))
 
-  if (freeStart && remaining > 0) {
+  if (cornerEndCaps && freeStart && remaining > 0) {
     const tip = alongX
       ? { x: first.x + (cursor + 1) * 0.5, y: first.y + 1 }
       : { x: first.x + 1, y: first.y + (cursor + 1) * 0.5 }
     list = addPiece(list, usedIds, tips, tip, corner, endCapRotation(alongX, false, openPositive)).list
+    prevPiece = corner
     remaining -= 1
     cursor += 1
   }
-  if (freeEnd && remaining > 0) remaining -= 1
+  if (cornerEndCaps && freeEnd && remaining > 0) remaining -= 1
 
-  for (const part of packTipCells(remaining)) {
+  for (const part of packTipCells(remaining, pipeline)) {
     const tip = alongX
       ? { x: first.x + (cursor + part.tipCells) * 0.5, y: first.y + 1 }
       : { x: first.x + 1, y: first.y + (cursor + part.tipCells) * 0.5 }
-    const piece = pieceForLen(kit, part.len, onHull, random)
+    const cellIndex = Math.min(cells.length - 1, Math.floor(cursor / 2))
+    const piece = pieceForLen(kit, part.len, onHull, random, pack, ctxAt(cells[cellIndex]))
     const pieceRot =
-      part.len === WALL_LEN_STUB ? endCapRotation(alongX, true, openPositive) : rot
+      part.len === pack.stub ? endCapRotation(alongX, true, openPositive) : rot
     list = addPiece(list, usedIds, tips, tip, piece, pieceRot).list
+    prevPiece = piece
     cursor += part.tipCells
   }
 
-  if (freeEnd) {
+  if (cornerEndCaps && freeEnd) {
     const tip = alongX
       ? { x: first.x + endExclusive * 0.5, y: first.y + 1 }
       : { x: first.x + 1, y: first.y + endExclusive * 0.5 }
-    list = addPiece(list, usedIds, tips, tip, corner, endCapRotation(alongX, true, openPositive)).list
+    const endCorner = pieceForLen(kit, pack.stub, onHull, random, pack, ctxAt(last))
+    list = addPiece(list, usedIds, tips, tip, endCorner, endCapRotation(alongX, true, openPositive)).list
   }
 
   for (const cell of cells) consumed.add(keyOf(cell.x, cell.y))
@@ -404,12 +492,23 @@ function placeStraightRunWithEndCaps(list, usedIds, tips, tiles, width, height, 
  * Place Template Pieces on templateWall underlay using 128/64/32 packing.
  * Tracks underlay-cell coverage explicitly. doorId + kit.doorFrame both required for frames.
  */
-export function placePackedWallPieces(map, kit, { doorId = null, doorKeys = null, random = Math.random } = {}) {
+export function placePackedWallPieces(
+  map,
+  kit,
+  { doorId = null, doorKeys = null, random = Math.random, pipeline = null, adjacency = null } = {},
+) {
   const { width, height, tiles } = map
   const doors = doorKeys instanceof Set ? doorKeys : doorKeys ? new Set(doorKeys) : null
   const usedIds = new Set((map.templatePiecePlacements ?? []).map((entry) => entry.id))
   const tips = new Set()
   let list = []
+  const pack = resolvePackLengths(pipeline)
+  const doorTipUnits = Number(pipeline?.doorTipUnits) || AUTO_PAINT_DOOR_TIP_UNITS
+  const placeJunctionCorners = pipeline?.placeJunctionCorners !== false
+  const junctionArmFills = pipeline?.junctionArmFills !== false
+  const trimRunAtJunction = pipeline?.trimRunAtJunction !== false
+  const cornerEndCaps = pipeline?.cornerEndCaps !== false
+  const adj = adjacency?.wallWall?.length || adjacency?.wallFloor?.length ? adjacency : null
 
   // Keep non-auto pieces; drop prior auto pieces (caller usually cleared them).
   for (const entry of map.templatePiecePlacements ?? []) {
@@ -449,7 +548,7 @@ export function placePackedWallPieces(map, kit, { doorId = null, doorKeys = null
       const rot = straightRotation(tiles, width, height, x0, y0, alongX)
       const openPositive = alongX ? rot === 0 : rot === 90
       const tipCount = cells.length * 2
-      const doorTips = Math.min(AUTO_PAINT_DOOR_TIP_UNITS, tipCount)
+      const doorTips = Math.min(doorTipUnits, tipCount)
       for (let i = 0; i < doorTips; i++) {
         const tip = alongX
           ? { x: x0 + (i + 1) * 0.5, y: y0 + 1 }
@@ -460,7 +559,7 @@ export function placePackedWallPieces(map, kit, { doorId = null, doorKeys = null
         const tip = alongX
           ? { x: x0 + (i + 1) * 0.5, y: y0 + 1 }
           : { x: x0 + 1, y: y0 + (i + 1) * 0.5 }
-        const cap = pieceForLen(kit, WALL_LEN_STUB, false, random)
+        const cap = pieceForLen(kit, pack.stub, false, random, pack, adjacencyCtxFor(map, adj, x0, y0))
         list = addPiece(list, usedIds, tips, tip, cap, endCapRotation(alongX, true, openPositive)).list
       }
     }
@@ -474,46 +573,78 @@ export function placePackedWallPieces(map, kit, { doorId = null, doorKeys = null
         const alongX = wallAt(tiles, width, height, x - 1, y) || wallAt(tiles, width, height, x + 1, y)
         const rot = straightRotation(tiles, width, height, x, y, alongX)
         const tip = alongX ? tipAlongX(x, y) : tipAlongY(x, y)
-        list = addPiece(list, usedIds, tips, tip, resolveKitPiece(kit.doorFrame, random), rot).list
+        list = addPiece(
+          list,
+          usedIds,
+          tips,
+          tip,
+          resolveKitPiece(kit.doorFrame, random, adjacencyCtxFor(map, adj, x, y)),
+          rot,
+        ).list
       }
     }
   }
 
   // 3) Corner posts at every junction (SE tip). Do not consume yet — pass 4 fills −X/−Y gaps.
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (!wallAt(tiles, width, height, x, y)) continue
-      const { n, s, e, w } = neighbours(tiles, width, height, x, y)
-      if (!isJunction(n, s, e, w)) continue
-      const onHull = hullCell(width, height, x, y)
-      const piece = pieceForLen(kit, WALL_LEN_STUB, onHull, random)
-      list = addPiece(list, usedIds, tips, cornerTip(x, y), piece, cornerRotation(n, s, e, w)).list
+  if (placeJunctionCorners) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (!wallAt(tiles, width, height, x, y)) continue
+        const { n, s, e, w } = neighbours(tiles, width, height, x, y)
+        if (!isJunction(n, s, e, w)) continue
+        const onHull = hullCell(width, height, x, y)
+        const piece = pieceForLen(kit, pack.stub, onHull, random, pack, adjacencyCtxFor(map, adj, x, y))
+        list = addPiece(list, usedIds, tips, cornerTip(x, y), piece, cornerRotation(n, s, e, w)).list
+      }
     }
   }
 
   // 4) Junction fills, then straight runs with Corner 32 end caps on every free edge.
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (!wallAt(tiles, width, height, x, y) || consumed.has(keyOf(x, y))) continue
-      const { n, s, e, w } = neighbours(tiles, width, height, x, y)
-      if (!isJunction(n, s, e, w)) continue
-      const onHull = hullCell(width, height, x, y)
-      const runPiece = pieceForLen(kit, WALL_LEN_SHORT, onHull, random)
-      // Close half-cell gaps west / north of the SE corner post. +X / +Y arms already meet flush.
-      if (w) {
-        const rot = straightRotation(tiles, width, height, x, y, true)
-        list = addPiece(list, usedIds, tips, junctionFillTipAlongX(x, y), runPiece, rot).list
+  // When both junction options are off, leave cells unconsumed so the safety pass covers them.
+  if (placeJunctionCorners || junctionArmFills) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (!wallAt(tiles, width, height, x, y) || consumed.has(keyOf(x, y))) continue
+        const { n, s, e, w } = neighbours(tiles, width, height, x, y)
+        if (!isJunction(n, s, e, w)) continue
+        if (junctionArmFills) {
+          const onHull = hullCell(width, height, x, y)
+          const runPiece = pieceForLen(kit, pack.short, onHull, random, pack, adjacencyCtxFor(map, adj, x, y))
+          // Close half-cell gaps west / north of the SE corner post. +X / +Y arms already meet flush.
+          if (w) {
+            const rot = straightRotation(tiles, width, height, x, y, true)
+            list = addPiece(list, usedIds, tips, junctionFillTipAlongX(x, y), runPiece, rot).list
+          }
+          if (n) {
+            const rot = straightRotation(tiles, width, height, x, y, false)
+            list = addPiece(list, usedIds, tips, junctionFillTipAlongY(x, y), runPiece, rot).list
+          }
+        }
+        consumed.add(keyOf(x, y))
       }
-      if (n) {
-        const rot = straightRotation(tiles, width, height, x, y, false)
-        list = addPiece(list, usedIds, tips, junctionFillTipAlongY(x, y), runPiece, rot).list
-      }
-      consumed.add(keyOf(x, y))
     }
   }
 
   for (const run of collectStraightRuns(tiles, width, height, consumed, keyOf)) {
-    list = placeStraightRunWithEndCaps(list, usedIds, tips, tiles, width, height, run, consumed, keyOf, kit, random)
+    list = placeStraightRunWithEndCaps(
+      list,
+      usedIds,
+      tips,
+      tiles,
+      width,
+      height,
+      run,
+      consumed,
+      keyOf,
+      kit,
+      random,
+      pack,
+      cornerEndCaps,
+      trimRunAtJunction,
+      pipeline,
+      map,
+      adj,
+    )
   }
 
   // 5) Safety: any still-uncovered underlay cell gets a short straight (or corner if tip blocked).
@@ -525,11 +656,12 @@ export function placePackedWallPieces(map, kit, { doorId = null, doorKeys = null
       const onHull = hullCell(width, height, x, y)
       const rot = straightRotation(tiles, width, height, x, y, alongX)
       const tip = alongX ? tipAlongX(x, y) : tipAlongY(x, y)
-      let result = addPiece(list, usedIds, tips, tip, pieceForLen(kit, WALL_LEN_SHORT, onHull, random), rot)
+      const ctx = adjacencyCtxFor(map, adj, x, y)
+      let result = addPiece(list, usedIds, tips, tip, pieceForLen(kit, pack.short, onHull, random, pack, ctx), rot)
       list = result.list
       if (!result.placed) {
         const alt = alongX ? junctionFillTipAlongX(x, y) : junctionFillTipAlongY(x, y)
-        result = addPiece(list, usedIds, tips, alt, pieceForLen(kit, WALL_LEN_STUB, onHull, random), rot)
+        result = addPiece(list, usedIds, tips, alt, pieceForLen(kit, pack.stub, onHull, random, pack, ctx), rot)
         list = result.list
       }
       if (result.placed) consumed.add(keyOf(x, y))
