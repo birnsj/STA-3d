@@ -34,6 +34,7 @@ function matchesQuery(item, q) {
  * Tabs are authoring **layers** (Ground, Walls, …). Items with groupId/groupLabel/section
  * render under the same category → tileset collapses as Dev Edit Assets.
  * Thumbnail S/M/L/XL matches Dev Edit Assets (shared localStorage key).
+ * Click selects (selectedKey / onSelect); drag still fills role slots.
  * items: [{ kind: 'tile'|'piece', id, label, href?, layer?, groupId?, groupLabel?, section? }]
  */
 const LAYER_TAB_SHORT = {
@@ -44,7 +45,17 @@ const LAYER_TAB_SHORT = {
   markers: 'Markers',
 }
 
-export default function GeSourcePalette({ title = 'Palette', hint = null, items = [] }) {
+function itemKey(item) {
+  return `${item.kind}:${item.id}`
+}
+
+export default function GeSourcePalette({
+  title = 'Palette',
+  hint = null,
+  items = [],
+  selectedKey = null,
+  onSelect = null,
+}) {
   // Always show every authoring layer tab (same set as Dev Edit Layers), even when empty.
   const [tab, setTab] = useState('ground')
   const [query, setQuery] = useState('')
@@ -81,7 +92,7 @@ export default function GeSourcePalette({ title = 'Palette', hint = null, items 
     const byKey = new Map()
     for (const item of visible) {
       const groupId = item.groupId || '_ungrouped'
-      const groupLabel = item.groupLabel || 'Assets'
+      const groupLabel = item.groupLabel || 'Palette'
       const section = item.section || null
       const key = groupId
       let entry = byKey.get(key)
@@ -111,20 +122,30 @@ export default function GeSourcePalette({ title = 'Palette', hint = null, items 
   const showCollapse = open.size > 0
 
   const renderThumb = (item) => {
+    const key = itemKey(item)
+    const selected = selectedKey === key
     const tile = item.kind === 'tile' ? getTile(item.id) : null
     const piece = item.kind === 'piece' ? getTemplatePiece(item.id) || item : null
+    const selectHint = onSelect ? (selected ? 'Selected · click again to clear' : 'Click to edit sprite') : null
+    const dragHint = 'Drag onto a slot'
+    const extra = [selectHint, dragHint].filter(Boolean).join(' · ')
     const dimTitle =
       item.kind === 'tile' && tile
-        ? tileThumbTitle(tile, { extra: 'Drag onto a slot' })
-        : templatePieceThumbTitle(piece, { extra: 'Drag onto a slot' })
+        ? tileThumbTitle(tile, { extra })
+        : templatePieceThumbTitle(piece, { extra })
     return (
-      <div key={`${item.kind}:${item.id}`} className="ed-asset-cell">
+      <div key={key} className="ed-asset-cell">
         <button
           type="button"
-          className="ed-thumb-btn ge-source-thumb"
+          className={`ed-thumb-btn ge-source-thumb${selected ? ' is-selected' : ''}`}
           title={dimTitle}
+          aria-pressed={onSelect ? selected : undefined}
           draggable
           onDragStart={(event) => setGeAssetDrag(event, item.kind, item.id)}
+          onClick={() => {
+            if (!onSelect) return
+            onSelect(selected ? null : item)
+          }}
         >
           {item.kind === 'tile' && tile ? (
             <TileThumbnail tile={tile} className="me-thumb-preview" animate={false} />
@@ -182,6 +203,7 @@ export default function GeSourcePalette({ title = 'Palette', hint = null, items 
           value={query}
           placeholder="Search…"
           aria-label="Search palette"
+          title="Filter palette thumbs by name or id"
           onChange={(event) => setQuery(event.target.value)}
         />
         {useGroups && (

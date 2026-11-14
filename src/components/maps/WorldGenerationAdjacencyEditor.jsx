@@ -105,9 +105,17 @@ function AdjacencyDropSlot({
           })
     : emptyText
 
+  const emptyTip =
+    acceptKind === 'floor'
+      ? 'Drop a floor piece from the Palette'
+      : acceptKind === 'wall'
+        ? 'Drop a wall piece from the Palette'
+        : 'Drop a wall or floor piece from the Palette'
+
   return (
     <div
       className={`ge-adj-slot${dropOver ? ' is-drop-target' : ''}${disabled ? ' is-disabled' : ''}${readOnly ? ' is-readonly' : ''}`}
+      title={assigned ? undefined : emptyTip}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -282,7 +290,12 @@ export default function WorldGenerationAdjacencyEditor({
       </p>
 
       <div className="ge-adjacency-section">
-        <h4 className="ge-adjacency-heading">Wall ↔ wall</h4>
+        <h4
+          className="ge-adjacency-heading"
+          title="Which wall pieces may neighbor each other along a run or at a join. Empty = all walls allowed."
+        >
+          Wall ↔ wall
+        </h4>
         <AdjacencyPairRow
           draft
           leftId={draftWW.a}
@@ -322,7 +335,12 @@ export default function WorldGenerationAdjacencyEditor({
       </div>
 
       <div className="ge-adjacency-section">
-        <h4 className="ge-adjacency-heading">Wall ↔ floor</h4>
+        <h4
+          className="ge-adjacency-heading"
+          title="Which wall pieces may sit beside which floor pieces. Empty = all wall–floor neighbors allowed."
+        >
+          Wall ↔ floor
+        </h4>
         <AdjacencyPairRow
           draft
           leftId={draftWF.wall}

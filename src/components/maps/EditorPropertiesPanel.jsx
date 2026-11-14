@@ -5,6 +5,7 @@ import MapProperties from './MapProperties.jsx'
 import { PropertySectionsProvider, PropertySectionsToolbar } from './PropertySections.jsx'
 
 // Right Properties panel: Properties = board entity or Assets thumbnail; Map = episode / location props.
+// Authoring layers live on Assets (same strip as World Generation), not here.
 
 export default function EditorPropertiesPanel({
   map,

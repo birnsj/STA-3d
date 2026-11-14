@@ -88,6 +88,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   const [showCentre, setShowCentre] = useState(false)
   const [showGridOptions, setShowGridOptions] = useState(false)
   const [showViewScale, setShowViewScale] = useState(false)
+  // Editor chrome hover tips (EditorTips) — not Settings → Tooltips / TitleTips.
+  const [showTooltips, setShowTooltips] = useState(true)
   const [showHelp, setShowHelp] = useState(false)
   const [overviewOpen, setOverviewOpen] = useState(false)
   const [layersOpen, setLayersOpen] = useState(false)
@@ -218,10 +220,19 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   const hoverTile = hover && hover.x < map.width && hover.y < map.height ? hover : null
 
   const onPlay = () => {
-    if (playErrors.length) return setStatus(`Cannot play: ${playErrors[0]}`)
+    if (playErrors.length) {
+      const message = `Cannot play: ${playErrors[0]}`
+      setStatus(message)
+      return message
+    }
     const team = playAwayTeam(savedCharacters)
-    if (!team.length) return setStatus('Play needs the authored redshirt party or a saved character.')
+    if (!team.length) {
+      const message = 'Play needs the authored redshirt party or a saved character.'
+      setStatus(message)
+      return message
+    }
     setPlaySession({ map: playtestMap(map), characters: team })
+    return null
   }
 
   const onMenuAction = async (id) => {
@@ -271,6 +282,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
         return setShowGridOptions(true)
       case 'viewScale':
         return setShowViewScale(true)
+      case 'tooltips':
+        return setShowTooltips((value) => !value)
       case 'overview':
         return setOverviewOpen((value) => !value)
       case 'layers':
@@ -414,6 +427,21 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     )
   }
 
+  // Play wins over World Generation so Exit returns to the ruleset screen when it stayed open.
+  if (playSession) {
+    return (
+      <Suspense fallback={null}>
+        <ExplorationPlaytest
+          map={playSession.map}
+          characters={playSession.characters}
+          savedCharacters={savedCharacters}
+          enemiesActive={enemiesActive}
+          onExit={() => setPlaySession(null)}
+        />
+      </Suspense>
+    )
+  }
+
   if (autoPaintRulesetEditor) {
     // Keep dialogs mounted: Generate Map may askConfirm when the open map is dirty.
     return (
@@ -450,6 +478,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           onGenerateHazards={doc.setGenerateHazards}
           cardTools={{ canGenerate: canDrawEpisodeArt, busy: doc.drawingCard, onGenerate: onGenerateCard }}
           onBack={() => setAutoPaintRulesetEditor(false)}
+          onPlay={onPlay}
           onGenerateMap={async (rulesetId) => {
             tools.setAutoPaintRulesetId(rulesetId)
             const ok = await doc.onGenerateAutoPaint(rulesetId)
@@ -458,22 +487,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
             return true
           }}
           onStatus={setStatus}
+          showTooltips={showTooltips}
+          onShowTooltips={setShowTooltips}
         />
         {dialogs}
-      </Suspense>
-    )
-  }
-
-  if (playSession) {
-    return (
-      <Suspense fallback={null}>
-        <ExplorationPlaytest
-          map={playSession.map}
-          characters={playSession.characters}
-          savedCharacters={savedCharacters}
-          enemiesActive={enemiesActive}
-          onExit={() => setPlaySession(null)}
-        />
       </Suspense>
     )
   }
@@ -543,7 +560,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
 
   return (
     <div ref={shellRef} className="me-screen ed-shell">
-      <EditorTips rootRef={shellRef} />
+      <EditorTips rootRef={shellRef} enabled={showTooltips} />
       <EditorMenuBar
         onAction={onMenuAction}
         checks={{
@@ -555,6 +572,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           surfaces: showSurfaces,
           weatherFx: showWeather,
           grid: showGrid,
+          tooltips: showTooltips,
           layers: layersOpen,
           levels: levelsOpen,
           overview: overviewOpen,
@@ -610,6 +628,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           onOpenCharacterLibrary={() => setCharacterLibrary(true)}
           animateTiles={animateTiles}
           activeLayer={editorLayers.layers.active}
+          onActiveLayer={editorLayers.setActive}
           askConfirm={askConfirm}
           askText={askText}
           onStatus={setStatus}

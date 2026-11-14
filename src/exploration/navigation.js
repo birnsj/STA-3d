@@ -4,16 +4,101 @@
 // straightened wherever a character can walk directly.
 // Template 32: empty templateWall underlay is not a full-cell solid; 32-thick Template Piece footprints are.
 import { blocksMovement } from '../combat/battleMap.js'
-import { circleHitsTemplateWalls } from '../maps/templatePieces.js'
+import { circleHitsTemplateWalls, templatePieceCatalogueEpochOf } from '../maps/templatePieces.js'
 import data from '../data/adaptation/exploration/partyControl.json'
 
 export const RADIUS = data.movement.radius
 const SAMPLE_STEP = 0.1
 const SQRT2 = Math.SQRT2
+const NEIGHBOURS = [
+  [1, 0, 1],
+  [-1, 0, 1],
+  [0, 1, 1],
+  [0, -1, 1],
+  [1, 1, SQRT2],
+  [1, -1, SQRT2],
+  [-1, 1, SQRT2],
+  [-1, -1, SQRT2],
+]
 
 export const tileOf = (point) => ({ x: Math.round(point.x), y: Math.round(point.y) })
 const solid = (map, x, y) => blocksMovement(map, { x, y })
 export const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y)
+
+/** True when the map has Template Piece footprints that A* must respect (Wall32 strips, props). */
+function hasTemplateFootprints(map) {
+  return Boolean(map?.templatePiecePlacements?.length)
+}
+
+// Precomputed body-clear centres + 8-neighbour edge bits for Template Piece maps.
+// Built once per placements array so formation walkingDistances / A* stay O(1) per edge
+// instead of re-sampling every Wall32 footprint on every BFS expansion (was tanking playtest FPS).
+const navGraphCache = new WeakMap()
+
+function templateNavGraph(map) {
+  if (!hasTemplateFootprints(map)) return null
+  const placements = map.templatePiecePlacements
+  const epoch = templatePieceCatalogueEpochOf()
+  const cached = navGraphCache.get(placements)
+  if (cached && cached.epoch === epoch && cached.w === map.width && cached.h === map.height) return cached
+
+  const w = map.width
+  const h = map.height
+  const centreOk = new Uint8Array(w * h)
+  const edges = new Uint8Array(w * h)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (solid(map, x, y)) continue
+      if (isClear(map, { x, y })) centreOk[y * w + x] = 1
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!centreOk[y * w + x]) continue
+      let bits = 0
+      for (let d = 0; d < NEIGHBOURS.length; d++) {
+        const [dx, dy] = NEIGHBOURS[d]
+        const nx = x + dx
+        const ny = y + dy
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue
+        if (!centreOk[ny * w + nx]) continue
+        if (dx && dy && (solid(map, x + dx, y) || solid(map, x, y + dy))) continue
+        if (!isClearLine(map, { x, y }, { x: nx, y: ny })) continue
+        bits |= 1 << d
+      }
+      edges[y * w + x] = bits
+    }
+  }
+  const graph = { epoch, w, h, centreOk, edges }
+  navGraphCache.set(placements, graph)
+  return graph
+}
+
+/**
+ * Tile centres used as A* nodes must be body-clear, not merely non-solid.
+ * templateWall underlay is walkable for blocksMovement, but a south/east strip can still
+ * block the centre of the cell below/beside it — those nodes must drop out of the graph.
+ */
+function tileCentreWalkable(map, x, y) {
+  if (x < 0 || y < 0 || x >= map.width || y >= map.height) return false
+  const graph = templateNavGraph(map)
+  if (!graph) return !solid(map, x, y)
+  return graph.centreOk[y * graph.w + x] === 1
+}
+
+/** Neighbour step for the tile graph: corner-cut rule + continuous clearance when pieces exist. */
+function canStepTo(map, x, y, dirIndex) {
+  const [dx, dy] = NEIGHBOURS[dirIndex]
+  const graph = templateNavGraph(map)
+  if (!graph) {
+    const nx = x + dx
+    const ny = y + dy
+    if (solid(map, nx, ny)) return false
+    if (dx && dy && (solid(map, x + dx, y) || solid(map, x, y + dy))) return false
+    return true
+  }
+  return (graph.edges[y * graph.w + x] & (1 << dirIndex)) !== 0
+}
 
 // True when a circle of radius r at point overlaps no solid tile and no Template Piece wall strip.
 // Tile (tx, ty) covers tx - 0.5 .. tx + 0.5.
@@ -52,16 +137,42 @@ export function clearUpTo(map, a, b) {
   return b
 }
 
-// Moves by delta one axis at a time, so a character pressed against a wall slides along it instead of stopping.
-export function slide(map, from, delta) {
-  if (!isClear(map, from)) return { x: from.x + delta.x, y: from.y + delta.y }
-  let { x, y } = from
-  if (isClear(map, { x: x + delta.x, y })) x += delta.x
-  if (isClear(map, { x, y: y + delta.y })) y += delta.y
-  return { x, y }
+/**
+ * Nudge a body that already overlaps a solid / Template strip back into clear space.
+ * Old behaviour free-moved while overlapping, which let Wall32 playtest phase through bulkheads
+ * after a separation shove or a jam against a 32px strip.
+ */
+function unstick(map, from, delta) {
+  const candidates = [
+    { x: from.x + delta.x, y: from.y + delta.y },
+    { x: from.x + delta.x, y: from.y },
+    { x: from.x, y: from.y + delta.y },
+  ]
+  for (const point of candidates) {
+    if (isClear(map, point)) return point
+  }
+  const span = Math.max(RADIUS, Math.hypot(delta.x, delta.y), 0.2)
+  for (let i = 0; i < 8; i++) {
+    const angle = (i * Math.PI) / 4
+    const point = { x: from.x + Math.cos(angle) * span, y: from.y + Math.sin(angle) * span }
+    if (isClear(map, point)) return point
+  }
+  const tile = nearestWalkableTile(map, from)
+  if (tile && isClear(map, tile)) return { x: tile.x, y: tile.y }
+  return from
 }
 
-// The walkable tile nearest to a point (the point's own tile when it is walkable).
+// Moves by delta one axis at a time, so a character pressed against a wall slides along it instead of stopping.
+export function slide(map, from, delta) {
+  const dest = { x: from.x + delta.x, y: from.y + delta.y }
+  if (isClear(map, dest)) return dest
+  if (isClear(map, { x: dest.x, y: from.y })) return { x: dest.x, y: from.y }
+  if (isClear(map, { x: from.x, y: dest.y })) return { x: from.x, y: dest.y }
+  if (!isClear(map, from)) return unstick(map, from, delta)
+  return from
+}
+
+// The walkable tile nearest to a point (the point's own tile when its centre is body-clear).
 export function nearestWalkableTile(map, point) {
   const centre = tileOf(point)
   const maxRing = Math.max(map.width, map.height)
@@ -69,7 +180,8 @@ export function nearestWalkableTile(map, point) {
     let best = null
     for (let y = centre.y - ring; y <= centre.y + ring; y++) {
       for (let x = centre.x - ring; x <= centre.x + ring; x++) {
-        if (Math.max(Math.abs(x - centre.x), Math.abs(y - centre.y)) !== ring || solid(map, x, y)) continue
+        if (Math.max(Math.abs(x - centre.x), Math.abs(y - centre.y)) !== ring) continue
+        if (!tileCentreWalkable(map, x, y)) continue
         const d = distance(point, { x, y })
         if (!best || d < best.d) best = { x, y, d }
       }
@@ -78,11 +190,6 @@ export function nearestWalkableTile(map, point) {
   }
   return centre
 }
-
-const NEIGHBOURS = [
-  [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
-  [1, 1, SQRT2], [1, -1, SQRT2], [-1, 1, SQRT2], [-1, -1, SQRT2],
-]
 
 // Minimal binary heap of [priority, key].
 function push(heap, item) {
@@ -115,8 +222,9 @@ function pop(heap) {
   return top
 }
 
-// A* over walkable tiles (8 directions; a diagonal step may not cut a solid corner). When the goal can't be reached,
-// the route ends at the reachable tile closest to it. Returns the tiles from start to the end, inclusive.
+// A* over body-clear tile centres (8 directions; no solid corner cuts; Template Piece strips
+// block edges via isClearLine). When the goal can't be reached, ends at the reachable tile
+// closest to it. Returns the tiles from start to the end, inclusive.
 export function findTilePath(map, start, goal) {
   const key = (x, y) => y * map.width + x
   const heuristic = (x, y) => {
@@ -139,11 +247,11 @@ export function findTilePath(map, start, goal) {
     }
     const h = heuristic(x, y)
     if (h < closest.h) closest = { key: current, h }
-    for (const [dx, dy, step] of NEIGHBOURS) {
+    for (let d = 0; d < NEIGHBOURS.length; d++) {
+      if (!canStepTo(map, x, y, d)) continue
+      const [dx, dy, step] = NEIGHBOURS[d]
       const nx = x + dx
       const ny = y + dy
-      if (solid(map, nx, ny)) continue
-      if (dx && dy && (solid(map, x + dx, y) || solid(map, x, y + dy))) continue
       const nextKey = key(nx, ny)
       const nextCost = cost.get(current) + step
       if (nextCost >= (cost.get(nextKey) ?? Infinity)) continue
@@ -170,7 +278,7 @@ export function walkingDistances(map, from, limit = Infinity) {
   const cached = cache.get(cacheKey)
   if (cached) return cached
   const field = new Float32Array(map.width * map.height).fill(Infinity)
-  if (!solid(map, from.x, from.y)) {
+  if (tileCentreWalkable(map, from.x, from.y)) {
     field[from.y * map.width + from.x] = 0
     const heap = [[0, from.y * map.width + from.x]]
     while (heap.length) {
@@ -178,10 +286,11 @@ export function walkingDistances(map, from, limit = Infinity) {
       if (cost > field[current]) continue
       const x = current % map.width
       const y = Math.floor(current / map.width)
-      for (const [dx, dy, step] of NEIGHBOURS) {
+      for (let d = 0; d < NEIGHBOURS.length; d++) {
+        if (!canStepTo(map, x, y, d)) continue
+        const [dx, dy, step] = NEIGHBOURS[d]
         const nx = x + dx
         const ny = y + dy
-        if (solid(map, nx, ny) || (dx && dy && (solid(map, x + dx, y) || solid(map, x, y + dy)))) continue
         const next = ny * map.width + nx
         if (cost + step >= field[next] || cost + step > limit) continue
         field[next] = cost + step
@@ -218,7 +327,8 @@ function straighten(map, from, points) {
 // the centre of the nearest reachable walkable tile (so a click on a wall walks up to it).
 export function planRoute(map, from, target) {
   if (isClearLine(map, from, target)) return [target]
-  const start = solid(map, tileOf(from).x, tileOf(from).y) ? nearestWalkableTile(map, from) : tileOf(from)
+  const fromTile = tileOf(from)
+  const start = tileCentreWalkable(map, fromTile.x, fromTile.y) ? fromTile : nearestWalkableTile(map, from)
   const goal = nearestWalkableTile(map, target)
   const tiles = findTilePath(map, start, goal)
   const end = tiles[tiles.length - 1]

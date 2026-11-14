@@ -37,6 +37,7 @@ const SHORTCUTS = [
     rows: [
       { keys: 'Tab', action: 'Next guide grid size (turns the grid on)' },
       { keys: 'Shift+Tab', action: 'Previous guide grid size' },
+      { keys: 'View → Tooltips', action: 'Show or hide editor hover tips (independent of Settings → Tooltips)' },
     ],
   },
 ]

@@ -22,20 +22,20 @@ export function PropertySectionsToolbar() {
   if (!api) return null
   return (
     <div className="ed-prop-sections-bar" role="toolbar" aria-label="Property sections">
-      <button type="button" className="ed-prop-sections-btn" onClick={api.expandAll}>
+      <button type="button" className="ed-prop-sections-btn" title="Open every collapsible section below" onClick={api.expandAll}>
         Expand all
       </button>
       <span className="ed-prop-sections-sep" aria-hidden="true">
         ·
       </span>
-      <button type="button" className="ed-prop-sections-btn" onClick={api.collapseAll}>
+      <button type="button" className="ed-prop-sections-btn" title="Close every collapsible section below" onClick={api.collapseAll}>
         Collapse all
       </button>
     </div>
   )
 }
 
-export function PropertySection({ id, title, defaultOpen = true, forceOpen = false, children }) {
+export function PropertySection({ id, title, tip = null, defaultOpen = true, forceOpen = false, children }) {
   const api = useContext(PropertySectionsContext)
   const [open, setOpen] = useState(defaultOpen || forceOpen)
   const [seenTick, setSeenTick] = useState(api?.wave.tick ?? 0)
@@ -59,6 +59,7 @@ export function PropertySection({ id, title, defaultOpen = true, forceOpen = fal
         aria-expanded={open}
         aria-controls={`ed-prop-section-${id}`}
         id={`ed-prop-section-head-${id}`}
+        title={tip || undefined}
         onClick={() => setOpen((value) => !value)}
       >
         <span className="ed-prop-section-chevron" aria-hidden="true" />

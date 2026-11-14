@@ -8,10 +8,15 @@ const MARGIN = 4
 
 // Native title= tips restyled as the editor's chrome (not the game's TitleTips / info boxes).
 // Strips title while hovered so the browser tip does not also appear.
-export default function EditorTips({ rootRef }) {
+// enabled: View → Tooltips in Dev Edit / World Generation (independent of Settings → Tooltips).
+export default function EditorTips({ rootRef, enabled = true }) {
   const [active, setActive] = useState(null)
 
   useEffect(() => {
+    if (!enabled) {
+      setActive(null)
+      return undefined
+    }
     const root = rootRef.current
     if (!root) return undefined
     let hovered = null
@@ -85,9 +90,9 @@ export default function EditorTips({ rootRef }) {
       root.removeEventListener('pointerdown', hide)
       root.removeEventListener('wheel', hide)
     }
-  }, [rootRef])
+  }, [rootRef, enabled])
 
-  if (!active) return null
+  if (!enabled || !active) return null
   // The root travels with the tip (captured in the effect) so render never reads the ref.
   return <EditorTipBubble text={active.text} anchor={active.anchor} root={active.root} />
 }

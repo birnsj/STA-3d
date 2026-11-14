@@ -297,10 +297,55 @@ function worldBoxes(map) {
   return boxes
 }
 
+// Collider-only boxes + 1-tile spatial buckets. Wall32 maps have hundreds of pieces; point tests
+// only probe the few buckets around the body instead of scanning every footprint each sample.
+const colliderIndexCache = new WeakMap()
+function colliderIndex(map) {
+  const placements = map.templatePiecePlacements ?? NO_PLACEMENTS
+  const cached = colliderIndexCache.get(placements)
+  if (cached?.epoch === templatePieceCatalogueEpoch) return cached
+  const boxes = []
+  const cells = new Map()
+  for (const entry of placements) {
+    const box = templatePieceWorldAabb(entry)
+    if (!box || !isTemplateWallCollider(box.def)) continue
+    const index = boxes.length
+    boxes.push(box)
+    const x0 = Math.floor(box.minX)
+    const x1 = Math.floor(box.maxX - 1e-9)
+    const y0 = Math.floor(box.minY)
+    const y1 = Math.floor(box.maxY - 1e-9)
+    for (let cy = y0; cy <= y1; cy++) {
+      for (let cx = x0; cx <= x1; cx++) {
+        const key = `${cx},${cy}`
+        let list = cells.get(key)
+        if (!list) cells.set(key, (list = []))
+        list.push(index)
+      }
+    }
+  }
+  const built = { epoch: templatePieceCatalogueEpoch, boxes, cells }
+  colliderIndexCache.set(placements, built)
+  return built
+}
+
 /** True when a circle overlaps any Template Piece wall/structure footprint (edge collision). */
 export function circleHitsTemplateWalls(map, point, radius) {
-  for (const box of worldBoxes(map)) {
-    if (isTemplateWallCollider(box.def) && circleHitsAabb(point, radius, box)) return true
+  if (!point || !(radius > 0)) return false
+  const index = colliderIndex(map)
+  if (!index.boxes.length) return false
+  const x0 = Math.floor(point.x - radius)
+  const x1 = Math.floor(point.x + radius)
+  const y0 = Math.floor(point.y - radius)
+  const y1 = Math.floor(point.y + radius)
+  for (let cy = y0; cy <= y1; cy++) {
+    for (let cx = x0; cx <= x1; cx++) {
+      const list = index.cells.get(`${cx},${cy}`)
+      if (!list) continue
+      for (let n = 0; n < list.length; n++) {
+        if (circleHitsAabb(point, radius, index.boxes[list[n]])) return true
+      }
+    }
   }
   return false
 }

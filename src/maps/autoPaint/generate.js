@@ -68,7 +68,7 @@ export function generateAutoPaintMap(source, rulesetId, random = Math.random) {
   )
 
   const floorUnder = { ...(layout.floorUnder ?? {}) }
-  // Deck cuts two-tile doors; keep both cells (128 underlay) and line 96px with Doorway 32.
+  // Deck cuts two-tile doors; keep both cells (128 underlay) and line 64px with Doorway 32.
   const doorCells = ruleset.pipeline?.doorCells ?? AUTO_PAINT_DOOR_CELLS
   shrinkDoorwaysToMaxCells(
     tiles,

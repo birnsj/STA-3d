@@ -30,11 +30,13 @@ export { tipKeyOf } from './wallsTemplate.js'
 export { generateAutoPaintMap } from './generate.js'
 export {
   AUTO_PAINT_DOOR_CELLS,
+  AUTO_PAINT_DOOR_CORNER_CLEARANCE,
   AUTO_PAINT_DOOR_TIP_UNITS,
   AUTO_PAINT_DOORWAY_PIECE,
   collectDoorCells,
   doorRunsFromKeys,
   paintDoorCellsAsFloor,
+  pickDoorwayOffsets,
   shrinkDoorwaysToMaxCells,
   shrinkDoorwaysToSingleCell,
 } from './doorways.js'

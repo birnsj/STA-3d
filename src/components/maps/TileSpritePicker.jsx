@@ -19,6 +19,8 @@ import TileThumbnail from './TileThumbnail.jsx'
 // weighted: value is [{ id, weight }, ...] with per-thumb % sliders (equal split on land, normalize to 100%).
 export default function TileSpritePicker({
   label,
+  /** Hover tip for the role label (EditorTips). */
+  labelTip = null,
   hint = null,
   options,
   value,
@@ -154,7 +156,9 @@ export default function TileSpritePicker({
     >
       {label && (
         <div className="ge-picker-head">
-          <span className="ce-field-label">{label}</span>
+          <span className="ce-field-label" title={labelTip || undefined}>
+            {label}
+          </span>
           {!useMulti && current && (
             <span className="ge-picker-current">
               {resolveAssigned(current)?.label ?? getTile(current)?.label ?? current}
@@ -199,7 +203,12 @@ export default function TileSpritePicker({
                 <span className="ed-thumb-label">{tile.label}</span>
               </button>
               {useWeights && (
-                <label className="ge-thumb-weight" onClick={(event) => event.stopPropagation()} onContextMenu={(event) => event.stopPropagation()}>
+                <label
+                  className="ge-thumb-weight"
+                  title="Mix % among pieces in this role (relative weights)"
+                  onClick={(event) => event.stopPropagation()}
+                  onContextMenu={(event) => event.stopPropagation()}
+                >
                   <input
                     type="range"
                     min="0"
@@ -208,6 +217,7 @@ export default function TileSpritePicker({
                     value={pct}
                     disabled={disabled || assigned.length < 2}
                     aria-label={`${tile.label} mix percent`}
+                    title="Mix % among pieces in this role"
                     onChange={(event) => onWeight(tile.id, event.target.value)}
                   />
                   <span className="ge-thumb-weight-pct">{pct}%</span>

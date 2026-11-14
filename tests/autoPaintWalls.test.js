@@ -11,6 +11,7 @@ import {
   packUnderlayRun,
   pieceFootprintAabb,
   pieceKitFromRuleset,
+  pickDoorwayOffsets,
   placePackedWallPieces,
   promoteWallCellManual,
   resolveAutoPaintRuleset,
@@ -18,6 +19,8 @@ import {
   snapAutoPaintGenerateSize,
   validateAutoPaintRuleset,
   wallEdgesContinuouslyCovered,
+  AUTO_PAINT_DOOR_CELLS,
+  AUTO_PAINT_DOOR_CORNER_CLEARANCE,
   WALL_LEN_LONG,
   WALL_LEN_SHORT,
   WALL_LEN_STUB,
@@ -404,12 +407,12 @@ describe('placePackedWallPieces coverage', () => {
     const packed = placePackedWallPieces(map, kit(), { doorKeys: ['4,3', '5,3'] })
     const pieces = autoPieces(packed)
     assert.ok(!pieces.some((p) => /DoorFrame/i.test(p.pieceId)))
-    // Edge tip + 3× Doorway 32 (96px) — edge tip blocks a wall Corner on the door centreline.
-    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 4, 'edge tip + 96px Doorway 32')
-    assert.ok(pieces.some((p) => /Corner/i.test(p.pieceId)), 'Corner 32 end caps on free wall ends / jambs')
+    // jamb · Doorway · Doorway · jamb on the opening strip.
+    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 2, '2× Doorway 32 between jambs')
+    assert.ok(pieces.some((p) => /Corner/i.test(p.pieceId)), 'Corner 32 jambs / end caps')
     assert.ok(!pieces.some((p) => p.pieceId === 'tplStarshipFloor32'), 'no Floor 32 overlay on openings')
-    // Doorway tips (edge + 96px) must not get a Corner; leftover tip holds the far jamb.
-    const doorTips = new Set(['4,4', '4.5,4', '5,4', '5.5,4'])
+    // Door tips must not get a Corner; jambs own the opening end tips.
+    const doorTips = new Set(['5,4', '5.5,4'])
     for (const entry of pieces) {
       if (!/Corner/i.test(entry.pieceId)) continue
       const key = `${entry.position.x},${entry.position.y}`
@@ -619,7 +622,7 @@ describe('placePackedWallPieces geometric continuity', () => {
     assertNoFootprintOverlapInterior(pieces)
   })
 
-  it('leaves a 96px doorway lined with Doorway 32 and terminates walls at the gap', () => {
+  it('leaves a 64px doorway lined with Doorway 32 and terminates walls at the gap', () => {
     const map = underlayMap(12, 10, [
       [2, 4],
       [3, 4],
@@ -632,22 +635,50 @@ describe('placePackedWallPieces geometric continuity', () => {
     const packed = placePackedWallPieces(map, kit(), { doorKeys })
     const pieces = autoPieces(packed)
     assert.ok(!pieces.some((p) => /DoorFrame/i.test(p.pieceId)))
-    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 4)
+    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 2, '2× Doorway 32 between jambs')
     assert.ok(!pieces.some((p) => p.pieceId === 'tplStarshipFloor32'))
-    // Wall run pieces must not cover the first 96px (3 tips) of the opening south edge [4, 5.5] at y=5.
-    for (const entry of pieces) {
-      if (/Doorway32|Corner/i.test(entry.pieceId)) continue
-      const box = pieceFootprintAabb(entry)
-      if (Math.abs(box.maxY - 5) > 1e-9) continue
-      const overlap = Math.min(box.maxX, 5.5) - Math.max(box.minX, 4)
-      assert.ok(overlap <= 1e-9, `wall must not bridge 96px doorway south edge, overlap=${overlap}`)
-    }
-    // Jamb Corner seats on leftover tip 6,5 (after 4.5/5/5.5 doorway tips) so the gap is continuous.
+    // Opening strip: jamb 4.5 · door 5 · door 5.5 · jamb 6.
+    assert.ok(pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 4.5 && p.position.y === 5), 'near jamb')
+    assert.ok(pieces.some((p) => p.pieceId === 'tplStarshipDoorway32' && p.position.x === 5 && p.position.y === 5))
+    assert.ok(pieces.some((p) => p.pieceId === 'tplStarshipDoorway32' && p.position.x === 5.5 && p.position.y === 5))
+    assert.ok(pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 6 && p.position.y === 5), 'far jamb')
+    // Must not also seat a freeStart / stub Corner at +0.5 tip (crowds the jamb into the wall).
     assert.ok(
-      pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 6 && p.position.y === 5),
-      'jamb Corner on leftover tip after 96px doorway',
+      !pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 6.5 && p.position.y === 5),
+      'no second Corner half a tip into the wall after the jamb',
     )
     assert.equal(wallEdgesContinuouslyCovered(packed, pieces, { doorKeys }), true)
+  })
+
+  it('does not stack a stub Corner beside the jamb on a 1-cell wall into a T-junction', () => {
+    // Door at (4,4)-(4,5); one wall cell (4,6) then a 4-way junction at (4,7) with east/west arms.
+    const map = underlayMap(12, 12, [
+      [4, 2],
+      [4, 3],
+      [4, 6],
+      [4, 7],
+      [3, 7],
+      [5, 7],
+      [4, 8],
+    ])
+    map.tiles[4][4] = 'floor'
+    map.tiles[5][4] = 'floor'
+    const doorKeys = ['4,4', '4,5']
+    const packed = placePackedWallPieces(map, kit(), { doorKeys })
+    const pieces = autoPieces(packed)
+    // Vertical opening: jamb · door · door · jamb along +Y tips.
+    assert.ok(
+      pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 5 && p.position.y === 4.5),
+      'near jamb on vertical doorway',
+    )
+    assert.ok(
+      pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 5 && p.position.y === 6),
+      'far jamb on vertical doorway',
+    )
+    assert.ok(
+      !pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 5 && p.position.y === 6.5),
+      'no stub Corner half a tip south of the jamb into the junction arm',
+    )
   })
 
   it('joins long walls into doorways and L-corners without gaps', () => {
@@ -722,8 +753,8 @@ describe('Auto-Paint Generate Map', () => {
       assert.ok(!getTile(map.tiles[y][x])?.wall, `opening ${key} is walkable floor`)
     }
     const doorway32 = autoPieces.filter((entry) => entry.pieceId === 'tplStarshipDoorway32')
-    assert.ok(doorway32.length >= 4, 'at least one opening (edge tip + 3× Doorway 32)')
-    assert.equal(doorway32.length % 4, 0, 'Doorway 32 count is multiples of 4 (edge + 96px)')
+    assert.ok(doorway32.length >= 2, 'at least one opening (2× Doorway 32 between jambs)')
+    assert.equal(doorway32.length % 2, 0, 'Doorway 32 count is multiples of 2 (64px lining)')
     assert.ok(
       !autoPieces.some((entry) => entry.pieceId === 'tplStarshipFloor32'),
       'no Floor 32 overlay on openings',
@@ -740,5 +771,41 @@ describe('Auto-Paint Generate Map', () => {
       assert.ok(!getTile(map.tiles[marker.y][marker.x])?.wall)
       assert.notEqual(map.tiles[marker.y][marker.x], 'templateWall')
     }
+  })
+})
+
+describe('pickDoorwayOffsets (corner clearance)', () => {
+  it('returns null when the shared wall is too short for clearance + door', () => {
+    // Clearance 1 + door 2 needs 4 cells; span 3 cannot fit.
+    assert.equal(pickDoorwayOffsets(() => 0, 1, 3), null)
+    assert.equal(
+      pickDoorwayOffsets(() => 0, 1, 3, {
+        doorCells: AUTO_PAINT_DOOR_CELLS,
+        cornerClearance: AUTO_PAINT_DOOR_CORNER_CLEARANCE,
+      }),
+      null,
+    )
+  })
+
+  it('fits a 2-cell door on a 4-cell shared wall with clearance 1', () => {
+    // Min span = 1 + 2 + 1; start locked at first+1.
+    const offsets = pickDoorwayOffsets(() => 0, 1, 4)
+    assert.deepEqual(offsets, [2, 3])
+  })
+
+  it('keeps doorCells away from both ends when the span is long enough', () => {
+    // Span 6 with clearance 1: start in [11, 13].
+    const offsets = pickDoorwayOffsets(() => 0, 10, 15)
+    assert.deepEqual(offsets, [11, 12])
+    assert.ok(offsets[0] - 10 >= AUTO_PAINT_DOOR_CORNER_CLEARANCE)
+    assert.ok(15 - offsets[offsets.length - 1] >= AUTO_PAINT_DOOR_CORNER_CLEARANCE)
+  })
+
+  it('skips clearance-0 flush doors that used to sit on corners', () => {
+    // Old behaviour: start could be `first` (door flush with the corner).
+    const mid = pickDoorwayOffsets(() => 0.5, 2, 9)
+    assert.ok(mid)
+    assert.ok(mid[0] > 2)
+    assert.ok(mid[mid.length - 1] < 9)
   })
 })

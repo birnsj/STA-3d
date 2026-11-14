@@ -62,7 +62,11 @@ export default function MapProperties({
 
   return (
     <div className="ed-map-props">
-      <PropertySection id="map" title="Map">
+      <PropertySection
+        id="map"
+        title="Map"
+        tip="Location, biome, weather, size, and ambient light for this map. Generate Map / Auto-Paint read size from here."
+      >
         <label className="me-field">
           Location
           <EditorSelect className="me-select me-wide" value={map.mapType} aria-label="Location" onChange={(event) => onMapType(event.target.value)}>
@@ -157,6 +161,7 @@ export default function MapProperties({
       <PropertySection
         id="name-episode-card"
         title="Name, episode & card"
+        tip="Map file name, Load Episode title, and optional episode card art."
         defaultOpen={false}
         forceOpen={revealEpisodeCard > 0}
         key={`name-episode-card-${revealEpisodeCard}`}
@@ -202,19 +207,29 @@ export default function MapProperties({
         />
       </PropertySection>
 
-      <PropertySection id="generate" title="Generate" defaultOpen={false}>
+      <PropertySection
+        id="generate"
+        title="Generate"
+        tip="Legacy Map Generator only (frozen). Prefer Tools → World Generation Ruleset → Generate Map for new construction."
+        defaultOpen={false}
+      >
         <ScaleSlider label="Room size" title="How big Legacy Map Generator makes rooms." min="70" value={roomScale} onChange={onRoomScale} />
         <ScaleSlider label="Building size" title="How big Legacy Map Generator makes buildings and city blocks." min="100" value={buildingScale} onChange={onBuildingScale} />
         <button type="button" className="me-button me-generate" title="Builds a new map with the frozen location generators. Nothing is saved until you press Save." onClick={onGenerateMap}>
           Legacy Map Generator
         </button>
-        <label className="me-check">
+        <label className="me-check" title="When Legacy Generate runs, also scatter hazard tiles on the new map.">
           <input type="checkbox" checked={generateHazards} onChange={(event) => onGenerateHazards?.(event.target.checked)} />
           Generate hazards
         </label>
       </PropertySection>
 
-      <PropertySection id="captains-log" title="Captain's Log" defaultOpen={false}>
+      <PropertySection
+        id="captains-log"
+        title="Captain's Log"
+        tip="Mission intro / outro wording and starting stardate shown in play."
+        defaultOpen={false}
+      >
         <label className="me-field">
           Starting stardate
           <input
@@ -245,11 +260,15 @@ export default function MapProperties({
         <p className="me-text is-muted">Story wording: Mission → Story Wording.</p>
       </PropertySection>
 
-      <PropertySection id="music" title="Music" defaultOpen={false}>
+      <PropertySection id="music" title="Music" tip="Exploration and combat music cues for this map." defaultOpen={false}>
         <MusicSettings map={map} edit={edit} />
       </PropertySection>
 
-      <PropertySection id="objectives" title="Objectives">
+      <PropertySection
+        id="objectives"
+        tip="Mission objectives and object counts. Open Objective / Object editors from Tools."
+        title="Objectives"
+      >
         {objectives.length ? (
           <ul className="me-objective-list">
             {objectives.map((objective, index) => (
@@ -270,7 +289,7 @@ export default function MapProperties({
         </p>
       </PropertySection>
 
-      <PropertySection id="status" title="Status" defaultOpen={false}>
+      <PropertySection id="status" title="Status" tip="Save path and the tile under the pointer." defaultOpen={false}>
         <p className="me-text">{fileId ? `maps/${fileId}.json` : 'Not saved yet'}</p>
         {fileId && mapFileId(map.name) && mapFileId(map.name) !== fileId && <p className="me-text">Renamed to maps/{mapFileId(map.name)}.json on Save.</p>}
         <p className="me-text">
@@ -289,7 +308,12 @@ export default function MapProperties({
         </p>
       </PropertySection>
 
-      <PropertySection id="warnings" title="Warnings" defaultOpen={warnings.length > 0}>
+      <PropertySection
+        id="warnings"
+        title="Warnings"
+        tip="Validation issues that should be fixed before play (missing starts, bad links, …)."
+        defaultOpen={warnings.length > 0}
+      >
         {warnings.length ? (
           <ul className="me-warnings">
             {warnings.map((warning) => (

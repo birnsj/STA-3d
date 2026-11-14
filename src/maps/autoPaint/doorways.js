@@ -1,17 +1,49 @@
-// Auto-Paint doorway openings: 96px = 3× 32×32 Doorway tips on a 2-cell floor gap,
-// plus a near-side edge Doorway tip so a wall Corner cannot block the door centreline.
+// Auto-Paint doorway openings: on a 2-cell (128px) floor gap, place
+// [Corner jamb][Doorway × tipUnits][Corner jamb] — default 2 Doorway tips = 64px door between 32px jambs.
 // Openings paint as normal floor (no full-cell doorway tile). Independent of Legacy Map Generator.
 import { cellKey } from '../mapFormat.js'
 import { getTemplatePiece } from '../templatePieces.js'
 
 export const AUTO_PAINT_DOORWAY_PIECE = 'tplStarshipDoorway32'
-/** Opening width in tip units (32px). 3 × Doorway 32 = 96px. */
-export const AUTO_PAINT_DOOR_TIP_UNITS = 3
-/** Underlay cells needed for a 96px opening (ceil(96/64)). */
+/** Opening lining width in tip units (32px). 2 × Doorway 32 = 64px. */
+export const AUTO_PAINT_DOOR_TIP_UNITS = 2
+/** Underlay cells for the floor gap (2 cells = 128px; lining is 64px, leftover tips for jambs). */
 export const AUTO_PAINT_DOOR_CELLS = 2
+/**
+ * Min solid wall cells between a doorway edge and a room corner / T-junction.
+ * Default 1: 64px door + jambs only needs one wall cell of corner standoff, so
+ * more shared walls get openings (was 2 when doors sat flush without jamb tips).
+ * Skip the door entirely when the shared wall is too short for this clearance.
+ */
+export const AUTO_PAINT_DOOR_CORNER_CLEARANCE = 1
 
 /**
- * Collapse contiguous doorway runs to at most `maxCells` (default 2 for 96px openings).
+ * Choose underlay offsets for a doorway along a shared wall `[first, last]`.
+ * Returns null when the span cannot keep `cornerClearance` cells of wall on
+ * both sides of a `doorCells`-wide opening (caller should leave the wall solid).
+ */
+export function pickDoorwayOffsets(
+  random,
+  first,
+  last,
+  {
+    doorCells = AUTO_PAINT_DOOR_CELLS,
+    cornerClearance = AUTO_PAINT_DOOR_CORNER_CLEARANCE,
+  } = {},
+) {
+  const width = Math.max(1, Math.floor(Number(doorCells)) || AUTO_PAINT_DOOR_CELLS)
+  const clearance = Math.max(0, Math.floor(Number(cornerClearance)) || 0)
+  if (last < first) return null
+  const startMin = first + clearance
+  const startMax = last - (width - 1) - clearance
+  if (startMax < startMin) return null
+  const span = startMax - startMin + 1
+  const start = startMin + Math.floor(random() * span)
+  return Array.from({ length: width }, (_, i) => start + i)
+}
+
+/**
+ * Collapse contiguous doorway runs to at most `maxCells` (default 2 for 64px lining).
  * Extra cells become `wallId` with floorUnder filled via onRestore.
  * Mutates `tiles` (and calls onRestore for each restored wall cell).
  */

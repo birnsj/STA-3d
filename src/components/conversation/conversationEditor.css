@@ -622,7 +622,8 @@
   margin: 0 0 0.35rem;
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--ed-text, #e8eef4);
+  color: var(--ed-accent, #4f9cff);
+  cursor: help;
 }
 .ed-shell .ge-adj-list {
   display: flex;
@@ -1037,6 +1038,26 @@ button.ge-pack-marker-face:hover {
   border-right: 0;
 }
 
+/* Selected palette thumb → sprite editors above Palette (ruleset fields swap out). */
+.ed-shell .ge-source-props {
+  flex: 1;
+  min-height: 0;
+  max-height: 55%;
+  width: auto;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 1px solid var(--ed-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.ed-shell .ge-source-props .ed-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .ed-shell .ge-source-hint {
   margin: 0;
   padding: 0 8px 6px;
@@ -1053,7 +1074,7 @@ button.ge-pack-marker-face:hover {
 }
 
 .ed-shell .ge-source-thumb {
-  cursor: grab;
+  cursor: pointer;
 }
 
 .ed-shell .ge-source-thumb:active {

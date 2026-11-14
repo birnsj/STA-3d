@@ -449,18 +449,57 @@ function placeStraightRunWithEndCaps(
   const ctxAt = (cell) => adjacencyCtxFor(map, adjacency, cell.x, cell.y, prevPiece ? [prevPiece] : [])
   const corner = pieceForLen(kit, pack.stub, onHull, random, pack, ctxAt(first))
 
-  // 96px doorway on a 2-cell gap leaves one tip empty; seat the jamb Corner on that leftover
-  // tip (cell boundary) so it meets the Doorway 32 run — does not consume a wall-run tip unit.
+  // Opening strip is jamb · Doorway × N · jamb. Wall runs must meet those jambs with
+  // straight 64/128 pieces (flush tip), never an extra Corner stub — stub+jamb reads as a
+  // double jamb and no longer looks like diagram “6”.
   const afterDoor =
     typeof openingAt === 'function' &&
     (alongX ? openingAt(first.x - 1, first.y) : openingAt(first.x, first.y - 1))
-  if (cornerEndCaps && freeStart && afterDoor) {
-    const tip = alongX ? { x: first.x, y: first.y + 1 } : { x: first.x + 1, y: first.y }
-    list = addPiece(list, usedIds, tips, tip, corner, endCapRotation(alongX, false, openPositive)).list
-    prevPiece = corner
-  }
+  const beforeDoor =
+    typeof openingAt === 'function' &&
+    (alongX ? openingAt(last.x + 1, last.y) : openingAt(last.x, last.y + 1))
 
-  if (cornerEndCaps && freeStart && remaining > 0) {
+  if (afterDoor) {
+    // Far jamb owns tip at first.* — no start Corner. Cover with shorts; leave a freeEnd
+    // stub+cap only on the far side (never a stub against the jamb).
+    if (cornerEndCaps && freeEnd && !beforeDoor && remaining > 0) remaining -= 1
+    while (remaining >= pack.shortTips) {
+      const tipCells = pack.shortTips
+      const tip = alongX
+        ? { x: first.x + (cursor + tipCells) * 0.5, y: first.y + 1 }
+        : { x: first.x + 1, y: first.y + (cursor + tipCells) * 0.5 }
+      const straight = pieceForLen(kit, pack.short, onHull, random, pack, ctxAt(first))
+      const placed = addPiece(list, usedIds, tips, tip, straight, rot)
+      list = placed.list
+      if (!placed.placed) break
+      prevPiece = straight
+      remaining -= tipCells
+      cursor += tipCells
+    }
+    // 1-tip remnant into a junction (or short arm): one short seated on that tip span.
+    if (remaining > 0 && !freeEnd) {
+      const tipCells = remaining
+      const tip = alongX
+        ? { x: first.x + (cursor + tipCells) * 0.5, y: first.y + 1 }
+        : { x: first.x + 1, y: first.y + (cursor + tipCells) * 0.5 }
+      const straight = pieceForLen(kit, pack.short, onHull, random, pack, ctxAt(first))
+      list = addPiece(list, usedIds, tips, tip, straight, rot).list
+      remaining = 0
+      cursor += tipCells
+    }
+  } else if (beforeDoor) {
+    // Near jamb owns the first door tip — pack flush shorts into the wall's last tip.
+    // No freeStart/freeEnd Corner on the door side (that was the double-jamb look).
+    if (cornerEndCaps && freeStart && remaining > pack.shortTips && (remaining - 1) % pack.shortTips === 0) {
+      const tip = alongX
+        ? { x: first.x + (cursor + 1) * 0.5, y: first.y + 1 }
+        : { x: first.x + 1, y: first.y + (cursor + 1) * 0.5 }
+      list = addPiece(list, usedIds, tips, tip, corner, endCapRotation(alongX, false, openPositive)).list
+      prevPiece = corner
+      remaining -= 1
+      cursor += 1
+    }
+  } else if (cornerEndCaps && freeStart && remaining > 0) {
     const tip = alongX
       ? { x: first.x + (cursor + 1) * 0.5, y: first.y + 1 }
       : { x: first.x + 1, y: first.y + (cursor + 1) * 0.5 }
@@ -469,27 +508,44 @@ function placeStraightRunWithEndCaps(
     remaining -= 1
     cursor += 1
   }
-  if (cornerEndCaps && freeEnd && remaining > 0) remaining -= 1
+
+  if (cornerEndCaps && freeEnd && !beforeDoor && !afterDoor && remaining > 0) remaining -= 1
 
   for (const part of packTipCells(remaining, pipeline)) {
+    if (beforeDoor && part.len === pack.stub) continue
     const tip = alongX
       ? { x: first.x + (cursor + part.tipCells) * 0.5, y: first.y + 1 }
       : { x: first.x + 1, y: first.y + (cursor + part.tipCells) * 0.5 }
     const cellIndex = Math.min(cells.length - 1, Math.floor(cursor / 2))
     const piece = pieceForLen(kit, part.len, onHull, random, pack, ctxAt(cells[cellIndex]))
-    const pieceRot =
-      part.len === pack.stub ? endCapRotation(alongX, true, openPositive) : rot
+    const pieceRot = part.len === pack.stub ? endCapRotation(alongX, true, openPositive) : rot
     list = addPiece(list, usedIds, tips, tip, piece, pieceRot).list
     prevPiece = piece
     cursor += part.tipCells
   }
 
-  if (cornerEndCaps && freeEnd) {
+  if (cornerEndCaps && freeEnd && !beforeDoor) {
+    // afterDoor may still owe a far-end cap (and a stub when middle left one tip).
+    if (afterDoor && remaining > 0) {
+      const stubTip = alongX
+        ? { x: first.x + (cursor + remaining) * 0.5, y: first.y + 1 }
+        : { x: first.x + 1, y: first.y + (cursor + remaining) * 0.5 }
+      const stubPiece = pieceForLen(kit, pack.stub, onHull, random, pack, ctxAt(last))
+      list = addPiece(
+        list,
+        usedIds,
+        tips,
+        stubTip,
+        stubPiece,
+        endCapRotation(alongX, true, openPositive),
+      ).list
+      cursor += remaining
+      remaining = 0
+    }
     const tip = alongX
       ? { x: first.x + endExclusive * 0.5, y: first.y + 1 }
       : { x: first.x + 1, y: first.y + endExclusive * 0.5 }
     const endCorner = pieceForLen(kit, pack.stub, onHull, random, pack, ctxAt(last))
-    // Tip may already hold the near-side Doorway edge piece (non-colliding); skip if so.
     list = addPiece(list, usedIds, tips, tip, endCorner, endCapRotation(alongX, true, openPositive)).list
   }
 
@@ -531,9 +587,8 @@ export function placePackedWallPieces(
   const consumed = new Set()
   const openingAt = (x, y) => isDoor(tiles, x, y, doorId, doors)
 
-  // 1) Doorway lining — 96px = 3× Doorway 32 on a 2-cell (128px) floor gap.
-  // Leave leftover tip(s) empty so wall-run Corner 32 end caps at the jambs own those tips
-  // (a Corner inside the opening collided with jambs and threw wall packing off).
+  // 1) Doorway lining on the opening strip (defaults: 2 cells / 2 door tips).
+  // [jamb Corner][Doorway × doorTipUnits][jamb Corner] — e.g. 64px door between 32px jambs.
   if ((doors?.size || doorId) && canLineAutoPaintDoorways()) {
     const openingKeys =
       doors ??
@@ -556,18 +611,40 @@ export function placePackedWallPieces(
       }
       const { x: x0, y: y0 } = cells[0]
       const rot = straightRotation(tiles, width, height, x0, y0, alongX)
+      const openPositive = alongX
+        ? openAt(tiles, width, height, x0, y0 + 1) && !openAt(tiles, width, height, x0, y0 - 1)
+        : openAt(tiles, width, height, x0 + 1, y0) && !openAt(tiles, width, height, x0 - 1, y0)
       const tipCount = cells.length * 2
-      const doorTips = Math.min(doorTipUnits, tipCount)
-      // Near-side edge tip is shared with the abutting wall's free-end Corner. A tip-anchored
-      // Corner there has maxX/maxY on the door cell centreline and blocks RADIUS transit —
-      // claim it with Doorway (non-colliding) first so the Corner cannot seat.
-      const edgeTip = alongX ? { x: x0, y: y0 + 1 } : { x: x0 + 1, y: y0 }
-      list = addPiece(list, usedIds, tips, edgeTip, AUTO_PAINT_DOORWAY_PIECE, rot).list
+      const placeJambs = cornerEndCaps && tipCount >= 2
+      const doorTips = Math.min(doorTipUnits, Math.max(0, tipCount - (placeJambs ? 2 : 0)))
+      const tipAt = (index) =>
+        alongX
+          ? { x: x0 + (index + 1) * 0.5, y: y0 + 1 }
+          : { x: x0 + 1, y: y0 + (index + 1) * 0.5 }
+      const jambPiece = pieceForLen(kit, pack.stub, false, random, pack, null)
+      if (placeJambs && jambPiece) {
+        list = addPiece(
+          list,
+          usedIds,
+          tips,
+          tipAt(0),
+          jambPiece,
+          endCapRotation(alongX, false, openPositive),
+        ).list
+      }
+      const doorStart = placeJambs ? 1 : 0
       for (let i = 0; i < doorTips; i++) {
-        const tip = alongX
-          ? { x: x0 + (i + 1) * 0.5, y: y0 + 1 }
-          : { x: x0 + 1, y: y0 + (i + 1) * 0.5 }
-        list = addPiece(list, usedIds, tips, tip, AUTO_PAINT_DOORWAY_PIECE, rot).list
+        list = addPiece(list, usedIds, tips, tipAt(doorStart + i), AUTO_PAINT_DOORWAY_PIECE, rot).list
+      }
+      if (placeJambs && jambPiece) {
+        list = addPiece(
+          list,
+          usedIds,
+          tips,
+          tipAt(tipCount - 1),
+          jambPiece,
+          endCapRotation(alongX, true, openPositive),
+        ).list
       }
     }
   }

@@ -42,6 +42,7 @@ const MENUS = [
       { id: 'grid', label: 'Grid' },
       { id: 'gridOptions', label: 'Grid options…' },
       { id: 'viewScale', label: 'View scale…' },
+      { id: 'tooltips', label: 'Tooltips' },
       { sep: true },
       { id: 'overview', label: 'Overview window' },
       { id: 'layers', label: 'Layers window' },

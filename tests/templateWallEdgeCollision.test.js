@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { blocksLineOfFire, blocksMovement, toBattleMap } from '../src/combat/battleMap.js'
 import { getReachableTiles } from '../src/combat/movementSystem.js'
-import { isClear, isClearLine, RADIUS } from '../src/exploration/navigation.js'
+import { findTilePath, isClear, isClearLine, planRoute, RADIUS, slide } from '../src/exploration/navigation.js'
 import { placePackedWallPieces, pieceKitFromRuleset, resolveAutoPaintRuleset } from '../src/maps/autoPaint/index.js'
 import { createNullMap } from '../src/maps/mapFormat.js'
 import { circleHitsTemplateWalls, templatePieceGivesCover } from '../src/maps/templatePieces.js'
@@ -100,7 +100,7 @@ describe('templateWall edge collision', () => {
     assert.equal(battle.templatePiecePlacements.length, 1)
   })
 
-  it('lets a body walk north-south through both cells of a 96px Template 32 doorway', () => {
+  it('lets a body walk north-south through the 64px clear span between doorway jambs', () => {
     const map = createNullMap({ name: 'door', width: 12, height: 10 })
     const tiles = map.tiles.map((row) => row.map(() => 'floor'))
     for (const [x, y] of [
@@ -131,11 +131,86 @@ describe('templateWall edge collision', () => {
       ),
       { doorKeys: ['4,4', '5,4'] },
     )
-    // West door cell centreline must clear the wall strip (old west jamb sat on x=4).
-    assert.equal(isClear(packed, { x: 4, y: 4.5 }, RADIUS), true)
+    // Opening is jamb · Doorway · Doorway · jamb (clear 4.5–5.5). Body radius must stay
+    // inside that span — samples near a jamb edge fail even though the door lining is clear.
     assert.equal(isClear(packed, { x: 5, y: 4.5 }, RADIUS), true)
-    assert.ok(isClearLine(packed, { x: 4, y: 3 }, { x: 4, y: 5 }))
+    assert.equal(isClear(packed, { x: 5.1, y: 4.5 }, RADIUS), true)
     assert.ok(isClearLine(packed, { x: 5, y: 3 }, { x: 5, y: 5 }))
+    assert.ok(isClearLine(packed, { x: 5.1, y: 3 }, { x: 5.1, y: 5 }))
+  })
+
+  it('does not phase through a bulkhead strip after overlapping it', () => {
+    // Underlay (4,4): south strip [4,5]×[4.5,5]. Stand overlapping the strip, shove south —
+    // must not free-move to the far side (old slide did when !isClear(from)).
+    const map = underlayMap(
+      [[4, 4]],
+      [
+        {
+          id: 'w1',
+          pieceId: 'tplStarshipWall32',
+          position: { x: 5, y: 5 },
+          rotation: 180,
+          scale: 1,
+          order: 0,
+        },
+      ],
+    )
+    const stuck = { x: 4.5, y: 4.75 }
+    assert.equal(isClear(map, stuck, RADIUS), false)
+    let pos = stuck
+    for (let i = 0; i < 30; i++) pos = slide(map, pos, { x: 0, y: 0.1 })
+    assert.ok(pos.y < 5.2, `must not cross south of the strip (ended y=${pos.y})`)
+    assert.equal(isClear(map, pos, RADIUS), true, 'unstick should leave clear space')
+  })
+
+  it('A* does not hop south across a wall strip, and routes through the doorway centre', () => {
+    const map = createNullMap({ name: 'path', width: 12, height: 10 })
+    const tiles = map.tiles.map((row) => row.map(() => 'floor'))
+    for (const [x, y] of [
+      [2, 4],
+      [3, 4],
+      [6, 4],
+      [7, 4],
+    ]) {
+      tiles[y][x] = 'templateWall'
+    }
+    const packed = placePackedWallPieces(
+      { ...map, tiles, floorUnder: {}, templatePiecePlacements: [] },
+      pieceKitFromRuleset(
+        resolveAutoPaintRuleset({
+          id: 'door-path',
+          walls: {
+            straight: 'tplStarshipWall32',
+            straightLong: 'tplStarshipWall32PlainLong',
+            corner: 'tplStarshipWall32Corner',
+            hull: null,
+            hullLong: null,
+            hullCorner: null,
+            doorFrame: null,
+          },
+          floors: { defaultTile: 'floor', variants: [] },
+          doors: { underlayTile: 'doorway' },
+        }),
+      ),
+      { doorKeys: ['4,4', '5,4'] },
+    )
+    // Strip-blind A* used to link (3,4)→(3,5); continuous clearance must refuse that edge.
+    const blocked = findTilePath(packed, { x: 3, y: 3 }, { x: 3, y: 5 })
+    assert.ok(
+      !blocked.some((t, i) => i > 0 && blocked[i - 1].x === 3 && blocked[i - 1].y === 4 && t.x === 3 && t.y === 5),
+      'no one-step hop across the bulkhead strip',
+    )
+    const path = findTilePath(packed, { x: 5, y: 3 }, { x: 5, y: 6 })
+    assert.ok(
+      path.some((t) => t.x === 5 && (t.y === 4 || t.y === 5)),
+      'path uses the doorway column',
+    )
+    const end = path[path.length - 1]
+    assert.equal(end.x, 5)
+    assert.equal(end.y, 6)
+    const route = planRoute(packed, { x: 5, y: 3 }, { x: 5, y: 6 })
+    assert.ok(route.length >= 1)
+    assert.ok(isClearLine(packed, { x: 5, y: 3 }, route[0]) || route[0].x === 5)
   })
 })
 

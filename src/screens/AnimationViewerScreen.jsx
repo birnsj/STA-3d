@@ -85,6 +85,7 @@ const ANIMATION_MENUS = [
       { id: 'lockedIso', label: 'Locked iso' },
       { id: 'loopOnce', label: 'Loop once-clips' },
       { id: 'showSkeleton', label: 'Show skeleton' },
+      { id: 'tooltips', label: 'Tooltips' },
       { sep: true },
       { id: 'viewScale', label: 'View scale…' },
     ],
@@ -171,6 +172,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
   const [lockedIso, setLockedIso] = useState(false)
   const [loopOnce, setLoopOnce] = useState(false)
   const [showSkeleton, setShowSkeleton] = useState(false)
+  const [showTooltips, setShowTooltips] = useState(true)
   const [ragdollActive, setRagdollActive] = useState(false)
   const [ragdollBusy, setRagdollBusy] = useState(false)
   const [ragdollSettings, setRagdollSettings] = useState(() => cloneRagdollSettings())
@@ -436,6 +438,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
     else if (id === 'lockedIso') setLockedIso((v) => !v)
     else if (id === 'loopOnce') setLoopOnce((v) => !v)
     else if (id === 'showSkeleton') setShowSkeleton((v) => !v)
+    else if (id === 'tooltips') setShowTooltips((v) => !v)
     else if (id === 'viewScale') setShowViewScale(true)
     else if (id === 'playPause') {
       if (!ragdollActive) setPlaying((p) => !p)
@@ -453,7 +456,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
 
   return (
     <div ref={shellRef} className="me-screen ed-shell av-screen">
-      <EditorTips rootRef={shellRef} />
+      <EditorTips rootRef={shellRef} enabled={showTooltips} />
       <EditorMenuBar
         menus={ANIMATION_MENUS}
         onAction={onMenuAction}
@@ -461,6 +464,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
           lockedIso,
           loopOnce,
           showSkeleton,
+          tooltips: showTooltips,
         }}
       />
 
@@ -495,7 +499,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
       <div className="ed-workspace">
         <aside className="ed-assets me-palette">
           <div className="ed-panel-head">
-            <span>Assets</span>
+            <span>Palette</span>
             <select
               className="me-select av-anim-set-select"
               value={animSetId}

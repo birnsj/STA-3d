@@ -131,6 +131,8 @@ function SizeFields({ width, height, onResize }) {
       min={MIN_SIZE}
       max={MAX_SIZE}
       value={draft[key]}
+      title={key === 'width' ? 'Map width in cells' : 'Map height in cells'}
+      aria-label={key === 'width' ? 'Map width' : 'Map height'}
       onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
     />
   )
@@ -143,7 +145,13 @@ function SizeFields({ width, height, onResize }) {
         ×
       </span>
       {field('height')}
-      <button type="button" className="me-button" disabled={!changed} onClick={() => onResize(Number(draft.width), Number(draft.height))}>
+      <button
+        type="button"
+        className="me-button"
+        disabled={!changed}
+        title="Apply map width × height (clips or pads the board)"
+        onClick={() => onResize(Number(draft.width), Number(draft.height))}
+      >
         Apply
       </button>
     </span>
@@ -230,7 +238,7 @@ export default function EditorToolbar({
             type="button"
             className={`me-button${placing ? ' is-on' : ''}`}
             aria-pressed={placing}
-            title="Paint the tile chosen in Assets → Tiles"
+            title="Paint the tile chosen in the Palette"
             onClick={() => onPlacing(!placing)}
           >
             Paint

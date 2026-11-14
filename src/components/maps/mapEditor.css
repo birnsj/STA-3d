@@ -1585,6 +1585,12 @@
   background: var(--ed-panel);
 }
 
+/* Same authoring-layer strip as World Generation Palette. */
+.ed-assets .ge-layer-tabs .ed-tab {
+  padding: 0 5px;
+  font-size: 9px;
+}
+
 .ed-tab {
   height: 22px;
   padding: 0 7px;

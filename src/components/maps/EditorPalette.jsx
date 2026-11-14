@@ -14,6 +14,7 @@ import {
   renameTile,
   reorderPaletteGroups,
 } from '../../maps/tileFiles.js'
+import { LAYER_IDS, LAYER_LABELS, layerOfTile, layerOfTemplatePiece } from '../../maps/layers.js'
 import { getTile, PALETTE_GROUPS, TILES, tileCatalogueEpochOf } from '../../maps/mapFormat.js'
 import { canEditTemplatePieces, deleteTemplatePiece } from '../../maps/templatePieceFiles.js'
 import { templatePieceCatalogueEpochOf, templatePieceGroups } from '../../maps/templatePieces.js'
@@ -29,8 +30,8 @@ import TileThumbnail from './TileThumbnail.jsx'
 
 const PALETTE_DRAG_TYPE = 'application/x-sta-palette-group'
 
-// Left Asset Browser: tabbed catalogues (Tiles, Environment, Items, Markers, NPCs). Tool ids unchanged.
-// Visual layout follows the Mission Editor mockup (thumbnail grid); catalogues unchanged.
+// Left Asset Browser. One authoring-layer strip (same as World Generation Palette) picks the catalogue body.
+// Tool ids unchanged. Visual layout follows the Mission Editor mockup (thumbnail grid).
 
 const MARKER_TOOLS = [
   { id: 'playerStarts', label: 'Player Start', swatch: 'player' },
@@ -40,14 +41,6 @@ const MARKER_TOOLS = [
   { id: 'erase', label: 'Erase Marker', swatch: 'erase' },
   { id: 'eraseFloor', label: 'Erase Floor (Null)', swatch: 'erase' },
   { id: 'eraseStructure', label: 'Erase Wall / Prop', swatch: 'erase' },
-]
-
-const ASSET_TABS = [
-  { id: 'tiles', label: 'Tiles' },
-  { id: 'environment', label: 'Environment' },
-  { id: 'items', label: 'Items' },
-  { id: 'markers', label: 'Markers' },
-  { id: 'npcs', label: 'NPCs' },
 ]
 
 const CALIBRATION_ITEM_GROUPS = [
@@ -164,13 +157,21 @@ function matchesQuery(text, query) {
   return String(text).toLowerCase().includes(query)
 }
 
-// Active editor layer → Assets tab. Ground/Walls stay on Tiles; Furniture → Environment; Characters → NPCs; Markers → Markers.
-const TAB_FOR_LAYER = {
+// Active authoring layer → which Assets body to show (tiles are also filtered by layer).
+const BODY_FOR_LAYER = {
   ground: 'tiles',
   walls: 'tiles',
-  furniture: 'environment',
+  furniture: 'furniture',
   characters: 'npcs',
   markers: 'markers',
+}
+
+const LAYER_TAB_SHORT = {
+  ground: 'Ground',
+  walls: 'Walls',
+  furniture: 'Furniture',
+  characters: 'Characters',
+  markers: 'Markers',
 }
 
 export default function EditorPalette({
@@ -185,12 +186,14 @@ export default function EditorPalette({
   onItemDragEnd,
   animateTiles = true,
   activeLayer = null,
+  onActiveLayer = null,
   askConfirm = null,
   askText = null,
   onStatus = null,
 }) {
-  const [tab, setTab] = useState('tiles')
   const [query, setQuery] = useState('')
+  // Catalogue-only tabs (not authoring layers): Environment, Items — same as the old Assets strip.
+  const [catalogueTab, setCatalogueTab] = useState(null)
   const [thumbScale, setThumbScale] = useState(loadThumbScale)
   const [open, setOpen] = useState(() => new Set())
   const [catalogueEpoch, setCatalogueEpoch] = useState(
@@ -523,12 +526,20 @@ export default function EditorPalette({
     saveThumbScale(thumbScale)
   }, [thumbScale])
 
-  // Layers window active layer steers the Assets tab (does not override a hand-picked tab until the layer changes).
+  const layerTab = LAYER_IDS.includes(activeLayer) ? activeLayer : 'ground'
+  const body = catalogueTab ?? BODY_FOR_LAYER[layerTab] ?? 'tiles'
+
+  // Layers window / external active-layer changes leave catalogue-only tabs.
   const [seenLayer, setSeenLayer] = useState(activeLayer)
   if (activeLayer && activeLayer !== seenLayer) {
     setSeenLayer(activeLayer)
-    const next = TAB_FOR_LAYER[activeLayer]
-    if (next) setTab(next)
+    setCatalogueTab(null)
+  }
+
+  const selectLayer = (layerId) => {
+    if (!LAYER_IDS.includes(layerId)) return
+    setCatalogueTab(null)
+    onActiveLayer?.(layerId)
   }
 
   const toggle = (id) =>
@@ -539,13 +550,36 @@ export default function EditorPalette({
       return next
     })
 
+  // Same layer filter as World Generation Palette: only thumbs for the active authoring layer.
   const filteredGroups = useMemo(
     () =>
       GROUPS.map((group) => ({
         ...group,
-        tiles: group.tiles.filter((tile) => matchesQuery(tile.label, q) || matchesQuery(tile.id, q)),
+        tiles: group.tiles.filter((tile) => {
+          if (layerOfTile(tile) !== layerTab) return false
+          return matchesQuery(tile.label, q) || matchesQuery(tile.id, q)
+        }),
       })).filter((group) => group.tiles.length > 0 || (canEditTiles && group.id !== 'other' && !q)),
-    [GROUPS, q],
+    [GROUPS, q, layerTab],
+  )
+
+  const filteredPieceGroups = useMemo(
+    () =>
+      pieceGroups
+        .map((group) => ({
+          ...group,
+          pieces: group.pieces.filter((piece) => {
+            if (layerOfTemplatePiece(piece) !== layerTab) return false
+            return (
+              !q ||
+              matchesQuery(piece.label, q) ||
+              matchesQuery(piece.id, q) ||
+              (piece.tags ?? []).some((tag) => matchesQuery(tag, q))
+            )
+          }),
+        }))
+        .filter((group) => group.pieces.length),
+    [pieceGroups, q, layerTab],
   )
 
   const anyOpen = filteredGroups.some((group) => open.has(group.id))
@@ -559,7 +593,7 @@ export default function EditorPalette({
   return (
     <aside className="ed-assets me-palette" style={{ '--ed-thumb-cols': thumbCols }} data-thumb-scale={thumbScale}>
       <div className="ed-panel-head">
-        <span>Assets</span>
+        <span>Palette</span>
         <div className="ed-seg ed-thumb-scale" role="group" aria-label="Thumbnail size">
           {THUMB_SCALES.map((entry) => (
             <button
@@ -575,28 +609,49 @@ export default function EditorPalette({
           ))}
         </div>
       </div>
-      <div className="ed-asset-tabs" role="tablist">
-        {ASSET_TABS.map((entry) => (
+      <div className="ed-asset-tabs ge-layer-tabs" role="tablist" aria-label="Palette catalogues">
+        {LAYER_IDS.map((layerId) => (
           <button
-            key={entry.id}
+            key={layerId}
             type="button"
             role="tab"
-            className={`ed-tab${tab === entry.id ? ' is-active' : ''}`}
-            aria-selected={tab === entry.id}
-            onClick={() => setTab(entry.id)}
+            className={`ed-tab${!catalogueTab && layerTab === layerId ? ' is-active' : ''}`}
+            aria-selected={!catalogueTab && layerTab === layerId}
+            title={LAYER_LABELS[layerId] ?? layerId}
+            onClick={() => selectLayer(layerId)}
           >
-            {entry.label}
+            {LAYER_TAB_SHORT[layerId] ?? layerId}
           </button>
         ))}
+        <button
+          type="button"
+          role="tab"
+          className={`ed-tab${catalogueTab === 'environment' ? ' is-active' : ''}`}
+          aria-selected={catalogueTab === 'environment'}
+          title="Destructibles and hazards"
+          onClick={() => setCatalogueTab('environment')}
+        >
+          Environment
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={`ed-tab${catalogueTab === 'items' ? ' is-active' : ''}`}
+          aria-selected={catalogueTab === 'items'}
+          title="Inventory and ground-loot items"
+          onClick={() => setCatalogueTab('items')}
+        >
+          Items
+        </button>
       </div>
       <div className="ed-asset-tools">
-        <input className="ed-asset-search me-name" type="search" value={query} placeholder="Search assets…" aria-label="Search assets" onChange={(event) => setQuery(event.target.value)} />
-        {tab === 'tiles' && canEditTiles && (
+        <input className="ed-asset-search me-name" type="search" value={query} placeholder="Search palette…" aria-label="Search palette" onChange={(event) => setQuery(event.target.value)} />
+        {body === 'tiles' && canEditTiles && (
           <button type="button" className="me-button ed-collapse-all" disabled={busy} title="Add category" onClick={onAddCategory}>
             Add category
           </button>
         )}
-        {tab === 'tiles' && (
+        {body === 'tiles' && (
           <button
             type="button"
             className="me-button ed-collapse-all"
@@ -609,7 +664,7 @@ export default function EditorPalette({
         )}
       </div>
       <div className="ed-asset-body">
-        {tab === 'tiles' && (
+        {body === 'tiles' && (
           <>
             {canEditTiles && (
               <input
@@ -620,15 +675,7 @@ export default function EditorPalette({
                 onChange={onImportFile}
               />
             )}
-            {pieceGroups
-              .map((group) => ({
-                ...group,
-                pieces: group.pieces.filter(
-                  (piece) => !q || matchesQuery(piece.label, q) || matchesQuery(piece.id, q) || (piece.tags ?? []).some((tag) => matchesQuery(tag, q)),
-                ),
-              }))
-              .filter((group) => group.pieces.length)
-              .map((group) => (
+            {filteredPieceGroups.map((group) => (
                 <ToolGroup key={group.id} id={`tiles:templates:${group.id}`} label={group.label} count={group.pieces.length} open={open} onToggle={toggle}>
                   <div className="ed-asset-grid">
                     {group.pieces.map((piece) => {
@@ -851,7 +898,106 @@ export default function EditorPalette({
           </>
         )}
 
-        {tab === 'environment' && (
+        {body === 'furniture' && (
+          <>
+            {filteredPieceGroups.map((group) => (
+              <ToolGroup key={group.id} id={`furniture:templates:${group.id}`} label={group.label} count={group.pieces.length} open={open} onToggle={toggle}>
+                <div className="ed-asset-grid">
+                  {group.pieces.map((piece) => {
+                    const inPaintSet = paintTemplateIds?.has(piece.id) ?? tool === `template:${piece.id}`
+                    return (
+                      <div key={piece.id} className="ed-asset-cell">
+                        <div className="ed-thumb-wrap">
+                          <button
+                            type="button"
+                            className={`ed-thumb-btn${tool === `template:${piece.id}` ? ' is-selected' : ''}${inPaintSet ? ' is-paint-set' : ''}`}
+                            aria-pressed={tool === `template:${piece.id}`}
+                            title={templatePieceThumbTitle(piece, {
+                              extra: canEditTemplatePieces
+                                ? 'paint cycle · right-click to delete'
+                                : 'paint cycle',
+                            })}
+                            onClick={() => onTool(`template:${piece.id}`)}
+                            onContextMenu={(event) => onPieceContextMenu(event, piece)}
+                          >
+                            <TemplatePieceThumbnail piece={piece} className="me-thumb-preview" animate={animateTiles} />
+                          </button>
+                          <label
+                            className="ed-thumb-check me-check"
+                            title="Include in Template Piece paint cycle"
+                            onClick={(event) => event.stopPropagation()}
+                            onContextMenu={(event) => event.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={inPaintSet}
+                              aria-label={`Paint with ${piece.label}`}
+                              onChange={(event) => onTogglePaintTemplate?.(piece.id, event.target.checked)}
+                            />
+                          </label>
+                        </div>
+                        <span className="ed-thumb-label">{piece.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </ToolGroup>
+            ))}
+            {filteredGroups.map((group) => {
+              const isOpen = open.has(group.id) || Boolean(q)
+              return (
+                <div key={group.id} className="me-group">
+                  <button type="button" className="me-group-tag" aria-expanded={isOpen} onClick={() => toggle(group.id)}>
+                    <span className="me-group-arrow" aria-hidden="true">
+                      {isOpen ? '▾' : '▸'}
+                    </span>
+                    <span className="me-group-label">{group.label}</span>
+                    <span className="me-group-count">{group.tiles.length}</span>
+                  </button>
+                  {isOpen && (
+                    <div className="ed-asset-grid">
+                      {group.tiles.map((tile) => {
+                        const inPaintSet = paintTileIds?.has(tile.id) ?? tool === `tile:${tile.id}`
+                        return (
+                          <div key={tile.id} className="ed-asset-cell">
+                            <div className="ed-thumb-wrap">
+                              <button
+                                type="button"
+                                className={`ed-thumb-btn${tool === `tile:${tile.id}` ? ' is-selected' : ''}${inPaintSet ? ' is-paint-set' : ''}`}
+                                aria-pressed={tool === `tile:${tile.id}`}
+                                title={tileThumbTitle(tile, { extra: 'paint cycle' })}
+                                onClick={() => onTool(`tile:${tile.id}`)}
+                                onContextMenu={(event) => onTileContextMenu(event, tile)}
+                              >
+                                <TileThumbnail tile={tile} className="me-thumb-preview" animate={animateTiles} />
+                              </button>
+                              <label
+                                className="ed-thumb-check me-check"
+                                title="Include in Place Tiles paint cycle"
+                                onClick={(event) => event.stopPropagation()}
+                                onContextMenu={(event) => event.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={inPaintSet}
+                                  aria-label={`Paint with ${tile.label}`}
+                                  onChange={(event) => onTogglePaintTile?.(tile.id, event.target.checked)}
+                                />
+                              </label>
+                            </div>
+                            <span className="ed-thumb-label">{tile.label}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </>
+        )}
+
+        {body === 'environment' && (
           <>
             <ToolGroup
               id="env:destructibles"
@@ -901,7 +1047,7 @@ export default function EditorPalette({
           </>
         )}
 
-        {tab === 'items' && (
+        {body === 'items' && (
           <>
             {CALIBRATION_ITEM_GROUPS.map((group, index) => {
               const items = calibrationItems().filter((item) => item.tags?.includes(group.tag) && itemMatches(item, q))
@@ -943,7 +1089,7 @@ export default function EditorPalette({
           </>
         )}
 
-        {tab === 'markers' &&
+        {body === 'markers' &&
           MARKER_TOOLS.filter((marker) => matchesQuery(marker.label, q)).map((marker) => (
             <ToolButton key={marker.id} selected={tool === marker.id} onClick={() => onTool(marker.id)}>
               <span className={`me-swatch is-${marker.swatch}`} aria-hidden="true" />
@@ -951,7 +1097,7 @@ export default function EditorPalette({
             </ToolButton>
           ))}
 
-        {tab === 'npcs' && (
+        {body === 'npcs' && (
           <>
             <ToolButton selected={tool === 'npcs'} onClick={() => onTool('npcs')}>
               <span className="me-swatch is-npc" aria-hidden="true" />

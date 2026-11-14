@@ -37,17 +37,17 @@ export default function WorldGenerationFlowchart({
       return
     }
     const num = Number(value)
-    // Door gap ↔ lining stay paired: cells×2 tip slots; lining is tipUnits (default cells×2−1 so one tip
-    // remains for the jamb). Changing one updates the other so Generate cannot drift out of sync.
+    // Door gap ↔ lining stay paired: cells×2 tip slots; lining leaves tip(s) empty for jamb Corners
+    // (default 2 cells / 2 tips = 64px lining on a 128px gap). Changing one updates the other.
     if (setting.key === 'doorCells') {
       const doorCells = Math.min(setting.max, Math.max(setting.min, Math.round(num) || setting.min))
-      const doorTipUnits = Math.min(6, Math.max(1, doorCells * 2 - 1))
+      const doorTipUnits = Math.min(6, Math.max(1, doorCells * 2 - 2))
       onPipelineChange?.({ doorCells, doorTipUnits })
       return
     }
     if (setting.key === 'doorTipUnits') {
       const doorTipUnits = Math.min(setting.max, Math.max(setting.min, Math.round(num) || setting.min))
-      const doorCells = Math.min(4, Math.max(1, Math.ceil(doorTipUnits / 2)))
+      const doorCells = Math.min(4, Math.max(1, Math.ceil((doorTipUnits + 2) / 2)))
       onPipelineChange?.({ doorTipUnits, doorCells })
       return
     }
@@ -72,9 +72,11 @@ export default function WorldGenerationFlowchart({
               type="button"
               className={`ge-flow-node${node.id === selected.id ? ' is-selected' : ''}`}
               onClick={() => onSelectNode?.(node.id)}
-              title={node.summary}
+              title={node.tip || node.summary}
             >
-              <span className="ge-flow-node-label">{node.label}</span>
+              <span className="ge-flow-node-label" title={node.tip || node.summary}>
+                {node.label}
+              </span>
               <span className="ge-flow-node-summary">{node.summary}</span>
             </button>
           </div>
@@ -83,9 +85,16 @@ export default function WorldGenerationFlowchart({
 
       <div className="ge-flow-detail">
         <div className="ge-flow-detail-head">
-          <p className="ce-heading">{selected.label}</p>
+          <p className="ce-heading" title={selected.tip || selected.summary}>
+            {selected.label}
+          </p>
           {selected.helpTopicId ? (
-            <button type="button" className="me-button" onClick={() => onOpenHelpTopic?.(selected.helpTopicId)}>
+            <button
+              type="button"
+              className="me-button"
+              title={`Open Help for ${selected.label}`}
+              onClick={() => onOpenHelpTopic?.(selected.helpTopicId)}
+            >
               Help: {selected.label}
             </button>
           ) : null}
@@ -107,9 +116,10 @@ export default function WorldGenerationFlowchart({
             {selected.settingsHint ? <p className="ge-block-hint">{selected.settingsHint}</p> : null}
             {selected.settings.map((setting) => {
               const value = readSetting(draft, setting)
+              const tip = setting.tip || setting.label
               if (setting.type === 'boolean') {
                 return (
-                  <label key={setting.key} className="ge-section-check">
+                  <label key={setting.key} className="ge-section-check" title={tip}>
                     <input
                       type="checkbox"
                       checked={Boolean(value)}
@@ -120,7 +130,7 @@ export default function WorldGenerationFlowchart({
                 )
               }
               return (
-                <label key={setting.key} className="me-field ge-flow-number">
+                <label key={setting.key} className="me-field ge-flow-number" title={tip}>
                   <span className="ce-field-label">{setting.label}</span>
                   <input
                     className="me-name"
@@ -129,6 +139,7 @@ export default function WorldGenerationFlowchart({
                     max={setting.max}
                     step={setting.step}
                     value={Number(value) || 0}
+                    title={tip}
                     onChange={(event) => setSetting(setting, event.target.value)}
                   />
                 </label>

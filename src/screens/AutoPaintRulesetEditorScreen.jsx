@@ -6,6 +6,7 @@ import EditorGridOptions from '../components/maps/EditorGridOptions.jsx'
 import EditorSelect from '../components/maps/EditorSelect.jsx'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import { subEditorFileMenus } from '../components/maps/editorSubMenus.js'
+import AssetProperties from '../components/maps/AssetProperties.jsx'
 import GeSourcePalette from '../components/maps/GeSourcePalette.jsx'
 import {
   PropertySection,
@@ -44,9 +45,26 @@ import { WORLD_GENERATION_HELP_TOPICS } from '../data/adaptation/maps/worldGener
 // Tools → World Generation Ruleset. Palette = Dev Edit Assets (Template Pieces + every tileset). Wall roles place tiles.
 // Help + flowchart copy/settings: edit worldGenerationWorkflow.js (not Legacy).
 
+/** Palette item → AssetProperties tool string (same as Dev Edit Assets). */
+function toolFromPaletteItem(item) {
+  if (!item) return null
+  if (item.kind === 'tile') return `tile:${item.id}`
+  if (item.kind === 'piece') return `template:${item.id}`
+  return null
+}
+
+/** tool string → GeSourcePalette selectedKey (`tile:id` / `piece:id`). */
+function selectedKeyFromTool(tool) {
+  if (!tool) return null
+  if (tool.startsWith('tile:')) return tool
+  if (tool.startsWith('template:')) return `piece:${tool.slice('template:'.length)}`
+  return null
+}
+
 const FLOOR_FIELD = {
   key: 'defaultTile',
   label: 'Default floor tile',
+  tip: 'Floor pieces that define walkable cells. Several allowed with mix %. Drag from the Palette.',
   filter: (tile) => !tile.wall && !tile.solid && !tile.empty,
 }
 
@@ -57,17 +75,53 @@ const WALL_FIELD = {
 const DOOR_TILE_FIELD = {
   key: 'underlayTile',
   label: 'Doorway tile',
+  tip: 'Art lining openings (often Doorway 32). Several allowed with mix %.',
   filter: (tile) => !tile.empty,
 }
 
 const WALL_TILE_FIELDS = [
-  { key: 'straight', label: 'Straight (64-long)', required: true },
-  { key: 'straightLong', label: 'Straight long (128)', required: false },
-  { key: 'corner', label: 'Corner (32×32)', required: true },
-  { key: 'hull', label: 'Hull straight (optional)', required: false },
-  { key: 'hullLong', label: 'Hull long (optional)', required: false },
-  { key: 'hullCorner', label: 'Hull corner (optional)', required: false },
-  { key: 'doorFrame', label: 'Door frame (optional)', required: false },
+  {
+    key: 'straight',
+    label: 'Straight (64-long)',
+    required: true,
+    tip: 'Required short straight runs (usually 64 tip). Used when a stretch is not long enough for Long.',
+  },
+  {
+    key: 'straightLong',
+    label: 'Straight long (128)',
+    required: false,
+    tip: 'Optional long straight runs (usually 128 tip). Empty = packing uses Straight only.',
+  },
+  {
+    key: 'corner',
+    label: 'Corner (32×32)',
+    required: true,
+    tip: 'Required 32×32 posts: end caps, junction corners, and stubs.',
+  },
+  {
+    key: 'hull',
+    label: 'Hull straight (optional)',
+    required: false,
+    tip: 'Optional outer-hull straight. Empty = rim uses Straight / Corner.',
+  },
+  {
+    key: 'hullLong',
+    label: 'Hull long (optional)',
+    required: false,
+    tip: 'Optional long outer-hull straight.',
+  },
+  {
+    key: 'hullCorner',
+    label: 'Hull corner (optional)',
+    required: false,
+    tip: 'Optional outer-hull corner post.',
+  },
+  {
+    key: 'doorFrame',
+    label: 'Door frame (optional)',
+    required: false,
+    tip: 'Optional frame around openings. Empty = openings stay underlay / doorway lining only.',
+  },
 ]
 
 /** Same tile list as Dev Edit Assets (all palette groups + Other). Null/empty authoring cells stay out. */
@@ -194,8 +248,11 @@ export default function AutoPaintRulesetEditorScreen({
   onGenerateHazards,
   cardTools = { canGenerate: false, busy: false, onGenerate: () => {} },
   onBack,
+  onPlay,
   onGenerateMap,
   onStatus,
+  showTooltips: showTooltipsProp = true,
+  onShowTooltips = null,
 }) {
   const [epoch, setEpoch] = useState(0)
   const [helpTopicId, setHelpTopicId] = useState(null)
@@ -210,9 +267,14 @@ export default function AutoPaintRulesetEditorScreen({
   const [status, setStatus] = useState('')
   // Default on: full Dev Edit Assets catalogue (Template Pieces + every tileset).
   const [showAll, setShowAll] = useState(true)
-  // 'rules' | 'map' — right pane only; left palette stays.
+  // Selected palette thumb → left rail (above Palette) shows AssetProperties.
+  const [paletteTool, setPaletteTool] = useState(null)
+  // 'rules' | 'map' — center pane; left palette stays.
   const [viewMode, setViewMode] = useState('rules')
   const [showGridOptions, setShowGridOptions] = useState(false)
+  const [localTooltips, setLocalTooltips] = useState(true)
+  const showTooltips = typeof onShowTooltips === 'function' ? showTooltipsProp : localTooltips
+  const setShowTooltips = typeof onShowTooltips === 'function' ? onShowTooltips : setLocalTooltips
 
   const dirty = !rulesetEqual(draft, saved)
   const canSave = canEditAutoPaintRulesets
@@ -352,7 +414,7 @@ export default function AutoPaintRulesetEditorScreen({
 
   const emptyHint = showAll
     ? 'No matching assets.'
-    : 'Drop a Template Piece from the palette (same catalogue as Dev Edit Assets).'
+    : 'Drop a Template Piece from the palette (same catalogue as Dev Edit Palette).'
 
   const tileOptions = (field, value) => withSelectedTiles(roleTiles.filter(field.filter), value)
 
@@ -425,12 +487,33 @@ export default function AutoPaintRulesetEditorScreen({
     }
   }
 
+  const playMap = () => {
+    if (!map || typeof onPlay !== 'function') {
+      const message = 'Run Generate Map first'
+      setStatus(message)
+      onStatus?.(message)
+      return
+    }
+    const message = onPlay()
+    if (message) {
+      setStatus(message)
+      onStatus?.(message)
+    }
+  }
+
   const onMenuAction = (id) => {
     if (id === 'save') return onSave()
     if (id === 'load') return loadFromDisk()
     if (id === 'revert') return revert()
     if (id === 'generateMap') return generateMap()
+    if (id === 'play') return playMap()
     if (id === 'back') return discardAndBack()
+    if (id === 'tooltips') return setShowTooltips((value) => !value)
+    if (id === 'viewRules') return setViewMode('rules')
+    if (id === 'viewMap') {
+      if (map) setViewMode('map')
+      return undefined
+    }
     if (id.startsWith('help:')) {
       setHelpTopicId(id.slice('help:'.length))
       return undefined
@@ -445,8 +528,21 @@ export default function AutoPaintRulesetEditorScreen({
       revert: true,
       loadLabel: 'Load from Disk',
       saveLabel: 'Save Ruleset',
-      extraFileItems: [{ id: 'generateMap', label: 'Generate Map' }],
+      extraFileItems: [
+        { id: 'generateMap', label: 'Generate Map' },
+        { id: 'play', label: 'Play' },
+      ],
     }),
+    {
+      id: 'view',
+      label: 'View',
+      items: [
+        { id: 'viewRules', label: 'Rules pane' },
+        { id: 'viewMap', label: 'Map board' },
+        { sep: true },
+        { id: 'tooltips', label: 'Tooltips' },
+      ],
+    },
     {
       id: 'help',
       label: 'Help',
@@ -463,15 +559,27 @@ export default function AutoPaintRulesetEditorScreen({
       className="ap-ruleset-editor"
       menus={menus}
       onMenuAction={onMenuAction}
+      menuChecks={{
+        viewRules: viewMode === 'rules',
+        viewMap: viewMode === 'map',
+        tooltips: showTooltips,
+      }}
+      showTooltips={showTooltips}
       toolbar={
         <>
-          <button type="button" className="me-button" onClick={discardAndBack}>
+          <button
+            type="button"
+            className="me-button"
+            title={dirty ? 'Return to Dev Edit without saving ruleset changes' : 'Return to Dev Edit'}
+            onClick={discardAndBack}
+          >
             {dirty ? 'Back (discard)' : 'Back to Map'}
           </button>
           <button
             type="button"
             className={`me-button${viewMode === 'rules' ? ' is-on' : ''}`}
             aria-pressed={viewMode === 'rules'}
+            title="Edit floors, walls, doors, flowchart, and adjacency"
             onClick={() => setViewMode('rules')}
           >
             Rules
@@ -486,10 +594,22 @@ export default function AutoPaintRulesetEditorScreen({
           >
             Map
           </button>
-          <button type="button" className="me-button" disabled={!canSave || !dirty || busy} onClick={onSave}>
+          <button
+            type="button"
+            className="me-button"
+            disabled={!canSave || !dirty || busy}
+            title={canSave ? 'Write this ruleset to autoPaintRulesets.json' : 'Dev server required to save'}
+            onClick={onSave}
+          >
             Save
           </button>
-          <button type="button" className="me-button" disabled={!dirty || busy} onClick={revert}>
+          <button
+            type="button"
+            className="me-button"
+            disabled={!dirty || busy}
+            title="Discard unsaved edits and restore the last saved ruleset"
+            onClick={revert}
+          >
             Revert
           </button>
           <button
@@ -508,7 +628,7 @@ export default function AutoPaintRulesetEditorScreen({
             title={
               showAll
                 ? 'Template Pieces only (Dev Edit catalogue).'
-                : 'Show every Dev Edit Assets tileset plus Template Pieces.'
+                : 'Show every Dev Edit Palette tileset plus Template Pieces.'
             }
           >
             {showAll ? 'Template Pieces only' : 'Show all'}
@@ -558,65 +678,117 @@ export default function AutoPaintRulesetEditorScreen({
             />{' '}
             Enemies
           </label>
+          <button
+            type="button"
+            className="me-button is-primary"
+            disabled={!map || typeof onPlay !== 'function'}
+            title={
+              map
+                ? 'Play this map in game mode. The map does not need saving first. Exit returns here.'
+                : 'Run Generate Map first'
+            }
+            onClick={playMap}
+          >
+            Play
+          </button>
           <span className="me-text">
             {status ||
               (showingMap
                 ? `${map?.name || 'Untitled map'} · Grid ${gridSize}px`
                 : showAll
-                  ? `${templateItems.length} Template Pieces + ${paletteItems.length - templateItems.length} tiles from Dev Edit Assets.`
-                  : `${templateItems.length} Template Pieces from templatePieces.json (same as Dev Edit Assets).`)}
+                  ? `${templateItems.length} Template Pieces + ${paletteItems.length - templateItems.length} tiles from Dev Edit Palette.`
+                  : `${templateItems.length} Template Pieces from templatePieces.json (same as Dev Edit Palette).`)}
             {!canSave && !showingMap && ' Dev server required to save.'}
           </span>
         </>
       }
     >
       <div className="ge-left-rail">
-        <div className="ge-generator-pick">
-          <span className="ce-field-label">Ruleset</span>
-          <EditorSelect
-            className="me-select me-wide"
-            value={selectedId}
-            aria-label="Ruleset"
-            onChange={(event) => openRuleset(event.target.value)}
-          >
-            {rulesets.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.id === selectedId && dirty ? `${entry.label} (unsaved)` : entry.label}
-              </option>
-            ))}
-          </EditorSelect>
-        </div>
-        <label className="me-field">
-          <span className="ce-field-label">Label</span>
-          <input
-            className="me-name"
-            value={draft.label}
-            onChange={(event) => patch({ label: event.target.value })}
-          />
-        </label>
-        <label className="me-field">
-          <span className="ce-field-label">Environment</span>
-          <EditorSelect
-            className="me-select me-wide"
-            value={draft.environment}
-            aria-label="Environment"
-            onChange={(event) => patch({ environment: event.target.value })}
-          >
-            {AUTO_PAINT_ENVIRONMENTS.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
-          </EditorSelect>
-        </label>
+        {paletteTool ? (
+          <aside className="ed-properties me-side ge-source-props">
+            <div className="ed-panel-head">
+              <span>Sprite</span>
+              <button
+                type="button"
+                className="me-button"
+                title="Back to ruleset settings"
+                onClick={() => setPaletteTool(null)}
+              >
+                Ruleset
+              </button>
+            </div>
+            <PropertySectionsProvider key={paletteTool}>
+              <PropertySectionsToolbar />
+              <div className="ed-properties-body">
+                <AssetProperties
+                  tool={paletteTool}
+                  onStatus={(message) => {
+                    setStatus(message)
+                    onStatus?.(message)
+                  }}
+                  animateTiles
+                  ambient={map?.ambient}
+                  ambientColour={map?.ambientColour}
+                  onAmbient={onAmbient}
+                  onAmbientColour={onAmbientColour}
+                />
+              </div>
+            </PropertySectionsProvider>
+          </aside>
+        ) : (
+          <>
+            <div className="ge-generator-pick">
+              <span className="ce-field-label">Ruleset</span>
+              <EditorSelect
+                className="me-select me-wide"
+                value={selectedId}
+                aria-label="Ruleset"
+                title="Which World Generation Ruleset to edit (Generate Map and Auto-Paint use the active one)"
+                onChange={(event) => openRuleset(event.target.value)}
+              >
+                {rulesets.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.id === selectedId && dirty ? `${entry.label} (unsaved)` : entry.label}
+                  </option>
+                ))}
+              </EditorSelect>
+            </div>
+            <label className="me-field" title="Display name for this ruleset in lists and the toolbar">
+              <span className="ce-field-label">Label</span>
+              <input
+                className="me-name"
+                value={draft.label}
+                onChange={(event) => patch({ label: event.target.value })}
+              />
+            </label>
+            <label className="me-field" title="Where this kit is meant to be used (starship, colony, outdoors, …)">
+              <span className="ce-field-label">Environment</span>
+              <EditorSelect
+                className="me-select me-wide"
+                value={draft.environment}
+                aria-label="Environment"
+                title="Environment tag for this ruleset"
+                onChange={(event) => patch({ environment: event.target.value })}
+              >
+                {AUTO_PAINT_ENVIRONMENTS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.label}
+                  </option>
+                ))}
+              </EditorSelect>
+            </label>
+          </>
+        )}
         <GeSourcePalette
           title="Palette"
           hint={
             showAll
-              ? 'Same categories as Dev Edit Assets (Locations, Biomes, …). Layer tabs filter; Expand opens tilesets. Drag onto a slot.'
-              : 'Template Pieces only (same catalogue as Dev Edit Assets). Use Show all for every tileset category.'
+              ? 'Same categories as Dev Edit Palette (Locations, Biomes, …). Layer tabs filter; Expand opens tilesets. Click a thumb to edit its sprite above; drag onto a slot.'
+              : 'Template Pieces only (same catalogue as Dev Edit Palette). Click a thumb to edit its sprite above; drag onto a slot. Use Show all for every tileset category.'
           }
           items={paletteItems}
+          selectedKey={selectedKeyFromTool(paletteTool)}
+          onSelect={(item) => setPaletteTool(toolFromPaletteItem(item))}
         />
       </div>
 
@@ -636,14 +808,24 @@ export default function AutoPaintRulesetEditorScreen({
       ) : (
         <div className="oe-detail oe-wide">
           <div className="ce-inspector">
-            <p className="ce-heading">{draft.label}</p>
-            <p className="ge-lead">
+            <p className="ce-heading" title="Display name of the ruleset you are editing">
+              {draft.label}
+            </p>
+            <p
+              className="ge-lead"
+              title="Pack pieces sets tip lengths; Corners shows the visual assembly. Role slots and Adjacency are below. Help menu has the full guide."
+            >
               Flowchart: Pack pieces = lengths; Corners = visual assembly of wall thumbs. Role slots and Adjacency
               (Palette drag pairs) are below. Help menu covers every step.
             </p>
             <PropertySectionsProvider>
               <PropertySectionsToolbar />
-              <PropertySection id="wg-flowchart" title="Flowchart" defaultOpen>
+              <PropertySection
+                id="wg-flowchart"
+                title="Flowchart"
+                tip="Pipeline steps from floors to packed walls. Click a step for its diagram and settings."
+                defaultOpen
+              >
                 <WorldGenerationFlowchart
                   draft={draft}
                   selectedNodeId={flowNodeId}
@@ -659,13 +841,19 @@ export default function AutoPaintRulesetEditorScreen({
                 />
               </PropertySection>
 
-              <PropertySection id="wg-floors" title="1. Floors" defaultOpen>
+              <PropertySection
+                id="wg-floors"
+                title="1. Floors"
+                tip="Required. These pieces define walkable floor cells that wall generation grows around."
+                defaultOpen
+              >
                 <p className="ge-block-hint">
                   Drag floor pieces or tiles from the Palette into the slot. Multiple allowed — mix % on each thumb.
                   Right-click to remove.
                 </p>
                 <TileSpritePicker
                   label={FLOOR_FIELD.label}
+                  labelTip={FLOOR_FIELD.tip}
                   options={tileOptions(FLOOR_FIELD, draft.floors.defaultTile)}
                   value={draft.floors.defaultTile}
                   multi
@@ -678,7 +866,12 @@ export default function AutoPaintRulesetEditorScreen({
                 />
               </PropertySection>
 
-              <PropertySection id="wg-walls" title="2. Walls / Structure" defaultOpen>
+              <PropertySection
+                id="wg-walls"
+                title="2. Walls / Structure"
+                tip="Straight + Corner are required. Optional Long / Hull / Door frame; empty optional roles fall back to Straight / Corner."
+                defaultOpen
+              >
                 <p className="ge-block-hint">
                   Drop Template Pieces or tiles into each role (multiple allowed). Mix % is relative among pieces in
                   that role. Empty optional roles = rim uses straight/corner. Right-click to
@@ -688,6 +881,7 @@ export default function AutoPaintRulesetEditorScreen({
                   <TileSpritePicker
                     key={field.key}
                     label={field.label}
+                    labelTip={field.tip}
                     options={tileOptions(WALL_FIELD, draft.walls[field.key] ?? [])}
                     value={draft.walls[field.key] ?? []}
                     multi
@@ -703,10 +897,16 @@ export default function AutoPaintRulesetEditorScreen({
                 ))}
               </PropertySection>
 
-              <PropertySection id="wg-doors" title="3. Doors / Openings" defaultOpen>
+              <PropertySection
+                id="wg-doors"
+                title="3. Doors / Openings"
+                tip="Doorway lining art for openings. Generate also places Doorway tips along the gap (see Doorways flowchart step)."
+                defaultOpen
+              >
                 <p className="ge-block-hint">Doorway tile(s) for openings — multiple allowed with mix %.</p>
                 <TileSpritePicker
                   label={DOOR_TILE_FIELD.label}
+                  labelTip={DOOR_TILE_FIELD.tip}
                   options={tileOptions(DOOR_TILE_FIELD, draft.doors.underlayTile)}
                   value={draft.doors.underlayTile}
                   multi
@@ -719,7 +919,12 @@ export default function AutoPaintRulesetEditorScreen({
                 />
               </PropertySection>
 
-              <PropertySection id="wg-adjacency" title="Adjacency rules" defaultOpen>
+              <PropertySection
+                id="wg-adjacency"
+                title="Adjacency rules"
+                tip="Whitelist of which wall/floor pieces may sit next to each other. Empty list = allow all; once you add pairs, only those pairs are allowed."
+                defaultOpen
+              >
                 <WorldGenerationAdjacencyEditor
                   draft={draft}
                   onAdjacencyChange={patchAdjacency}

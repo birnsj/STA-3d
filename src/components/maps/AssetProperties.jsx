@@ -94,7 +94,7 @@ function LayerField({ entry, layerOf, saveLayer, canEdit, fileLabel, ariaLabel, 
       .finally(() => setSaving(false))
   }
   return (
-    <div className="ed-prop-layer" title={canEdit ? `Editor Assets layer for this ${ariaLabel}` : 'Layer can only be changed in the dev build'}>
+    <div className="ed-prop-layer" title={canEdit ? `Editor Palette layer for this ${ariaLabel}` : 'Layer can only be changed in the dev build'}>
       <EditorSelect
         className="me-select me-wide"
         value={value}
@@ -296,7 +296,7 @@ function AmbientLightControl({ ambient, ambientColour, onAmbient, onAmbientColou
   }
 
   return (
-    <PropertySection id="light" title="Light">
+    <PropertySection id="light" title="Light" tip="Map ambient brightness and tint. Glowing tiles stay lit when the room is dark.">
       <div className="ed-light-pool">
         <label className="ed-emissive" title="Ambient light: how bright the room is. Glowing tiles stay lit in the dark.">
           <span className="ed-emissive-label">Ambient</span>
@@ -662,13 +662,18 @@ export default function AssetProperties({
   onAmbientColour,
 }) {
   const asset = parseTool(tool)
-  if (!asset) return <p className="me-text">Select a thumbnail in Assets to edit it here.</p>
+  if (!asset) return <p className="me-text">Select a thumbnail in the Palette to edit it here.</p>
 
   if (asset.kind === 'tile') {
     const tile = getTile(asset.id)
     return (
       <div className="ed-asset-props">
-        <PropertySection id="layer" title="Layer" forceOpen>
+        <PropertySection
+          id="layer"
+          title="Layer"
+          tip="Palette layer for this tile (Ground, Walls, Furniture, …). Affects palette grouping only."
+          forceOpen
+        >
           <LayerField
             key={`layer:${tile.id}`}
             entry={tile}
@@ -681,7 +686,7 @@ export default function AssetProperties({
           />
           {!canEditTiles && <p className="me-text is-muted">Layer can only be changed in the dev build.</p>}
         </PropertySection>
-        <PropertySection id="tile" title="Tile">
+        <PropertySection id="tile" title="Tile" tip="Flags such as Solid, Wall, Cover, and Fade for this catalogue tile.">
           <div className="ed-asset-preview">
             <TileThumbnail tile={tile} className="ed-asset-preview-art" animate={animateTiles} />
             {tile.big && <span className="me-thumb-badge">2×2</span>}
@@ -713,7 +718,11 @@ export default function AssetProperties({
     const size = imageSize(tile)
     return (
       <div className="ed-asset-props">
-        <PropertySection id="destructible" title="Destructible">
+        <PropertySection
+          id="destructible"
+          title="Destructible"
+          tip="Breakable props placed on the board. Structure / Resistance come from the catalogue."
+        >
           <div className="ed-asset-preview">
             <TileThumbnail tile={tile} className="ed-asset-preview-art" animate={animateTiles} />
           </div>
@@ -746,7 +755,7 @@ export default function AssetProperties({
   if (asset.kind === 'item') {
     return (
       <div className="ed-asset-props">
-        <PropertySection id="item" title="Item">
+        <PropertySection id="item" title="Item" tip="Inventory / ground loot. Click the board to place a pickup.">
           <ItemSummary itemId={asset.id} onStatus={onStatus} footer={<p className="me-text">Click the board to place this item on the ground.</p>} />
         </PropertySection>
         <ItemStatSection itemId={asset.id} />
@@ -759,7 +768,12 @@ export default function AssetProperties({
     return (
       <div className="ed-asset-props">
         {piece && (
-          <PropertySection id="layer" title="Layer" forceOpen>
+          <PropertySection
+            id="layer"
+            title="Layer"
+            tip="Palette layer for this Template Piece. Affects palette grouping only."
+            forceOpen
+          >
             <LayerField
               key={`layer:${piece.id}`}
               entry={piece}
@@ -773,7 +787,11 @@ export default function AssetProperties({
             {!canEditTemplatePieces && <p className="me-text is-muted">Layer can only be changed in the dev build.</p>}
           </PropertySection>
         )}
-        <PropertySection id="template" title="Template Piece">
+        <PropertySection
+          id="template"
+          title="Template Piece"
+          tip="Overlay piece (walls, doors, props). R rotates 90°. Pathing still uses the deck underlay."
+        >
           <div className="ed-asset-preview">
             {piece && (
               <TemplatePieceThumbnail piece={piece} className="ed-asset-preview-art" large animate={animateTiles} />
@@ -811,7 +829,11 @@ export default function AssetProperties({
     const info = HAZARD_TYPES[asset.id]
     return (
       <div className="ed-asset-props">
-        <PropertySection id="hazard" title="Hazard">
+        <PropertySection
+          id="hazard"
+          title="Hazard"
+          tip="Paint fire, smoke, gas, etc. Intensity controls how thick the cloud is when placing."
+        >
           <div className="ed-asset-preview">
             <span
               className="me-swatch is-hazard ed-asset-preview-swatch"
@@ -853,7 +875,7 @@ export default function AssetProperties({
   if (asset.kind === 'hazardErase') {
     return (
       <div className="ed-asset-props">
-        <PropertySection id="hazard-erase" title="Hazard">
+        <PropertySection id="hazard-erase" title="Hazard" tip="Click hazard tiles on the board to clear them.">
           <p className="ed-asset-name">Erase Hazard</p>
           <p className="me-text">Click hazard tiles on the board to erase them.</p>
         </PropertySection>
@@ -863,7 +885,11 @@ export default function AssetProperties({
 
   return (
     <div className="ed-asset-props">
-      <PropertySection id="marker" title="Marker">
+      <PropertySection
+        id="marker"
+        title="Marker"
+        tip="Player starts, enemy spawns, NPCs, area labels, or erase markers on the board."
+      >
         <p className="ed-asset-name">
           {asset.id === 'playerStarts'
             ? 'Player Start'

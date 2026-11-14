@@ -2,6 +2,7 @@
 // Generate Map uses hazard:false and empty furnishRooms; helpers below cover that path only.
 import { getTile } from '../mapFormat.js'
 import { WORLD_DOOR_MARK } from './constants.js'
+import { pickDoorwayOffsets } from './doorways.js'
 
 const MARKERS_PER_SIDE = 8
 const MIN_ROOM = 4
@@ -47,12 +48,6 @@ function splitAxis(start, length, random, baseSpan = 6) {
   })
 }
 
-function doorwayOffsets(random, first, last) {
-  if (last <= first) return [first]
-  const start = randomInt(random, first, last - 1)
-  return [start, start + 1]
-}
-
 function cutDoorway(tiles, keep, cells, step, tile) {
   cells.forEach(({ x, y }) => {
     tiles[y][x] = tile
@@ -60,17 +55,33 @@ function cutDoorway(tiles, keep, cells, step, tile) {
   })
 }
 
+/**
+ * Cut doorways between adjacent rooms. Skip a shared wall when the overlap is too
+ * short for doorCells + corner clearance on both ends (leave solid wall instead).
+ */
 function connectRooms(tiles, grid, random, door) {
   const keep = new Set()
   grid.forEach((row) =>
     row.forEach((room, col) => {
-      if (row[col + 1]) {
-        const cells = doorwayOffsets(random, room.y0, room.y1).map((y) => ({ x: room.x1 + 1, y }))
-        cutDoorway(tiles, keep, cells, [1, 0], door)
+      const east = row[col + 1]
+      if (east) {
+        const y0 = Math.max(room.y0, east.y0)
+        const y1 = Math.min(room.y1, east.y1)
+        const offsets = pickDoorwayOffsets(random, y0, y1)
+        if (offsets) {
+          const cells = offsets.map((y) => ({ x: room.x1 + 1, y }))
+          cutDoorway(tiles, keep, cells, [1, 0], door)
+        }
       }
-      if (grid[room.row + 1]?.[col]) {
-        const cells = doorwayOffsets(random, room.x0, room.x1).map((x) => ({ x, y: room.y1 + 1 }))
-        cutDoorway(tiles, keep, cells, [0, 1], door)
+      const south = grid[room.row + 1]?.[col]
+      if (south) {
+        const x0 = Math.max(room.x0, south.x0)
+        const x1 = Math.min(room.x1, south.x1)
+        const offsets = pickDoorwayOffsets(random, x0, x1)
+        if (offsets) {
+          const cells = offsets.map((x) => ({ x, y: room.y1 + 1 }))
+          cutDoorway(tiles, keep, cells, [0, 1], door)
+        }
       }
     }),
   )

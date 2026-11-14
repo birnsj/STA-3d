@@ -193,11 +193,18 @@ function MarkerSlot({ label, text, active = true, toggleKey = null, onToggle = n
     <div className={`ge-pack-slot ge-pack-marker${active ? '' : ' is-off'}${toggleKey ? ' is-toggle' : ''}`} title={hints}>
       <span className="ge-pack-slot-label">{label}</span>
       {toggleKey ? (
-        <button type="button" className={`ge-pack-marker-face${active ? '' : ' is-off'}`} onClick={onClick}>
+        <button
+          type="button"
+          className={`ge-pack-marker-face${active ? '' : ' is-off'}`}
+          title={hints}
+          onClick={onClick}
+        >
           {text}
         </button>
       ) : (
-        <span className="ge-pack-marker-face">{text}</span>
+        <span className="ge-pack-marker-face" title={hints}>
+          {text}
+        </span>
       )}
       {!active && toggleKey ? <span className="ge-pack-off-badge">Off</span> : null}
     </div>
@@ -401,16 +408,14 @@ export default function WorldGenerationPackingAssembly({
     return (
       <div className="ge-pack-assembly">
         <p className="ge-block-hint">
-          Opening = 2 underlay cells; line 96px with 3× Doorway 32. Leftover tip stays empty — Corner end caps sit on the
-          wall jambs, not inside the opening. Opening size is in the settings below.
+          Opening = 2 underlay cells: jamb Corner · 2× Doorway 32 · jamb Corner (64px door between 32px jambs). Opening
+          size is in the settings below.
         </p>
         <div className="ge-pack-diagram">
-          <h4 className="ge-pack-diagram-title">Opening (96px = 3×32)</h4>
+          <h4 className="ge-pack-diagram-title">Opening (jamb · 64px door · jamb)</h4>
           <div className="ge-pack-row">
             {cornerSlot('Jamb', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
             <Connector text="|" />
-            {doorSlot('Door 32')}
-            <Connector text="·" />
             {doorSlot('Door 32')}
             <Connector text="·" />
             {doorSlot('Door 32')}
