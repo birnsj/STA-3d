@@ -62,6 +62,7 @@ export default function WorldGenerationMapPanel({
             generateHazards={generateHazards}
             onGenerateHazards={onGenerateHazards}
             cardTools={cardTools}
+            worldGeneration
             warnings={[]}
             status=""
             revealEpisodeCard={0}

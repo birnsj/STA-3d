@@ -53,6 +53,8 @@ export default function MapProperties({
   onRoomScale,
   buildingScale,
   onBuildingScale,
+  /** When true (World Generation Ruleset Map panel), copy focuses on WG Generate Map. */
+  worldGeneration = false,
 }) {
   const objectives = map.objectives ?? []
   const objectCount = authoredDefinitionsFor(map).length
@@ -65,7 +67,7 @@ export default function MapProperties({
       <PropertySection
         id="map"
         title="Map"
-        tip="Location, biome, weather, size, and ambient light for this map. Generate Map / Auto-Paint read size from here."
+        tip="Location, biome, weather, size, and ambient light for this map. World Generation Generate Map uses size, type, biome, light, and weather from here."
       >
         <label className="me-field">
           Location
@@ -210,18 +212,46 @@ export default function MapProperties({
       <PropertySection
         id="generate"
         title="Generate"
-        tip="Legacy Map Generator only (frozen). Prefer Tools → World Generation Ruleset → Generate Map for new construction."
-        defaultOpen={false}
+        tip={
+          worldGeneration
+            ? 'Room size feeds World Generation Generate Map (deck room span). Building size is for Legacy city/outdoor only. Use File → Generate Map (or the toolbar) to build.'
+            : 'Legacy Map Generator (frozen). Prefer Tools → World Generation Ruleset → Generate Map for new construction.'
+        }
+        defaultOpen={worldGeneration}
       >
-        <ScaleSlider label="Room size" title="How big Legacy Map Generator makes rooms." min="70" value={roomScale} onChange={onRoomScale} />
-        <ScaleSlider label="Building size" title="How big Legacy Map Generator makes buildings and city blocks." min="100" value={buildingScale} onChange={onBuildingScale} />
-        <button type="button" className="me-button me-generate" title="Builds a new map with the frozen location generators. Nothing is saved until you press Save." onClick={onGenerateMap}>
-          Legacy Map Generator
-        </button>
-        <label className="me-check" title="When Legacy Generate runs, also scatter hazard tiles on the new map.">
-          <input type="checkbox" checked={generateHazards} onChange={(event) => onGenerateHazards?.(event.target.checked)} />
-          Generate hazards
-        </label>
+        <ScaleSlider
+          label="Room size"
+          title={
+            worldGeneration
+              ? 'How large rooms are when World Generation Generate Map builds the deck grid (also used by Legacy Generate).'
+              : 'How big Legacy Map Generator makes rooms.'
+          }
+          min="70"
+          value={roomScale}
+          onChange={onRoomScale}
+        />
+        <ScaleSlider
+          label="Building size"
+          title={
+            worldGeneration
+              ? 'Legacy city / outdoor Generate only. World Generation deck layouts do not place buildings.'
+              : 'How big Legacy Map Generator makes buildings and city blocks.'
+          }
+          min="100"
+          value={buildingScale}
+          onChange={onBuildingScale}
+        />
+        {!worldGeneration && (
+          <>
+            <button type="button" className="me-button me-generate" title="Builds a new map with the frozen location generators. Nothing is saved until you press Save." onClick={onGenerateMap}>
+              Legacy Map Generator
+            </button>
+            <label className="me-check" title="When Legacy Generate runs, also scatter hazard tiles on the new map.">
+              <input type="checkbox" checked={generateHazards} onChange={(event) => onGenerateHazards?.(event.target.checked)} />
+              Generate hazards
+            </label>
+          </>
+        )}
       </PropertySection>
 
       <PropertySection

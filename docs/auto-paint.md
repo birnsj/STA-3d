@@ -10,7 +10,7 @@ Editor overview / menu placement: `docs/editor-authoring-summary.md` (§8 World 
 ## Current behaviour
 
 1. **Tools → World Generation Ruleset** — palette is the Dev Edit **Template Pieces** catalogue (`templatePieces.json`). **Help** menu + **Flowchart** (pipeline settings) + role slots + **Adjacency rules** (per-ruleset wall↔wall and wall↔floor whitelists; empty = allow all). Edit Help copy in `src/data/adaptation/maps/worldGenerationWorkflow.js`. Pipeline / adjacency save on the ruleset. Default ruleset **Template 32** stores **Template Piece ids** in wall roles. Save → `autoPaintRulesets.json` (`/__autopaint`).
-2. **Generate Map** (in World Generation Ruleset) — builds into the open map and shows it in **Map** view (left palette stays; **Rules** / **Map** toggles). Each press draws a new seed. Grid settings are shared with main Dev Edit. Template 32: deck room grid + `templateWall` underlay + openings as **jamb · 2× Doorway 32 · jamb** on a two-cell gap + floorUnder + **128 / 64 / 32** packing (`placeWallRuns.js`). Does not call frozen `placeTemplateWalls`.
+2. **Generate Map** (in World Generation Ruleset) — builds into the open map and shows it in **Map** view (left palette stays; **Rules** / **Map** toggles). Each press draws a new seed. **Map Properties** on the right (size, location, biome, light, weather, Room size) feed the build and carry onto the result; Building size is Legacy city/outdoor only. Template 32: deck room grid + `templateWall` underlay + openings as **jamb · 2× Doorway 32 · jamb** on a two-cell gap + floorUnder + **128 / 64 / 32** packing (`placeWallRuns.js`). Does not call frozen `placeTemplateWalls`.
 3. **Edit → Toggle Auto-Paint** — paint floors; walls rebuild from the footprint.
 4. **Edit → Rebuild Auto-Paint Walls** — regenerate auto walls from current floors.
 
@@ -35,6 +35,8 @@ Hull / doorFrame **null** → no Template Deck fill-in (rim uses straight/corner
 ## Floor under walls
 
 Underlay wall cells store the ruleset default floor in `floorUnder`. Empty `templateWall` cells paint that floor on the board (walls stay Template Piece overlays). Combat’s `toBattleMap` keeps `floorUnder` + placements so the battlefield matches exploration.
+
+Optional Floors role **`underWall`** (seed: `tplStarshipFloor32`): when packing, places Floor 32 on underlay **tip slots** whose 0.5×0.5 footprint has no ground diamond. Tile `floorUnder` is centered on the integer cell and does not cover the east/south half where Template 32 walls sit — exterior edges still get Floor 32 there. Tips already over a floor / floorUnder diamond are skipped.
 
 ## Map JSON
 

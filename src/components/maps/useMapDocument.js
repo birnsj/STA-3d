@@ -186,13 +186,18 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
       (await confirmDiscard('The open map has unsaved changes. Generate Map replaces it, and those changes will be lost.', 'Generate'))
     if (!proceed || !isMapDocumentOperationCurrent(guardRef.current, operation)) return false
     const seed = Math.random()
-    const result = generateAutoPaintMap(map, rulesetId, seededRandom(seed))
+    // Room / building scales from Map Properties (same sliders as Legacy Generate).
+    const result = generateAutoPaintMap(map, rulesetId, seededRandom(seed), {
+      rooms: roomScale / 100,
+      buildings: buildingScale / 100,
+    })
     if (result.error) {
       setStatus(result.error)
       return false
     }
     let next = result.map
-    next = { ...next, weather: randomWeather(next) }
+    // Keep authored weather when the open map already set one; otherwise pick for the biome.
+    next = { ...next, weather: map.weather != null && map.weather !== '' ? map.weather : randomWeather(next) }
     const label = getAutoPaintRuleset(rulesetId)?.label ?? rulesetId
     const detail = result.status ? ` ${result.status}` : ''
     const seedLabel = Math.floor(seed * 1e9)

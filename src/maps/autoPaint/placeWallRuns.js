@@ -11,7 +11,7 @@
 //   tipAlongX/Y (collides with the corner tip) and never the axis-swapped half tips.
 import { wallCandidateAllowed } from './adjacency.js'
 import { pickWeighted, primaryId, normalizeWeightedEntries } from './weightedChoice.js'
-import { NULL_TILE, normalizeTemplateRotation } from '../mapFormat.js'
+import { getTile, groundTileId, NULL_TILE, normalizeTemplateRotation } from '../mapFormat.js'
 import { snapTemplatePiecePosition, TEMPLATE_PIECE_CELL_PX } from '../mapEdits.js'
 import { getTemplatePiece, templatePieceFootprint } from '../templatePieces.js'
 import { WORLD_WALL_UNDERLAY } from './constants.js'
@@ -140,6 +140,46 @@ function addPiece(list, usedIds, tips, tip, pieceId, rotation) {
     ],
     placed: true,
   }
+}
+
+/**
+ * True when a Floor 32 tip's 0.5×0.5 footprint already sits on a drawn ground diamond.
+ * Tile diamonds are centered on integer cells ([c−0.5,c+0.5]²). Template 32 walls sit on the
+ * east/south half of the underlay tip-cell ([x+0.5,x+1] / [y+0.5,y+1]) — past their own
+ * floorUnder diamond — so exterior edges need Floor 32 even when floorUnder is set.
+ */
+function floor32TipCoveredByGround(map, tipX, tipY) {
+  const cx = Math.round(tipX - 0.25)
+  const cy = Math.round(tipY - 0.25)
+  if (cx < 0 || cy < 0 || cx >= map.width || cy >= map.height) return false
+  return Boolean(groundTileId(map, { x: cx, y: cy }))
+}
+
+/**
+ * Cover underlay tip slots that have no ground diamond (void under 32px bulkheads).
+ * Own tip set so wall pieces can still seat on those tips (higher order).
+ */
+function placeUnderWallFloorFills(list, usedIds, map, kit, random) {
+  const pieceId = resolveKitPiece(kit.underWall, random, null)
+  if (!pieceId) return list
+  const floorTips = new Set()
+  const { width, height, tiles } = map
+  let next = list
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (!wallAt(tiles, width, height, x, y)) continue
+      for (const tip of [
+        { x: x + 0.5, y: y + 0.5 },
+        { x: x + 1, y: y + 0.5 },
+        { x: x + 0.5, y: y + 1 },
+        { x: x + 1, y: y + 1 },
+      ]) {
+        if (floor32TipCoveredByGround(map, tip.x, tip.y)) continue
+        next = addPiece(next, usedIds, floorTips, tip, pieceId, 0).list
+      }
+    }
+  }
+  return next
 }
 
 /**
@@ -586,6 +626,11 @@ export function placePackedWallPieces(
   const keyOf = (x, y) => `${x},${y}`
   const consumed = new Set()
   const openingAt = (x, y) => isDoor(tiles, x, y, doorId, doors)
+
+  // 0) Floor 32 tip fill on underlay tip slots with no ground diamond (void under 32px bulkheads).
+  // floorUnder's integer-centered diamond does not cover east/south half-cells; exterior edges
+  // still get Floor 32 there. Own tip set so walls can share those tips.
+  list = placeUnderWallFloorFills(list, usedIds, map, kit, random)
 
   // 1) Doorway lining on the opening strip (defaults: 2 cells / 2 door tips).
   // [jamb Corner][Doorway × doorTipUnits][jamb Corner] — e.g. 64px door between 32px jambs.

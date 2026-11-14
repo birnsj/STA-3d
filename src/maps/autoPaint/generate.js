@@ -28,8 +28,12 @@ function resolveWeightedTiles(role) {
 /**
  * Deck layout (floors, doorways, markers) + floor under every underlay wall cell,
  * then World Generation 128/64/32 tip packing.
+ *
+ * @param {object} [layoutScale] Map Properties scales: `{ rooms, buildings }` (1 = 100%).
+ *   `rooms` drives deck room span. `buildings` is accepted for parity with Legacy; deck
+ *   layouts do not place city blocks, so it has no effect here yet.
  */
-export function generateAutoPaintMap(source, rulesetId, random = Math.random) {
+export function generateAutoPaintMap(source, rulesetId, random = Math.random, layoutScale = {}) {
   const ruleset = getAutoPaintRuleset(rulesetId)
   if (!ruleset) return { map: source, error: 'No World Generation ruleset.' }
   // Roles may store Template Piece ids / weighted lists; deck underlay needs catalogue tiles.
@@ -46,12 +50,15 @@ export function generateAutoPaintMap(source, rulesetId, random = Math.random) {
     return { map: source, error: 'Map is too small for Generate Map (need at least 6×6).' }
   }
 
+  const roomScale = Number(layoutScale.rooms) > 0 ? Number(layoutScale.rooms) : 1
   const kit = pieceKitFromRuleset(ruleset)
   const generateDeck = makeWorldDeckGenerator({
     floor: floorId,
     wall: WORLD_WALL_UNDERLAY,
     door: doorMark,
     furnishRooms: () => {},
+    roomScale,
+    preferOpenings: ruleset.pipeline?.preferOpenings !== false,
   })
   const layout = generateDeck(
     { ...source, width, height, tiles: createNullMap({ width, height }).tiles },

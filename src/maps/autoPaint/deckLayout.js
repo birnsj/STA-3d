@@ -28,8 +28,13 @@ function roomCells(room) {
   return cells
 }
 
-function splitAxis(start, length, random, baseSpan = 6) {
-  const span = Math.max(MIN_ROOM, Math.round(baseSpan))
+/**
+ * Split a span into rooms. `roomScale` (1 = default) multiplies the target room span —
+ * same meaning as the Map Properties Room size slider (Legacy layoutScale.rooms).
+ */
+function splitAxis(start, length, random, baseSpan = 6, roomScale = 1) {
+  const scale = Number.isFinite(Number(roomScale)) && Number(roomScale) > 0 ? Number(roomScale) : 1
+  const span = Math.max(MIN_ROOM, Math.round(baseSpan * scale))
   const count = Math.max(1, Math.min(Math.round((length + 1) / (span + 1)), Math.floor((length + 1) / (MIN_ROOM + 1))))
   const floor = length - (count - 1)
   const sizes = Array.from({ length: count }, (_, i) => Math.floor(floor / count) + (i < floor % count ? 1 : 0))
@@ -124,20 +129,29 @@ function labelRegions(tiles, regions, names, random) {
 
 /**
  * Deck room grid for Generate Map.
- * @param {{ floor: string, wall: string, door?: string, furnishRooms?: Function }} style
+ * @param {{
+ *   floor: string,
+ *   wall: string,
+ *   door?: string,
+ *   furnishRooms?: Function,
+ *   roomScale?: number,
+ *   preferOpenings?: boolean,
+ * }} style
  */
 export function makeWorldDeckGenerator({
   floor,
   wall,
   door = WORLD_DOOR_MARK,
   furnishRooms = () => {},
+  roomScale = 1,
+  preferOpenings = true,
 } = {}) {
   return function generateDeck(map, random, areaNames = []) {
     const { width, height } = map
     const tiles = makeGrid(width, height, (x, y) => (x === 0 || y === 0 || x === width - 1 || y === height - 1 ? wall : floor))
 
-    const columns = splitAxis(1, width - 2, random)
-    const rows = splitAxis(1, height - 2, random)
+    const columns = splitAxis(1, width - 2, random, 6, roomScale)
+    const rows = splitAxis(1, height - 2, random, 6, roomScale)
     const grid = rows.map(([y0, y1], row) => columns.map(([x0, x1], col) => ({ row, col, x0, x1, y0, y1 })))
     const rooms = grid.flat()
     columns.slice(0, -1).forEach(([, x1]) => {
@@ -147,7 +161,7 @@ export function makeWorldDeckGenerator({
       for (let x = 1; x < width - 1; x++) tiles[y1 + 1][x] = wall
     })
 
-    const keep = connectRooms(tiles, grid, random, door)
+    const keep = preferOpenings ? connectRooms(tiles, grid, random, door) : new Set()
 
     const playerRow = random() < 0.5 ? 0 : rows.length - 1
     const playerCol = random() < 0.5 ? 0 : columns.length - 1

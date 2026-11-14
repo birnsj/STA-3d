@@ -88,6 +88,32 @@ function cellsCoveredByPiece(entry) {
   }
   return cells
 }
+
+/**
+ * Cells used to join a Template Piece into wall fade sections.
+ * Door jambs (Corner 32) sit on opening floor cells, not templateWall underlay — without the
+ * orthogonal underlay neighbours they never match faded wall sections and stay opaque.
+ */
+function templatePieceFadeCells(map, entry) {
+  const cells = cellsCoveredByPiece(entry)
+  let extra = null
+  for (const key of cells) {
+    const [x, y] = key.split(',').map(Number)
+    if (isFadingWall(map, x, y)) continue
+    for (const [nx, ny] of [
+      [x + 1, y],
+      [x - 1, y],
+      [x, y + 1],
+      [x, y - 1],
+    ]) {
+      if (!isFadingWall(map, nx, ny)) continue
+      if (!extra) extra = []
+      extra.push(keyOf(nx, ny))
+    }
+  }
+  if (!extra) return cells
+  return [...new Set([...cells, ...extra])]
+}
 const isDoorway = (map, x, y) => map.tiles[y][x] === 'doorway'
 const isSpaceBarrier = (map, x, y) => isWall(map, x, y) || isDoorway(map, x, y) || isEmpty(map, x, y)
 
@@ -368,7 +394,7 @@ export function templatePieceFadeIds(map, figures, previousIds = new Set(), { mo
     if (!tip || !Number.isFinite(tip.x) || !Number.isFinite(tip.y)) continue
     pieces.push({
       id: entry.id,
-      cells: cellsCoveredByPiece(entry),
+      cells: templatePieceFadeCells(map, entry),
       shape: templatePieceFadeShape(entry, def),
     })
   }

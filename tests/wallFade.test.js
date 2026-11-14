@@ -290,4 +290,36 @@ describe('Template Piece wall fade (Settings room vs single)', () => {
     assert.ok(templatePieceFadeIds(longWall, behind, new Set(), { mode: 'single' }).has('long'), 'fades while the figure is behind')
     assert.equal(templatePieceFadeIds(longWall, past, new Set(), { mode: 'single' }).has('long'), false, 'solid once the figure is past')
   })
+
+  it('door jamb Corners on opening floors fade with the adjacent wall underlay', () => {
+    // Internal east–west wall (y=4) with a 2-cell opening: jambs sit on floor, walls on underlay.
+    const doorWall = {
+      width: 8,
+      height: 8,
+      tiles: [
+        [W, W, W, W, W, W, W, W],
+        [W, F, F, F, F, F, F, W],
+        [W, F, F, F, F, F, F, W],
+        [W, F, F, F, F, F, F, W],
+        [W, W, W, F, F, W, W, W],
+        [W, F, F, F, F, F, F, W],
+        [W, F, F, F, F, F, F, W],
+        [W, W, W, W, W, W, W, W],
+      ],
+      templatePiecePlacements: [
+        { id: 'wall-w', pieceId: 'tplStarshipWall32', position: { x: 3, y: 5 }, rotation: 0 },
+        { id: 'jamb-w', pieceId: 'tplStarshipWall32Corner', position: { x: 3.5, y: 5 }, rotation: 0 },
+        { id: 'jamb-e', pieceId: 'tplStarshipWall32Corner', position: { x: 5, y: 5 }, rotation: 0 },
+        { id: 'wall-e', pieceId: 'tplStarshipWall32', position: { x: 6, y: 5 }, rotation: 0 },
+      ],
+    }
+    const figure = [{ id: 'a', position: { x: 2, y: 2 } }]
+    // Jamb footprints cover opening floors only — room fade keys are underlay. Without joining
+    // orthogonal underlay, jambs stay opaque while wall-w / wall-e go see-through.
+    const fadedCells = new Set(['2,4', '5,4'])
+    assert.equal(fadedCells.has('3,4'), false, 'opening floors are not wall fade cells')
+    const ids = templatePieceFadeIds(doorWall, figure, new Set(), { mode: 'room', fadedCellKeys: fadedCells })
+    assert.ok(ids.has('wall-w') && ids.has('wall-e'), 'wall pieces on underlay fade')
+    assert.ok(ids.has('jamb-w') && ids.has('jamb-e'), 'jamb Corners on the opening fade with the wall')
+  })
 })

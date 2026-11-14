@@ -99,6 +99,7 @@ export function pieceKitFromRuleset(ruleset) {
     doorFrame: asWeightedPieces(walls.doorFrame),
     fittings: asWeightedPieces(walls.fittings),
     fittingChance: Number.isFinite(Number(walls.fittingChance)) ? Number(walls.fittingChance) : 0,
+    underWall: asWeightedPieces(ruleset?.floors?.underWall),
   }
 }
 

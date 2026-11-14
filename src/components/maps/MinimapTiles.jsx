@@ -9,7 +9,8 @@ const MAX_PIXELS = 2048
 const MAX_TILE_PIXELS = 16
 
 // Top-down silhouette for Template 32 / overlay walls (no full-cell wall tile art).
-const TEMPLATE_WALL_FILL = '#3d4650'
+// Darker than deck plating so half-cell 32px runs still read as room boundaries.
+const TEMPLATE_WALL_FILL = '#2a3138'
 
 // A tile PNG (iso, 64 wide, mapFormat.js imageSize) seen from above: its top face (the floor diamond, raised by the
 // block height for walls) unskewed onto a size x size square. The transform maps the face's corners top / right / left
@@ -27,18 +28,34 @@ function topFace(tile, image, size) {
   return canvas
 }
 
+/** True when the live cell is empty wall underlay (Template 32) — minimap treats the whole cell as wall. */
+function isTemplateUnderlay(id) {
+  const tile = getTile(id)
+  return Boolean(tile?.wall && tile.empty)
+}
+
 function drawTemplateWallFootprints(context, placements, size) {
   if (!placements?.length) return
   context.fillStyle = TEMPLATE_WALL_FILL
+  // Half-cell (32px) footprints are ~size/2 px — inflate thin axes so walls stay readable.
+  const minSpan = Math.max(2, Math.ceil(size * 0.55))
   for (const entry of placements) {
     const box = templatePieceWorldAabb(entry)
     if (!box || !isTemplateWallCollider(box.def)) continue
     // foreignObject origin is tile (−0.5, −0.5); canvas (0,0) = that corner.
-    const x = (box.minX + 0.5) * size
-    const y = (box.minY + 0.5) * size
-    const w = (box.maxX - box.minX) * size
-    const h = (box.maxY - box.minY) * size
+    let x = (box.minX + 0.5) * size
+    let y = (box.minY + 0.5) * size
+    let w = (box.maxX - box.minX) * size
+    let h = (box.maxY - box.minY) * size
     if (w <= 0 || h <= 0) continue
+    if (w < minSpan) {
+      x -= (minSpan - w) / 2
+      w = minSpan
+    }
+    if (h < minSpan) {
+      y -= (minSpan - h) / 2
+      h = minSpan
+    }
     context.fillRect(x, y, w, h)
   }
 }
@@ -46,7 +63,8 @@ function drawTemplateWallFootprints(context, placements, size) {
 // A map's tiles top down, one unit per tile with tile (x, y) centred on (x, y), for the minimaps (exploration, map editor).
 // Drawn into one canvas, redrawn only when the tiles change: a big map has thousands of tiles, too many to keep as SVG
 // elements in a view that re-renders as people move.
-// Template Piece walls (Template 32) live in templatePiecePlacements — stamp their footprints after floors so rooms read.
+// Template 32: underlay cells paint as solid wall (not floorUnder — that deck is for the iso board). Piece footprints
+// then stamp jambs / columns on openings so door gaps still read.
 export default function MinimapTiles({ tiles, floorUnder = null, templatePiecePlacements = null }) {
   const canvasRef = useRef(null)
   const rows = tiles.length
@@ -57,10 +75,12 @@ export default function MinimapTiles({ tiles, floorUnder = null, templatePiecePl
     if (!canvas || !rows || !columns) return undefined
     let cancelled = false
     const size = Math.max(1, Math.min(MAX_TILE_PIXELS, Math.floor(MAX_PIXELS / Math.max(rows, columns))))
-    const map = { tiles, floorUnder: floorUnder ?? {}, width: columns, height: rows }
+    // Minimap ignores floorUnder under empty walls so rooms keep solid boundaries.
+    const map = { tiles, floorUnder: {}, width: columns, height: rows }
     const ids = new Set()
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < columns; x++) {
+        if (isTemplateUnderlay(tiles[y][x])) continue
         const id = groundTileId(map, { x, y }) ?? tiles[y][x]
         if (id && id !== NULL_TILE) ids.add(id)
       }
@@ -74,6 +94,12 @@ export default function MinimapTiles({ tiles, floorUnder = null, templatePiecePl
       const context = canvas.getContext('2d')
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < columns; x++) {
+          const live = tiles[y][x]
+          if (isTemplateUnderlay(live)) {
+            context.fillStyle = TEMPLATE_WALL_FILL
+            context.fillRect(x * size, y * size, size, size)
+            continue
+          }
           const id = groundTileId(map, { x, y })
           if (!id) continue
           const face = faces.get(id)

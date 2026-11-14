@@ -35,7 +35,7 @@ const FALLBACK = Object.freeze({
   label: 'Template 32',
   environment: 'starshipStation',
   wallMode: 'tiles',
-  floors: { defaultTile: 'floor', variants: [] },
+  floors: { defaultTile: 'floor', underWall: 'tplStarshipFloor32', variants: [] },
   walls: {
     straight: 'tplStarshipWall32',
     straightLong: 'tplStarshipWall32PlainLong',
@@ -134,6 +134,11 @@ export function resolveAutoPaintRuleset(raw = {}) {
     required: true,
     fallback: FALLBACK.floors.defaultTile,
   })
+  // Optional 32×32 tip fill on underlay tip slots with no ground diamond (void under 32px walls).
+  const underWall =
+    'underWall' in floorsIn
+      ? optionalRole(floorsIn.underWall)
+      : optionalRole(FALLBACK.floors.underWall)
 
   return {
     schemaVersion: 1,
@@ -143,6 +148,7 @@ export function resolveAutoPaintRuleset(raw = {}) {
     wallMode: WALL_MODE_IDS.has(base.wallMode) ? base.wallMode : FALLBACK.wallMode,
     floors: {
       defaultTile,
+      underWall,
       variants: Array.isArray(floorsIn.variants)
         ? floorsIn.variants.filter((id) => typeof id === 'string' && id.trim()).map((id) => id.trim())
         : [],
@@ -173,6 +179,9 @@ export function validateAutoPaintRuleset(raw) {
   if (!primaryId(ruleset.walls.corner)) errors.push('walls.corner is required')
   for (const id of weightedIds(ruleset.floors.defaultTile)) {
     if (!knownFloorRole(id)) errors.push(`floors.defaultTile: unknown tile “${id}”`)
+  }
+  for (const id of weightedIds(ruleset.floors.underWall)) {
+    if (!knownRole(id)) errors.push(`floors.underWall: unknown Template Piece “${id}”`)
   }
   for (const id of ruleset.floors.variants) {
     if (!knownTile(id)) errors.push(`floors.variants: unknown tile “${id}”`)
@@ -231,6 +240,7 @@ export function listAutoPaintRulesets() {
     floors: {
       ...entry.floors,
       defaultTile: cloneRole(entry.floors.defaultTile),
+      underWall: cloneRole(entry.floors.underWall),
       variants: [...entry.floors.variants],
     },
     walls: {
@@ -293,6 +303,10 @@ export function autoPaintRulesetsSnapshot() {
       ...entry,
       floors: {
         defaultTile: serializeWeighted(entry.floors.defaultTile),
+        underWall:
+          entry.floors.underWall == null
+            ? null
+            : serializeWeighted(entry.floors.underWall, { allowEmpty: true }),
         variants: [...entry.floors.variants],
       },
       walls: {

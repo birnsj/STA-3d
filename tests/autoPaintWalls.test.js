@@ -288,7 +288,8 @@ describe('placePackedWallPieces coverage', () => {
           hullCorner: null,
           doorFrame: null,
         },
-        floors: { defaultTile: 'floor', variants: [] },
+        // underWall null: these cases assert wall tip packing, not Floor 32 fills.
+        floors: { defaultTile: 'floor', underWall: null, variants: [] },
         doors: { underlayTile: 'doorway' },
       }),
     )
@@ -296,8 +297,12 @@ describe('placePackedWallPieces coverage', () => {
   function underlayMap(width, height, cells) {
     const map = createNullMap({ name: 'pack', width, height })
     const tiles = map.tiles.map((row) => row.slice())
-    for (const [x, y] of cells) tiles[y][x] = 'templateWall'
-    return { ...map, tiles, templatePiecePlacements: [], floorUnder: {} }
+    const floorUnder = {}
+    for (const [x, y] of cells) {
+      tiles[y][x] = 'templateWall'
+      floorUnder[`${x},${y}`] = 'floor'
+    }
+    return { ...map, tiles, templatePiecePlacements: [], floorUnder }
   }
 
   function autoPieces(map) {
@@ -467,12 +472,13 @@ describe('placePackedWallPieces geometric continuity', () => {
           hullCorner: null,
           doorFrame: null,
         },
-        floors: { defaultTile: 'floor', variants: [] },
+        // Geometry cases: disable underWall so Floor 32 tips do not inflate tip sets.
+        floors: { defaultTile: 'floor', underWall: null, variants: [] },
         doors: { underlayTile: 'doorway' },
       }),
     )
 
-  function underlayMap(width, height, cells, { floorFill = true } = {}) {
+  function underlayMap(width, height, cells, { floorFill = true, underFloor = true } = {}) {
     const map = createNullMap({ name: 'geo', width, height })
     const tiles = map.tiles.map((row) => row.slice())
     if (floorFill) {
@@ -480,8 +486,12 @@ describe('placePackedWallPieces geometric continuity', () => {
         for (let x = 0; x < width; x++) tiles[y][x] = 'floor'
       }
     }
-    for (const [x, y] of cells) tiles[y][x] = 'templateWall'
-    return { ...map, tiles, templatePiecePlacements: [], floorUnder: {} }
+    const floorUnder = {}
+    for (const [x, y] of cells) {
+      tiles[y][x] = 'templateWall'
+      if (underFloor) floorUnder[`${x},${y}`] = 'floor'
+    }
+    return { ...map, tiles, templatePiecePlacements: [], floorUnder }
   }
 
   function autoPieces(map) {
@@ -622,6 +632,69 @@ describe('placePackedWallPieces geometric continuity', () => {
     assertNoFootprintOverlapInterior(pieces)
   })
 
+  it('places Floor 32 tips only where tip footprints lack a ground diamond', () => {
+    const kitWithUnder = pieceKitFromRuleset(
+      resolveAutoPaintRuleset({
+        id: 'under-wall-floor',
+        walls: {
+          straight: 'tplStarshipWall32',
+          straightLong: 'tplStarshipWall32PlainLong',
+          corner: 'tplStarshipWall32Corner',
+          hull: null,
+          hullLong: null,
+          hullCorner: null,
+          doorFrame: null,
+        },
+        floors: { defaultTile: 'floor', underWall: 'tplStarshipFloor32', variants: [] },
+        doors: { underlayTile: 'doorway' },
+      }),
+    )
+    // Interior underlay surrounded by floor: every tip sits on a ground diamond.
+    const withDeck = underlayMap(8, 8, [
+      [2, 3],
+      [3, 3],
+    ])
+    assert.equal(
+      autoPieces(placePackedWallPieces(withDeck, kitWithUnder)).filter((p) => p.pieceId === 'tplStarshipFloor32')
+        .length,
+      0,
+      'no Floor 32 when every tip already has ground',
+    )
+    // No floorUnder on underlay: inner tips need Floor 32; south tips still covered by floorFill.
+    const voidUnder = underlayMap(
+      8,
+      8,
+      [
+        [5, 3],
+        [6, 3],
+      ],
+      { underFloor: false },
+    )
+    const voidFloors = autoPieces(placePackedWallPieces(voidUnder, kitWithUnder)).filter(
+      (p) => p.pieceId === 'tplStarshipFloor32',
+    )
+    assert.ok(voidFloors.length >= 3, `expected inner tip fills, got ${voidFloors.length}`)
+    assert.ok(
+      voidFloors.every((p) => p.position.y <= 3.5),
+      'south tips stay covered by neighboring floor diamonds',
+    )
+
+    // Exterior east underlay with floorUnder: east-half tips (x+1) sit past the diamond → Floor 32.
+    const exterior = underlayMap(6, 4, [[5, 1]], { floorFill: false, underFloor: true })
+    exterior.tiles[1][4] = 'floor'
+    const exteriorFloors = autoPieces(placePackedWallPieces(exterior, kitWithUnder)).filter(
+      (p) => p.pieceId === 'tplStarshipFloor32',
+    )
+    assert.ok(
+      exteriorFloors.some((p) => p.position.x === 6),
+      'exterior east tips get Floor 32 despite floorUnder',
+    )
+    assert.ok(
+      !exteriorFloors.some((p) => p.position.x === 5.5 && p.position.y === 1.5),
+      'inner tip over floorUnder diamond is skipped',
+    )
+  })
+
   it('leaves a 64px doorway lined with Doorway 32 and terminates walls at the gap', () => {
     const map = underlayMap(12, 10, [
       [2, 4],
@@ -720,6 +793,21 @@ describe('Auto-Paint Generate Map', () => {
     assert.equal(custom.height, 20)
   })
 
+  it('room scale from Map Properties changes deck room span', () => {
+    const source = { ...createNullMap({ name: 'scale', width: 24, height: 24 }), mapType: 'interior' }
+    const small = generateAutoPaintMap(source, 'template-32', () => 0.4, { rooms: 0.7 })
+    const large = generateAutoPaintMap(source, 'template-32', () => 0.4, { rooms: 1.8 })
+    assert.equal(small.error, undefined)
+    assert.equal(large.error, undefined)
+    const underSmall = small.map.autoPaint.regions[0].generatedUnderlayKeys.length
+    const underLarge = large.map.autoPaint.regions[0].generatedUnderlayKeys.length
+    // Smaller target rooms → more internal walls → more underlay cells.
+    assert.ok(
+      underSmall > underLarge,
+      `expected more underlay with small rooms (${underSmall}) than large (${underLarge})`,
+    )
+  })
+
   it('packs 128/64 walls with corners and floor under underlay', () => {
     const source = createNullMap({ name: 'gen', width: 20, height: 20 })
     const { map, error } = generateAutoPaintMap(source, 'template-32', () => 0.25)
@@ -755,9 +843,14 @@ describe('Auto-Paint Generate Map', () => {
     const doorway32 = autoPieces.filter((entry) => entry.pieceId === 'tplStarshipDoorway32')
     assert.ok(doorway32.length >= 2, 'at least one opening (2× Doorway 32 between jambs)')
     assert.equal(doorway32.length % 2, 0, 'Doorway 32 count is multiples of 2 (64px lining)')
+    const floor32 = autoPieces.filter((entry) => entry.pieceId === 'tplStarshipFloor32')
+    assert.ok(floor32.length > 0, 'exterior underlay tips get Floor 32 past floorUnder diamonds')
+    const doorTipKeys = new Set(
+      doorway32.map((entry) => `${entry.position.x},${entry.position.y}`),
+    )
     assert.ok(
-      !autoPieces.some((entry) => entry.pieceId === 'tplStarshipFloor32'),
-      'no Floor 32 overlay on openings',
+      floor32.every((entry) => !doorTipKeys.has(`${entry.position.x},${entry.position.y}`)),
+      'Floor 32 must not occupy Doorway 32 tips',
     )
     // Seed doorFrame is null — must not invent Template Deck frames.
     assert.ok(!autoPieces.some((entry) => entry.pieceId.includes('DoorFrame')), 'no door frames when role is null')

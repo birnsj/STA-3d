@@ -5,29 +5,29 @@
   "card": null,
   "mapType": "starshipDeck",
   "biome": "temperate",
-  "weather": "powerFailure",
+  "weather": "redAlert",
   "ambient": 100,
   "ambientColour": "#02040a",
   "rows": [
     "ŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻ",
-    "Ż.....Ż.......Ż....Ż",
-    "Ż.....Ż.......Ż....Ż",
-    "Ż.....Ż............Ż",
+    "Ż......Ż.....Ż.....Ż",
+    "Ż............Ż.....Ż",
     "Ż..................Ż",
-    "Ż.............Ż....Ż",
-    "Ż.....Ż.......Ż....Ż",
-    "ŻŻ..ŻŻŻŻ..ŻŻŻŻŻŻ..ŻŻ",
-    "Ż.....Ż.......Ż....Ż",
+    "Ż......Ż...........Ż",
+    "Ż......Ż.....Ż.....Ż",
+    "ŻŻ..ŻŻŻŻŻŻ..ŻŻŻ..ŻŻŻ",
+    "Ż......Ż.....Ż.....Ż",
+    "Ż......Ż.....Ż.....Ż",
+    "Ż............Ż.....Ż",
     "Ż..................Ż",
+    "Ż......Ż...........Ż",
+    "Ż......Ż.....Ż.....Ż",
+    "ŻŻŻŻ..ŻŻŻ..ŻŻŻŻ..ŻŻŻ",
+    "Ż......Ż.....Ż.....Ż",
+    "Ż............Ż.....Ż",
     "Ż..................Ż",
-    "Ż.....Ż.......Ż....Ż",
-    "Ż.....Ż.......Ż....Ż",
-    "ŻŻŻ..ŻŻŻ..ŻŻŻŻŻŻ..ŻŻ",
-    "Ż.....Ż.......Ż....Ż",
-    "Ż..................Ż",
-    "Ż..................Ż",
-    "Ż.....Ż.......Ż....Ż",
-    "Ż.....Ż.......Ż....Ż",
+    "Ż......Ż...........Ż",
+    "Ż......Ż.....Ż.....Ż",
     "ŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻŻ"
   ],
   "rotated": [],
@@ -151,132 +151,986 @@
     "16,19": "floor",
     "17,19": "floor",
     "18,19": "floor",
-    "19,19": "floor"
+    "19,19": "floor",
+    "7,1": "floor",
+    "13,1": "floor",
+    "13,2": "floor",
+    "7,4": "floor",
+    "7,5": "floor",
+    "13,5": "floor",
+    "1,6": "floor",
+    "4,6": "floor",
+    "5,6": "floor",
+    "7,6": "floor",
+    "8,6": "floor",
+    "9,6": "floor",
+    "12,6": "floor",
+    "13,6": "floor",
+    "17,6": "floor",
+    "18,6": "floor",
+    "7,8": "floor",
+    "13,8": "floor",
+    "13,9": "floor",
+    "7,11": "floor",
+    "7,12": "floor",
+    "13,12": "floor",
+    "3,13": "floor",
+    "8,13": "floor",
+    "17,13": "floor",
+    "7,14": "floor",
+    "13,14": "floor",
+    "13,15": "floor",
+    "7,17": "floor",
+    "7,18": "floor",
+    "13,18": "floor"
   },
   "areas": [],
   "markers": {
     "playerStarts": [
       [
-        9,
+        1,
+        1
+      ],
+      [
+        2,
         4
       ],
       [
-        9,
-        2
+        5,
+        1
       ],
       [
-        15,
+        5,
         3
       ],
       [
-        16,
-        2
+        5,
+        5
       ],
       [
-        11,
-        2
-      ],
-      [
-        16,
+        4,
         4
       ],
       [
-        10,
+        1,
         3
       ],
       [
-        16,
-        3
+        1,
+        2
       ]
     ],
-    "enemySpawns": []
+    "enemySpawns": [
+      [
+        16,
+        18
+      ],
+      [
+        18,
+        18
+      ],
+      [
+        16,
+        17
+      ],
+      [
+        14,
+        15
+      ],
+      [
+        18,
+        17
+      ],
+      [
+        16,
+        15
+      ],
+      [
+        16,
+        14
+      ],
+      [
+        17,
+        15
+      ]
+    ]
   },
   "templatePiecePlacements": [
+    {
+      "id": "tplStarshipFloor32-1",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        0.5
+      ],
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-2",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        1
+      ],
+      "order": 1,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-3",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        1.5
+      ],
+      "order": 2,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-4",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        2
+      ],
+      "order": 3,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-5",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        2.5
+      ],
+      "order": 4,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-6",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        3
+      ],
+      "order": 5,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-7",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        3.5
+      ],
+      "order": 6,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-8",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        4
+      ],
+      "order": 7,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-9",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        4.5
+      ],
+      "order": 8,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-10",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        5
+      ],
+      "order": 9,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-11",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        5.5
+      ],
+      "order": 10,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-12",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        6
+      ],
+      "order": 11,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-13",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        6.5
+      ],
+      "order": 12,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-14",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        7
+      ],
+      "order": 13,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-15",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        7.5
+      ],
+      "order": 14,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-16",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        8
+      ],
+      "order": 15,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-17",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        8.5
+      ],
+      "order": 16,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-18",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        9
+      ],
+      "order": 17,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-19",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        9.5
+      ],
+      "order": 18,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-20",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        10
+      ],
+      "order": 19,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-21",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        10.5
+      ],
+      "order": 20,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-22",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        11
+      ],
+      "order": 21,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-23",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        11.5
+      ],
+      "order": 22,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-24",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        12
+      ],
+      "order": 23,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-25",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        12.5
+      ],
+      "order": 24,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-26",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        13
+      ],
+      "order": 25,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-27",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        13.5
+      ],
+      "order": 26,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-28",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        14
+      ],
+      "order": 27,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-29",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        14.5
+      ],
+      "order": 28,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-30",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        15
+      ],
+      "order": 29,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-31",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        15.5
+      ],
+      "order": 30,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-32",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        16
+      ],
+      "order": 31,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-33",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        16.5
+      ],
+      "order": 32,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-34",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        17
+      ],
+      "order": 33,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-35",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        17.5
+      ],
+      "order": 34,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-36",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        18
+      ],
+      "order": 35,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-37",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        18.5
+      ],
+      "order": 36,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-38",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        19
+      ],
+      "order": 37,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-39",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        0.5,
+        20
+      ],
+      "order": 38,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-40",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        1,
+        20
+      ],
+      "order": 39,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-41",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        1.5,
+        20
+      ],
+      "order": 40,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-42",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        2,
+        20
+      ],
+      "order": 41,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-43",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        2.5,
+        20
+      ],
+      "order": 42,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-44",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        3,
+        20
+      ],
+      "order": 43,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-45",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        3.5,
+        20
+      ],
+      "order": 44,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-46",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        4,
+        20
+      ],
+      "order": 45,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-47",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        4.5,
+        20
+      ],
+      "order": 46,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-48",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        5,
+        20
+      ],
+      "order": 47,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-49",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        5.5,
+        20
+      ],
+      "order": 48,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-50",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        6,
+        20
+      ],
+      "order": 49,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-51",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        6.5,
+        20
+      ],
+      "order": 50,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-52",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        7,
+        20
+      ],
+      "order": 51,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-53",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        7.5,
+        20
+      ],
+      "order": 52,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-54",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        8,
+        20
+      ],
+      "order": 53,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-55",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        8.5,
+        20
+      ],
+      "order": 54,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-56",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        9,
+        20
+      ],
+      "order": 55,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-57",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        9.5,
+        20
+      ],
+      "order": 56,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-58",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        10,
+        20
+      ],
+      "order": 57,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-59",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        10.5,
+        20
+      ],
+      "order": 58,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-60",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        11,
+        20
+      ],
+      "order": 59,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-61",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        11.5,
+        20
+      ],
+      "order": 60,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-62",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        12,
+        20
+      ],
+      "order": 61,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-63",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        12.5,
+        20
+      ],
+      "order": 62,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-64",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        13,
+        20
+      ],
+      "order": 63,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-65",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        13.5,
+        20
+      ],
+      "order": 64,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-66",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        14,
+        20
+      ],
+      "order": 65,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-67",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        14.5,
+        20
+      ],
+      "order": 66,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-68",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        15,
+        20
+      ],
+      "order": 67,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-69",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        15.5,
+        20
+      ],
+      "order": 68,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-70",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        16,
+        20
+      ],
+      "order": 69,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-71",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        16.5,
+        20
+      ],
+      "order": 70,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-72",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        17,
+        20
+      ],
+      "order": 71,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-73",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        17.5,
+        20
+      ],
+      "order": 72,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-74",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        18,
+        20
+      ],
+      "order": 73,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-75",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        18.5,
+        20
+      ],
+      "order": 74,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-76",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        19,
+        20
+      ],
+      "order": 75,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-77",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        19.5
+      ],
+      "order": 76,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-78",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        19.5,
+        20
+      ],
+      "order": 77,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipFloor32-79",
+      "pieceId": "tplStarshipFloor32",
+      "position": [
+        20,
+        20
+      ],
+      "order": 78,
+      "autoPaint": true
+    },
     {
       "id": "tplStarshipWall32Corner-1",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
-        3.5
+        8,
+        2.5
       ],
       "rotation": 270,
+      "order": 79,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-1",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        15,
-        4
+        8,
+        3
       ],
       "rotation": 270,
-      "order": 1,
+      "order": 80,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-2",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        15,
-        4.5
+        8,
+        3.5
       ],
       "rotation": 270,
-      "order": 2,
+      "order": 81,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-2",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
-        5
+        8,
+        4
       ],
       "rotation": 180,
-      "order": 3,
+      "order": 82,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-3",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
-        4.5
+        14,
+        3.5
       ],
       "rotation": 270,
-      "order": 4,
+      "order": 83,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-3",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        7,
-        5
+        14,
+        4
       ],
       "rotation": 270,
-      "order": 5,
+      "order": 84,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-4",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        7,
-        5.5
+        14,
+        4.5
       ],
       "rotation": 270,
-      "order": 6,
+      "order": 85,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-4",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
-        6
+        14,
+        5
       ],
       "rotation": 180,
-      "order": 7,
+      "order": 86,
       "autoPaint": true
     },
     {
@@ -284,10 +1138,10 @@
       "pieceId": "tplStarshipWall32Corner",
       "position": [
         2.5,
-        8
+        7
       ],
       "rotation": 270,
-      "order": 8,
+      "order": 87,
       "autoPaint": true
     },
     {
@@ -295,10 +1149,10 @@
       "pieceId": "tplStarshipDoorway32",
       "position": [
         3,
-        8
+        7
       ],
       "rotation": 180,
-      "order": 9,
+      "order": 88,
       "autoPaint": true
     },
     {
@@ -306,10 +1160,10 @@
       "pieceId": "tplStarshipDoorway32",
       "position": [
         3.5,
-        8
+        7
       ],
       "rotation": 180,
-      "order": 10,
+      "order": 89,
       "autoPaint": true
     },
     {
@@ -317,400 +1171,400 @@
       "pieceId": "tplStarshipWall32Corner",
       "position": [
         4,
-        8
+        7
       ],
-      "order": 11,
+      "order": 90,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-7",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        8.5,
-        8
+        10.5,
+        7
       ],
       "rotation": 270,
-      "order": 12,
+      "order": 91,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-7",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        9,
-        8
+        11,
+        7
       ],
       "rotation": 180,
-      "order": 13,
+      "order": 92,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-8",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        9.5,
-        8
+        11.5,
+        7
       ],
       "rotation": 180,
-      "order": 14,
+      "order": 93,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-8",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        10,
-        8
+        12,
+        7
       ],
-      "order": 15,
+      "order": 94,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-9",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        16.5,
-        8
+        15.5,
+        7
       ],
       "rotation": 270,
-      "order": 16,
+      "order": 95,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-9",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        17,
-        8
+        16,
+        7
       ],
       "rotation": 180,
-      "order": 17,
+      "order": 96,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-10",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        17.5,
-        8
+        16.5,
+        7
       ],
       "rotation": 180,
-      "order": 18,
+      "order": 97,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-10",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        18,
-        8
+        17,
+        7
       ],
-      "order": 19,
+      "order": 98,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-11",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
+        8,
         9.5
       ],
       "rotation": 270,
-      "order": 20,
+      "order": 99,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-11",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        7,
+        8,
         10
       ],
       "rotation": 270,
-      "order": 21,
+      "order": 100,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-12",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        7,
+        8,
         10.5
       ],
       "rotation": 270,
-      "order": 22,
+      "order": 101,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-12",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
+        8,
         11
       ],
       "rotation": 180,
-      "order": 23,
+      "order": 102,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-13",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
-        9.5
+        14,
+        10.5
       ],
       "rotation": 270,
-      "order": 24,
+      "order": 103,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-13",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        15,
-        10
+        14,
+        11
       ],
       "rotation": 270,
-      "order": 25,
+      "order": 104,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-14",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        15,
-        10.5
+        14,
+        11.5
       ],
       "rotation": 270,
-      "order": 26,
+      "order": 105,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-14",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
-        11
+        14,
+        12
       ],
       "rotation": 180,
-      "order": 27,
+      "order": 106,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-15",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        3.5,
+        4.5,
         14
       ],
       "rotation": 270,
-      "order": 28,
+      "order": 107,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-15",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        4,
+        5,
         14
       ],
       "rotation": 180,
-      "order": 29,
+      "order": 108,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-16",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        4.5,
+        5.5,
         14
       ],
       "rotation": 180,
-      "order": 30,
+      "order": 109,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-16",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        5,
+        6,
         14
       ],
-      "order": 31,
+      "order": 110,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-17",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        8.5,
+        9.5,
         14
       ],
       "rotation": 270,
-      "order": 32,
+      "order": 111,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-17",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        9,
+        10,
         14
       ],
       "rotation": 180,
-      "order": 33,
+      "order": 112,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-18",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        9.5,
+        10.5,
         14
       ],
       "rotation": 180,
-      "order": 34,
+      "order": 113,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-18",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        10,
+        11,
         14
       ],
-      "order": 35,
+      "order": 114,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-19",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        16.5,
+        15.5,
         14
       ],
       "rotation": 270,
-      "order": 36,
+      "order": 115,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-19",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        17,
+        16,
         14
       ],
       "rotation": 180,
-      "order": 37,
+      "order": 116,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-20",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        17.5,
+        16.5,
         14
       ],
       "rotation": 180,
-      "order": 38,
+      "order": 117,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-20",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        18,
+        17,
         14
       ],
-      "order": 39,
+      "order": 118,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-21",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
+        8,
         15.5
       ],
       "rotation": 270,
-      "order": 40,
+      "order": 119,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-21",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        7,
+        8,
         16
       ],
       "rotation": 270,
-      "order": 41,
+      "order": 120,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-22",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        7,
+        8,
         16.5
       ],
       "rotation": 270,
-      "order": 42,
+      "order": 121,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-22",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
+        8,
         17
       ],
       "rotation": 180,
-      "order": 43,
+      "order": 122,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-23",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
-        15.5
+        14,
+        16.5
       ],
       "rotation": 270,
-      "order": 44,
+      "order": 123,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-23",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        15,
-        16
+        14,
+        17
       ],
       "rotation": 270,
-      "order": 45,
+      "order": 124,
       "autoPaint": true
     },
     {
       "id": "tplStarshipDoorway32-24",
       "pieceId": "tplStarshipDoorway32",
       "position": [
-        15,
-        16.5
+        14,
+        17.5
       ],
       "rotation": 270,
-      "order": 46,
+      "order": 125,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-24",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
-        17
+        14,
+        18
       ],
       "rotation": 180,
-      "order": 47,
+      "order": 126,
       "autoPaint": true
     },
     {
@@ -721,27 +1575,27 @@
         1
       ],
       "rotation": 90,
-      "order": 48,
+      "order": 127,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-26",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
+        8,
         1
       ],
-      "order": 49,
+      "order": 128,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-27",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
+        14,
         1
       ],
-      "order": 50,
+      "order": 129,
       "autoPaint": true
     },
     {
@@ -752,7 +1606,7 @@
         1
       ],
       "rotation": 180,
-      "order": 51,
+      "order": 130,
       "autoPaint": true
     },
     {
@@ -760,30 +1614,30 @@
       "pieceId": "tplStarshipWall32Corner",
       "position": [
         1,
-        8
+        7
       ],
       "rotation": 270,
-      "order": 52,
+      "order": 131,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-30",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
-        8
+        8,
+        7
       ],
-      "order": 53,
+      "order": 132,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-31",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
-        8
+        14,
+        7
       ],
-      "order": 54,
+      "order": 133,
       "autoPaint": true
     },
     {
@@ -791,10 +1645,10 @@
       "pieceId": "tplStarshipWall32Corner",
       "position": [
         20,
-        8
+        7
       ],
       "rotation": 90,
-      "order": 55,
+      "order": 134,
       "autoPaint": true
     },
     {
@@ -805,27 +1659,27 @@
         14
       ],
       "rotation": 270,
-      "order": 56,
+      "order": 135,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-34",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
+        8,
         14
       ],
-      "order": 57,
+      "order": 136,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-35",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
+        14,
         14
       ],
-      "order": 58,
+      "order": 137,
       "autoPaint": true
     },
     {
@@ -836,7 +1690,7 @@
         14
       ],
       "rotation": 90,
-      "order": 59,
+      "order": 138,
       "autoPaint": true
     },
     {
@@ -846,29 +1700,29 @@
         1,
         20
       ],
-      "order": 60,
+      "order": 139,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-38",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        7,
+        8,
         20
       ],
       "rotation": 180,
-      "order": 61,
+      "order": 140,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32Corner-39",
       "pieceId": "tplStarshipWall32Corner",
       "position": [
-        15,
+        14,
         20
       ],
       "rotation": 180,
-      "order": 62,
+      "order": 141,
       "autoPaint": true
     },
     {
@@ -879,29 +1733,29 @@
         20
       ],
       "rotation": 270,
-      "order": 63,
+      "order": 142,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-1",
       "pieceId": "tplStarshipWall32",
       "position": [
-        6.5,
+        7.5,
         1
       ],
       "rotation": 180,
-      "order": 64,
+      "order": 143,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-2",
       "pieceId": "tplStarshipWall32",
       "position": [
-        14.5,
+        13.5,
         1
       ],
       "rotation": 180,
-      "order": 65,
+      "order": 144,
       "autoPaint": true
     },
     {
@@ -912,7 +1766,7 @@
         1
       ],
       "rotation": 180,
-      "order": 66,
+      "order": 145,
       "autoPaint": true
     },
     {
@@ -920,54 +1774,54 @@
       "pieceId": "tplStarshipWall32",
       "position": [
         1,
-        7.5
+        6.5
       ],
       "rotation": 270,
-      "order": 67,
+      "order": 146,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-5",
       "pieceId": "tplStarshipWall32",
       "position": [
-        6.5,
-        8
+        7.5,
+        7
       ],
       "rotation": 180,
-      "order": 68,
+      "order": 147,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-6",
       "pieceId": "tplStarshipWall32",
       "position": [
-        7,
-        7.5
+        8,
+        6.5
       ],
       "rotation": 270,
-      "order": 69,
+      "order": 148,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-7",
       "pieceId": "tplStarshipWall32",
       "position": [
-        14.5,
-        8
+        13.5,
+        7
       ],
       "rotation": 180,
-      "order": 70,
+      "order": 149,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-8",
       "pieceId": "tplStarshipWall32",
       "position": [
-        15,
-        7.5
+        14,
+        6.5
       ],
       "rotation": 270,
-      "order": 71,
+      "order": 150,
       "autoPaint": true
     },
     {
@@ -975,10 +1829,10 @@
       "pieceId": "tplStarshipWall32",
       "position": [
         19.5,
-        8
+        7
       ],
       "rotation": 180,
-      "order": 72,
+      "order": 151,
       "autoPaint": true
     },
     {
@@ -986,10 +1840,10 @@
       "pieceId": "tplStarshipWall32",
       "position": [
         20,
-        7.5
+        6.5
       ],
       "rotation": 270,
-      "order": 73,
+      "order": 152,
       "autoPaint": true
     },
     {
@@ -1000,51 +1854,51 @@
         13.5
       ],
       "rotation": 270,
-      "order": 74,
+      "order": 153,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-12",
       "pieceId": "tplStarshipWall32",
       "position": [
-        6.5,
+        7.5,
         14
       ],
       "rotation": 180,
-      "order": 75,
+      "order": 154,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-13",
       "pieceId": "tplStarshipWall32",
       "position": [
-        7,
+        8,
         13.5
       ],
       "rotation": 270,
-      "order": 76,
+      "order": 155,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-14",
       "pieceId": "tplStarshipWall32",
       "position": [
-        14.5,
+        13.5,
         14
       ],
       "rotation": 180,
-      "order": 77,
+      "order": 156,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-15",
       "pieceId": "tplStarshipWall32",
       "position": [
-        15,
+        14,
         13.5
       ],
       "rotation": 270,
-      "order": 78,
+      "order": 157,
       "autoPaint": true
     },
     {
@@ -1055,7 +1909,7 @@
         14
       ],
       "rotation": 180,
-      "order": 79,
+      "order": 158,
       "autoPaint": true
     },
     {
@@ -1066,7 +1920,7 @@
         13.5
       ],
       "rotation": 270,
-      "order": 80,
+      "order": 159,
       "autoPaint": true
     },
     {
@@ -1077,51 +1931,51 @@
         19.5
       ],
       "rotation": 270,
-      "order": 81,
+      "order": 160,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-19",
       "pieceId": "tplStarshipWall32",
       "position": [
-        6.5,
+        7.5,
         20
       ],
       "rotation": 180,
-      "order": 82,
+      "order": 161,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-20",
       "pieceId": "tplStarshipWall32",
       "position": [
-        7,
+        8,
         19.5
       ],
       "rotation": 270,
-      "order": 83,
+      "order": 162,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-21",
       "pieceId": "tplStarshipWall32",
       "position": [
-        14.5,
+        13.5,
         20
       ],
       "rotation": 180,
-      "order": 84,
+      "order": 163,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-22",
       "pieceId": "tplStarshipWall32",
       "position": [
-        15,
+        14,
         19.5
       ],
       "rotation": 270,
-      "order": 85,
+      "order": 164,
       "autoPaint": true
     },
     {
@@ -1132,7 +1986,7 @@
         20
       ],
       "rotation": 180,
-      "order": 86,
+      "order": 165,
       "autoPaint": true
     },
     {
@@ -1143,7 +1997,7 @@
         19.5
       ],
       "rotation": 270,
-      "order": 87,
+      "order": 166,
       "autoPaint": true
     },
     {
@@ -1153,7 +2007,7 @@
         3,
         1
       ],
-      "order": 88,
+      "order": 167,
       "autoPaint": true
     },
     {
@@ -1163,79 +2017,79 @@
         5,
         1
       ],
-      "order": 89,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32Corner-41",
-      "pieceId": "tplStarshipWall32Corner",
-      "position": [
-        5.5,
-        1
-      ],
-      "rotation": 90,
-      "order": 90,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-3",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        9,
-        1
-      ],
-      "order": 91,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-4",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        11,
-        1
-      ],
-      "order": 92,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-5",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        13,
-        1
-      ],
-      "order": 93,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32Corner-42",
-      "pieceId": "tplStarshipWall32Corner",
-      "position": [
-        13.5,
-        1
-      ],
-      "rotation": 90,
-      "order": 94,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-6",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        17,
-        1
-      ],
-      "order": 95,
+      "order": 168,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-25",
       "pieceId": "tplStarshipWall32",
       "position": [
+        6,
+        1
+      ],
+      "order": 169,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32Corner-41",
+      "pieceId": "tplStarshipWall32Corner",
+      "position": [
+        6.5,
+        1
+      ],
+      "rotation": 90,
+      "order": 170,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-3",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        10,
+        1
+      ],
+      "order": 171,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-4",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        12,
+        1
+      ],
+      "order": 172,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32Corner-42",
+      "pieceId": "tplStarshipWall32Corner",
+      "position": [
+        12.5,
+        1
+      ],
+      "rotation": 90,
+      "order": 173,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-5",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        16,
+        1
+      ],
+      "order": 174,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-6",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
         18,
         1
       ],
-      "order": 96,
+      "order": 175,
       "autoPaint": true
     },
     {
@@ -1246,7 +2100,7 @@
         1
       ],
       "rotation": 90,
-      "order": 97,
+      "order": 176,
       "autoPaint": true
     },
     {
@@ -1257,7 +2111,7 @@
         3
       ],
       "rotation": 90,
-      "order": 98,
+      "order": 177,
       "autoPaint": true
     },
     {
@@ -1268,18 +2122,7 @@
         5
       ],
       "rotation": 90,
-      "order": 99,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-26",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        1,
-        6
-      ],
-      "rotation": 90,
-      "order": 100,
+      "order": 178,
       "autoPaint": true
     },
     {
@@ -1287,43 +2130,43 @@
       "pieceId": "tplStarshipWall32Corner",
       "position": [
         1,
-        6.5
+        5.5
       ],
       "rotation": 90,
-      "order": 101,
+      "order": 179,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-26",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        8,
+        2
+      ],
+      "rotation": 270,
+      "order": 180,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-9",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
-        7,
+        14,
         3
       ],
       "rotation": 270,
-      "order": 102,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-27",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        7,
-        4
-      ],
-      "rotation": 270,
-      "order": 103,
+      "order": 181,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-10",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
-        15,
+        20,
         3
       ],
       "rotation": 270,
-      "order": 104,
+      "order": 182,
       "autoPaint": true
     },
     {
@@ -1331,32 +2174,10 @@
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
         20,
-        3
-      ],
-      "rotation": 270,
-      "order": 105,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-12",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        20,
         5
       ],
       "rotation": 270,
-      "order": 106,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-28",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        20,
-        6
-      ],
-      "rotation": 270,
-      "order": 107,
+      "order": 183,
       "autoPaint": true
     },
     {
@@ -1364,153 +2185,142 @@
       "pieceId": "tplStarshipWall32Corner",
       "position": [
         20,
-        6.5
+        5.5
       ],
       "rotation": 180,
-      "order": 108,
+      "order": 184,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-27",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        8,
+        5
+      ],
+      "rotation": 270,
+      "order": 185,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-28",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        8,
+        5.5
+      ],
+      "rotation": 270,
+      "order": 186,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-29",
       "pieceId": "tplStarshipWall32",
       "position": [
-        15,
-        6
+        14,
+        5.5
       ],
       "rotation": 270,
-      "order": 109,
+      "order": 187,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-30",
       "pieceId": "tplStarshipWall32",
       "position": [
-        15,
-        6.5
+        2,
+        7
       ],
-      "rotation": 270,
-      "order": 110,
+      "rotation": 180,
+      "order": 188,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-31",
       "pieceId": "tplStarshipWall32",
       "position": [
-        7,
-        6.5
+        5,
+        7
       ],
-      "rotation": 270,
-      "order": 111,
+      "rotation": 180,
+      "order": 189,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-32",
       "pieceId": "tplStarshipWall32",
       "position": [
-        2,
-        8
+        6,
+        7
       ],
       "rotation": 180,
-      "order": 112,
+      "order": 190,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-33",
       "pieceId": "tplStarshipWall32",
       "position": [
-        5,
-        8
+        6.5,
+        7
       ],
       "rotation": 180,
-      "order": 113,
+      "order": 191,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-12",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        10,
+        7
+      ],
+      "rotation": 180,
+      "order": 192,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-34",
       "pieceId": "tplStarshipWall32",
       "position": [
-        5.5,
-        8
+        12.5,
+        7
       ],
       "rotation": 180,
-      "order": 114,
+      "order": 193,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-35",
       "pieceId": "tplStarshipWall32",
       "position": [
-        8,
-        8
+        15,
+        7
       ],
       "rotation": 180,
-      "order": 115,
+      "order": 194,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-36",
       "pieceId": "tplStarshipWall32",
       "position": [
-        11,
-        8
+        18,
+        7
       ],
       "rotation": 180,
-      "order": 116,
+      "order": 195,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32-37",
       "pieceId": "tplStarshipWall32",
       "position": [
-        12,
-        8
-      ],
-      "rotation": 180,
-      "order": 117,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-38",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        13,
-        8
-      ],
-      "rotation": 180,
-      "order": 118,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-39",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        13.5,
-        8
-      ],
-      "rotation": 180,
-      "order": 119,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-40",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        16,
-        8
-      ],
-      "rotation": 180,
-      "order": 120,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-41",
-      "pieceId": "tplStarshipWall32",
-      "position": [
         18.5,
-        8
+        7
       ],
       "rotation": 180,
-      "order": 121,
+      "order": 196,
       "autoPaint": true
     },
     {
@@ -1518,10 +2328,10 @@
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
         1,
-        10
+        9
       ],
       "rotation": 90,
-      "order": 122,
+      "order": 197,
       "autoPaint": true
     },
     {
@@ -1529,10 +2339,21 @@
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
         1,
+        11
+      ],
+      "rotation": 90,
+      "order": 198,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-38",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        1,
         12
       ],
       "rotation": 90,
-      "order": 123,
+      "order": 199,
       "autoPaint": true
     },
     {
@@ -1543,51 +2364,73 @@
         12.5
       ],
       "rotation": 90,
-      "order": 124,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-42",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        7,
-        9
-      ],
-      "rotation": 270,
-      "order": 125,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-43",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        15,
-        9
-      ],
-      "rotation": 270,
-      "order": 126,
+      "order": 200,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-15",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
-        20,
-        10
+        8,
+        9
       ],
       "rotation": 270,
-      "order": 127,
+      "order": 201,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-16",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
+        14,
+        9
+      ],
+      "rotation": 270,
+      "order": 202,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-39",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        14,
+        10
+      ],
+      "rotation": 270,
+      "order": 203,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-17",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        20,
+        9
+      ],
+      "rotation": 270,
+      "order": 204,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-18",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        20,
+        11
+      ],
+      "rotation": 270,
+      "order": 205,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-40",
+      "pieceId": "tplStarshipWall32",
+      "position": [
         20,
         12
       ],
       "rotation": 270,
-      "order": 128,
+      "order": 206,
       "autoPaint": true
     },
     {
@@ -1598,172 +2441,161 @@
         12.5
       ],
       "rotation": 180,
-      "order": 129,
+      "order": 207,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-44",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        7,
-        12
-      ],
-      "rotation": 270,
-      "order": 130,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-45",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        7,
-        12.5
-      ],
-      "rotation": 270,
-      "order": 131,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-46",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        15,
-        12
-      ],
-      "rotation": 270,
-      "order": 132,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-47",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        15,
-        12.5
-      ],
-      "rotation": 270,
-      "order": 133,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-17",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        3,
-        14
-      ],
-      "rotation": 180,
-      "order": 134,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-48",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        5.5,
-        14
-      ],
-      "rotation": 180,
-      "order": 135,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-49",
+      "id": "tplStarshipWall32-41",
       "pieceId": "tplStarshipWall32",
       "position": [
         8,
-        14
+        12
       ],
-      "rotation": 180,
-      "order": 136,
+      "rotation": 270,
+      "order": 208,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-50",
+      "id": "tplStarshipWall32-42",
       "pieceId": "tplStarshipWall32",
       "position": [
-        11,
-        14
+        8,
+        12.5
       ],
-      "rotation": 180,
-      "order": 137,
+      "rotation": 270,
+      "order": 209,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-51",
+      "id": "tplStarshipWall32-43",
       "pieceId": "tplStarshipWall32",
       "position": [
-        12,
-        14
+        14,
+        12.5
       ],
-      "rotation": 180,
-      "order": 138,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-52",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        13,
-        14
-      ],
-      "rotation": 180,
-      "order": 139,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-53",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        13.5,
-        14
-      ],
-      "rotation": 180,
-      "order": 140,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-54",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        16,
-        14
-      ],
-      "rotation": 180,
-      "order": 141,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-55",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        18.5,
-        14
-      ],
-      "rotation": 180,
-      "order": 142,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-18",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        1,
-        16
-      ],
-      "rotation": 90,
-      "order": 143,
+      "rotation": 270,
+      "order": 210,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-19",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
+        3,
+        14
+      ],
+      "rotation": 180,
+      "order": 211,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-44",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        4,
+        14
+      ],
+      "rotation": 180,
+      "order": 212,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-45",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        6.5,
+        14
+      ],
+      "rotation": 180,
+      "order": 213,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-46",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        9,
+        14
+      ],
+      "rotation": 180,
+      "order": 214,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-47",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        12,
+        14
+      ],
+      "rotation": 180,
+      "order": 215,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-48",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        12.5,
+        14
+      ],
+      "rotation": 180,
+      "order": 216,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-49",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        15,
+        14
+      ],
+      "rotation": 180,
+      "order": 217,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-50",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        18,
+        14
+      ],
+      "rotation": 180,
+      "order": 218,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32-51",
+      "pieceId": "tplStarshipWall32",
+      "position": [
+        18.5,
+        14
+      ],
+      "rotation": 180,
+      "order": 219,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-20",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        1,
+        16
+      ],
+      "rotation": 90,
+      "order": 220,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-21",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
         1,
         18
       ],
       "rotation": 90,
-      "order": 144,
+      "order": 221,
       "autoPaint": true
     },
     {
@@ -1774,51 +2606,51 @@
         18.5
       ],
       "rotation": 90,
-      "order": 145,
+      "order": 222,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-56",
+      "id": "tplStarshipWall32-52",
       "pieceId": "tplStarshipWall32",
       "position": [
-        7,
+        8,
         15
       ],
       "rotation": 270,
-      "order": 146,
+      "order": 223,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-57",
-      "pieceId": "tplStarshipWall32",
+      "id": "tplStarshipWall32PlainLong-22",
+      "pieceId": "tplStarshipWall32PlainLong",
       "position": [
-        15,
-        15
+        14,
+        16
       ],
       "rotation": 270,
-      "order": 147,
+      "order": 224,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32PlainLong-20",
+      "id": "tplStarshipWall32PlainLong-23",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
         20,
         16
       ],
       "rotation": 270,
-      "order": 148,
+      "order": 225,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32PlainLong-21",
+      "id": "tplStarshipWall32PlainLong-24",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
         20,
         18
       ],
       "rotation": 270,
-      "order": 149,
+      "order": 226,
       "autoPaint": true
     },
     {
@@ -1829,148 +2661,137 @@
         18.5
       ],
       "rotation": 180,
-      "order": 150,
+      "order": 227,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-58",
+      "id": "tplStarshipWall32-53",
       "pieceId": "tplStarshipWall32",
       "position": [
-        7,
+        8,
         18
       ],
       "rotation": 270,
-      "order": 151,
+      "order": 228,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-59",
+      "id": "tplStarshipWall32-54",
       "pieceId": "tplStarshipWall32",
       "position": [
-        7,
+        8,
         18.5
       ],
       "rotation": 270,
-      "order": 152,
+      "order": 229,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-60",
+      "id": "tplStarshipWall32-55",
       "pieceId": "tplStarshipWall32",
       "position": [
-        15,
-        18
-      ],
-      "rotation": 270,
-      "order": 153,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32-61",
-      "pieceId": "tplStarshipWall32",
-      "position": [
-        15,
+        14,
         18.5
       ],
       "rotation": 270,
-      "order": 154,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-22",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        3,
-        20
-      ],
-      "rotation": 180,
-      "order": 155,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-23",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        5,
-        20
-      ],
-      "rotation": 180,
-      "order": 156,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32Corner-50",
-      "pieceId": "tplStarshipWall32Corner",
-      "position": [
-        5.5,
-        20
-      ],
-      "order": 157,
-      "autoPaint": true
-    },
-    {
-      "id": "tplStarshipWall32PlainLong-24",
-      "pieceId": "tplStarshipWall32PlainLong",
-      "position": [
-        9,
-        20
-      ],
-      "rotation": 180,
-      "order": 158,
+      "order": 230,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-25",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
-        11,
+        3,
         20
       ],
       "rotation": 180,
-      "order": 159,
+      "order": 231,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-26",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
-        13,
+        5,
         20
       ],
       "rotation": 180,
-      "order": 160,
+      "order": 232,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32Corner-51",
-      "pieceId": "tplStarshipWall32Corner",
+      "id": "tplStarshipWall32-56",
+      "pieceId": "tplStarshipWall32",
       "position": [
-        13.5,
+        6,
         20
       ],
-      "order": 161,
+      "rotation": 180,
+      "order": 233,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32Corner-50",
+      "pieceId": "tplStarshipWall32Corner",
+      "position": [
+        6.5,
+        20
+      ],
+      "order": 234,
       "autoPaint": true
     },
     {
       "id": "tplStarshipWall32PlainLong-27",
       "pieceId": "tplStarshipWall32PlainLong",
       "position": [
-        17,
+        10,
         20
       ],
       "rotation": 180,
-      "order": 162,
+      "order": 235,
       "autoPaint": true
     },
     {
-      "id": "tplStarshipWall32-62",
-      "pieceId": "tplStarshipWall32",
+      "id": "tplStarshipWall32PlainLong-28",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        12,
+        20
+      ],
+      "rotation": 180,
+      "order": 236,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32Corner-51",
+      "pieceId": "tplStarshipWall32Corner",
+      "position": [
+        12.5,
+        20
+      ],
+      "order": 237,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-29",
+      "pieceId": "tplStarshipWall32PlainLong",
+      "position": [
+        16,
+        20
+      ],
+      "rotation": 180,
+      "order": 238,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipWall32PlainLong-30",
+      "pieceId": "tplStarshipWall32PlainLong",
       "position": [
         18,
         20
       ],
       "rotation": 180,
-      "order": 163,
+      "order": 239,
       "autoPaint": true
     },
     {
@@ -1980,7 +2801,7 @@
         18.5,
         20
       ],
-      "order": 164,
+      "order": 240,
       "autoPaint": true
     }
   ],
@@ -1996,13 +2817,13 @@
           "3,1",
           "4,1",
           "5,1",
-          "7,1",
+          "6,1",
           "8,1",
           "9,1",
           "10,1",
           "11,1",
           "12,1",
-          "13,1",
+          "14,1",
           "15,1",
           "16,1",
           "17,1",
@@ -2012,13 +2833,14 @@
           "3,2",
           "4,2",
           "5,2",
+          "6,2",
           "7,2",
           "8,2",
           "9,2",
           "10,2",
           "11,2",
           "12,2",
-          "13,2",
+          "14,2",
           "15,2",
           "16,2",
           "17,2",
@@ -2028,6 +2850,7 @@
           "3,3",
           "4,3",
           "5,3",
+          "6,3",
           "7,3",
           "8,3",
           "9,3",
@@ -2046,7 +2869,6 @@
           "4,4",
           "5,4",
           "6,4",
-          "7,4",
           "8,4",
           "9,4",
           "10,4",
@@ -2064,51 +2886,50 @@
           "4,5",
           "5,5",
           "6,5",
-          "7,5",
           "8,5",
           "9,5",
           "10,5",
           "11,5",
           "12,5",
-          "13,5",
+          "14,5",
           "15,5",
           "16,5",
           "17,5",
           "18,5",
-          "1,6",
           "2,6",
           "3,6",
-          "4,6",
-          "5,6",
-          "7,6",
-          "8,6",
-          "9,6",
           "10,6",
           "11,6",
-          "12,6",
-          "13,6",
           "15,6",
           "16,6",
-          "17,6",
-          "18,6",
+          "1,7",
           "2,7",
           "3,7",
+          "4,7",
+          "5,7",
+          "6,7",
           "8,7",
           "9,7",
+          "10,7",
+          "11,7",
+          "12,7",
+          "14,7",
+          "15,7",
           "16,7",
           "17,7",
+          "18,7",
           "1,8",
           "2,8",
           "3,8",
           "4,8",
           "5,8",
-          "7,8",
+          "6,8",
           "8,8",
           "9,8",
           "10,8",
           "11,8",
           "12,8",
-          "13,8",
+          "14,8",
           "15,8",
           "16,8",
           "17,8",
@@ -2125,7 +2946,6 @@
           "10,9",
           "11,9",
           "12,9",
-          "13,9",
           "14,9",
           "15,9",
           "16,9",
@@ -2154,13 +2974,14 @@
           "3,11",
           "4,11",
           "5,11",
-          "7,11",
+          "6,11",
           "8,11",
           "9,11",
           "10,11",
           "11,11",
           "12,11",
           "13,11",
+          "14,11",
           "15,11",
           "16,11",
           "17,11",
@@ -2170,35 +2991,35 @@
           "3,12",
           "4,12",
           "5,12",
-          "7,12",
+          "6,12",
           "8,12",
           "9,12",
           "10,12",
           "11,12",
           "12,12",
-          "13,12",
+          "14,12",
           "15,12",
           "16,12",
           "17,12",
           "18,12",
-          "3,13",
           "4,13",
-          "8,13",
+          "5,13",
           "9,13",
+          "10,13",
+          "15,13",
           "16,13",
-          "17,13",
           "1,14",
           "2,14",
           "3,14",
           "4,14",
           "5,14",
-          "7,14",
+          "6,14",
           "8,14",
           "9,14",
           "10,14",
           "11,14",
           "12,14",
-          "13,14",
+          "14,14",
           "15,14",
           "16,14",
           "17,14",
@@ -2215,7 +3036,6 @@
           "10,15",
           "11,15",
           "12,15",
-          "13,15",
           "14,15",
           "15,15",
           "16,15",
@@ -2244,13 +3064,14 @@
           "3,17",
           "4,17",
           "5,17",
-          "7,17",
+          "6,17",
           "8,17",
           "9,17",
           "10,17",
           "11,17",
           "12,17",
           "13,17",
+          "14,17",
           "15,17",
           "16,17",
           "17,17",
@@ -2260,13 +3081,13 @@
           "3,18",
           "4,18",
           "5,18",
-          "7,18",
+          "6,18",
           "8,18",
           "9,18",
           "10,18",
           "11,18",
           "12,18",
-          "13,18",
+          "14,18",
           "15,18",
           "16,18",
           "17,18",

@@ -68,6 +68,13 @@ const FLOOR_FIELD = {
   filter: (tile) => !tile.wall && !tile.solid && !tile.empty,
 }
 
+const UNDER_WALL_FLOOR_FIELD = {
+  key: 'underWall',
+  label: 'Under-wall floor (32×32)',
+  tip: 'Floor 32 tip fill on underlay tip slots with no ground diamond (e.g. exterior east/south wall halves past floorUnder). Empty = no tip fill.',
+  filter: (tile) => !tile.wall && !tile.solid && !tile.empty,
+}
+
 const WALL_FIELD = {
   filter: (tile) => Boolean(tile.wall),
 }
@@ -863,6 +870,21 @@ export default function AutoPaintRulesetEditorScreen({
                   acceptId={roleIdAllowed}
                   titleForTile={roleThumbTitle}
                   onChange={onWeightedRoleChange((entries) => patchFloors({ defaultTile: entries }))}
+                />
+                <TileSpritePicker
+                  label={UNDER_WALL_FLOOR_FIELD.label}
+                  labelTip={UNDER_WALL_FLOOR_FIELD.tip}
+                  options={tileOptions(UNDER_WALL_FLOOR_FIELD, draft.floors.underWall)}
+                  value={draft.floors.underWall ?? []}
+                  multi
+                  weighted
+                  emptyText={emptyHint}
+                  resolveDropId={resolveDropToRole}
+                  acceptId={roleIdAllowed}
+                  titleForTile={roleThumbTitle}
+                  onChange={onWeightedRoleChange((entries) => patchFloors({ underWall: entries }), {
+                    allowEmpty: true,
+                  })}
                 />
               </PropertySection>
 

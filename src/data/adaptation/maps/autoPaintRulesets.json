@@ -15,6 +15,12 @@
             "weight": 1
           }
         ],
+        "underWall": [
+          {
+            "id": "tplStarshipFloor32",
+            "weight": 1
+          }
+        ],
         "variants": []
       },
       "walls": {
