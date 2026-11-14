@@ -11,9 +11,12 @@ export default function TextDialog({ title, message, initialValue = '', placehol
   }, [onCancel])
 
   return (
-    <div className="me-dialog-backdrop" onPointerDown={(event) => event.target === event.currentTarget && onCancel()}>
+    <div
+      className="me-dialog-backdrop ed-dialog-backdrop"
+      onPointerDown={(event) => event.target === event.currentTarget && onCancel()}
+    >
       <form
-        className="me-dialog"
+        className="me-dialog ed-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="me-text-title"
@@ -22,12 +25,12 @@ export default function TextDialog({ title, message, initialValue = '', placehol
           onSave(value)
         }}
       >
-        <p id="me-text-title" className="me-heading">
+        <p id="me-text-title" className="me-heading ed-dialog-title">
           {title}
         </p>
-        {message && <p className="me-text">{message}</p>}
+        {message && <p className="me-text ed-dialog-text">{message}</p>}
         <input
-          className="me-name me-label-input"
+          className="me-name me-label-input ed-dialog-input"
           type="text"
           value={value}
           maxLength={maxLength}
@@ -37,16 +40,16 @@ export default function TextDialog({ title, message, initialValue = '', placehol
           onFocus={(event) => event.target.select()}
           onChange={(event) => setValue(event.target.value)}
         />
-        <div className="me-dialog-actions">
+        <div className="me-dialog-actions ed-dialog-actions">
           {removeLabel && (
-            <button type="button" className="me-button" onClick={() => onSave('')}>
+            <button type="button" className="me-button ed-dialog-btn" onClick={() => onSave('')}>
               {removeLabel}
             </button>
           )}
-          <button type="button" className="me-button" onClick={onCancel}>
+          <button type="button" className="me-button ed-dialog-btn" onClick={onCancel}>
             Cancel
           </button>
-          <button type="submit" className="me-button is-primary">
+          <button type="submit" className="me-button ed-dialog-btn is-primary">
             {saveLabel}
           </button>
         </div>

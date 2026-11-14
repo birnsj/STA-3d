@@ -1,11 +1,15 @@
 import { useLayoutEffect, useRef } from 'react'
 import { getTile, groundTileId, imageSize, NULL_TILE } from '../../maps/mapFormat.js'
+import { isTemplateWallCollider, templatePieceWorldAabb } from '../../maps/templatePieces.js'
 import { loadImage } from './canvasTiles.js'
 import './maps.css'
 
 // Canvas pixels per tile: as many as fit MAX_PIXELS across the map, up to MAX_TILE_PIXELS.
 const MAX_PIXELS = 2048
 const MAX_TILE_PIXELS = 16
+
+// Top-down silhouette for Template 32 / overlay walls (no full-cell wall tile art).
+const TEMPLATE_WALL_FILL = '#3d4650'
 
 // A tile PNG (iso, 64 wide, mapFormat.js imageSize) seen from above: its top face (the floor diamond, raised by the
 // block height for walls) unskewed onto a size x size square. The transform maps the face's corners top / right / left
@@ -23,10 +27,27 @@ function topFace(tile, image, size) {
   return canvas
 }
 
+function drawTemplateWallFootprints(context, placements, size) {
+  if (!placements?.length) return
+  context.fillStyle = TEMPLATE_WALL_FILL
+  for (const entry of placements) {
+    const box = templatePieceWorldAabb(entry)
+    if (!box || !isTemplateWallCollider(box.def)) continue
+    // foreignObject origin is tile (−0.5, −0.5); canvas (0,0) = that corner.
+    const x = (box.minX + 0.5) * size
+    const y = (box.minY + 0.5) * size
+    const w = (box.maxX - box.minX) * size
+    const h = (box.maxY - box.minY) * size
+    if (w <= 0 || h <= 0) continue
+    context.fillRect(x, y, w, h)
+  }
+}
+
 // A map's tiles top down, one unit per tile with tile (x, y) centred on (x, y), for the minimaps (exploration, map editor).
 // Drawn into one canvas, redrawn only when the tiles change: a big map has thousands of tiles, too many to keep as SVG
 // elements in a view that re-renders as people move.
-export default function MinimapTiles({ tiles, floorUnder = null }) {
+// Template Piece walls (Template 32) live in templatePiecePlacements — stamp their footprints after floors so rooms read.
+export default function MinimapTiles({ tiles, floorUnder = null, templatePiecePlacements = null }) {
   const canvasRef = useRef(null)
   const rows = tiles.length
   const columns = tiles[0]?.length ?? 0
@@ -59,11 +80,12 @@ export default function MinimapTiles({ tiles, floorUnder = null }) {
           if (face) context.drawImage(face, x * size, y * size)
         }
       }
+      drawTemplateWallFootprints(context, templatePiecePlacements, size)
     })
     return () => {
       cancelled = true
     }
-  }, [tiles, floorUnder, rows, columns])
+  }, [tiles, floorUnder, templatePiecePlacements, rows, columns])
 
   return (
     <foreignObject x={-0.5} y={-0.5} width={columns} height={rows} pointerEvents="none">

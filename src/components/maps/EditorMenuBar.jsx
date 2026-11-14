@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-// File / Edit / View / Tools / Test / Help. Legacy Map Generator / Name / Episode / Card live on the Properties Map tab (and toolbar).
+// File / Edit / View / Tools / Test / Help. Tools editors + Legacy generate also sit as toolbar icons.
 
 const MENUS = [
   {

@@ -15,11 +15,26 @@ function itemLayer(item) {
   return 'ground'
 }
 
+function matchesQuery(item, q) {
+  if (!q) return true
+  return (
+    item.label.toLowerCase().includes(q) ||
+    item.id.toLowerCase().includes(q) ||
+    String(item.groupLabel ?? '')
+      .toLowerCase()
+      .includes(q) ||
+    String(item.section ?? '')
+      .toLowerCase()
+      .includes(q)
+  )
+}
+
 /**
  * Left-rail source palette (same chrome as Map Editor Assets).
- * Tabs are authoring **layers** (Ground, Walls, …), not Tiles/Pieces.
+ * Tabs are authoring **layers** (Ground, Walls, …). Items with groupId/groupLabel/section
+ * render under the same category → tileset collapses as Dev Edit Assets.
  * Thumbnail S/M/L/XL matches Dev Edit Assets (shared localStorage key).
- * items: [{ kind: 'tile'|'piece', id, label, href?, layer? }]
+ * items: [{ kind: 'tile'|'piece', id, label, href?, layer?, groupId?, groupLabel?, section? }]
  */
 const LAYER_TAB_SHORT = {
   ground: 'Ground',
@@ -34,6 +49,7 @@ export default function GeSourcePalette({ title = 'Palette', hint = null, items 
   const [tab, setTab] = useState('ground')
   const [query, setQuery] = useState('')
   const [thumbScale, setThumbScale] = useState(loadThumbScale)
+  const [open, setOpen] = useState(() => new Set())
   const q = query.trim().toLowerCase()
   const thumbCols = thumbColsForScale(thumbScale)
 
@@ -55,10 +71,71 @@ export default function GeSourcePalette({ title = 'Palette', hint = null, items 
   const visible = useMemo(() => {
     return items.filter((item) => {
       if (itemLayer(item) !== activeTab) return false
-      if (!q) return true
-      return item.label.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
+      return matchesQuery(item, q)
     })
   }, [items, activeTab, q])
+
+  // Same category → tileset order as Dev Edit Assets when items carry group metadata.
+  const grouped = useMemo(() => {
+    const order = []
+    const byKey = new Map()
+    for (const item of visible) {
+      const groupId = item.groupId || '_ungrouped'
+      const groupLabel = item.groupLabel || 'Assets'
+      const section = item.section || null
+      const key = groupId
+      let entry = byKey.get(key)
+      if (!entry) {
+        entry = { id: groupId, label: groupLabel, section, items: [] }
+        byKey.set(key, entry)
+        order.push(entry)
+      }
+      entry.items.push(item)
+    }
+    return order
+  }, [visible])
+
+  const useGroups = grouped.some((group) => group.id !== '_ungrouped') || grouped.length > 1
+
+  const toggle = (id) => {
+    setOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const expandAll = () => setOpen(new Set(grouped.map((group) => group.id)))
+  const collapseAll = () => setOpen(new Set())
+  const showCollapse = open.size > 0
+
+  const renderThumb = (item) => {
+    const tile = item.kind === 'tile' ? getTile(item.id) : null
+    const piece = item.kind === 'piece' ? getTemplatePiece(item.id) || item : null
+    const dimTitle =
+      item.kind === 'tile' && tile
+        ? tileThumbTitle(tile, { extra: 'Drag onto a slot' })
+        : templatePieceThumbTitle(piece, { extra: 'Drag onto a slot' })
+    return (
+      <div key={`${item.kind}:${item.id}`} className="ed-asset-cell">
+        <button
+          type="button"
+          className="ed-thumb-btn ge-source-thumb"
+          title={dimTitle}
+          draggable
+          onDragStart={(event) => setGeAssetDrag(event, item.kind, item.id)}
+        >
+          {item.kind === 'tile' && tile ? (
+            <TileThumbnail tile={tile} className="me-thumb-preview" animate={false} />
+          ) : (
+            <TemplatePieceThumbnail piece={piece} className="me-thumb-preview" animate={false} />
+          )}
+        </button>
+        <span className="ed-thumb-label">{item.label}</span>
+      </div>
+    )
+  }
 
   return (
     <aside
@@ -107,37 +184,48 @@ export default function GeSourcePalette({ title = 'Palette', hint = null, items 
           aria-label="Search palette"
           onChange={(event) => setQuery(event.target.value)}
         />
+        {useGroups && (
+          <button
+            type="button"
+            className="me-button ed-collapse-all"
+            disabled={!grouped.length}
+            title={showCollapse ? 'Collapse all groups' : 'Expand all groups'}
+            onClick={() => (showCollapse ? collapseAll() : expandAll())}
+          >
+            {showCollapse ? 'Collapse' : 'Expand'}
+          </button>
+        )}
       </div>
       {hint ? <p className="ge-source-hint">{hint}</p> : null}
       <div className="ed-asset-body">
-        <div className="ed-asset-grid" role="list">
-          {visible.map((item) => {
-            const tile = item.kind === 'tile' ? getTile(item.id) : null
-            const piece = item.kind === 'piece' ? getTemplatePiece(item.id) || item : null
-            const dimTitle =
-              item.kind === 'tile' && tile
-                ? tileThumbTitle(tile, { extra: 'Drag onto a slot' })
-                : templatePieceThumbTitle(piece, { extra: 'Drag onto a slot' })
+        {useGroups ? (
+          grouped.map((group, index) => {
+            const isOpen = open.has(group.id) || Boolean(q)
+            const startsSection = group.section && group.section !== grouped[index - 1]?.section
             return (
-              <div key={`${item.kind}:${item.id}`} className="ed-asset-cell">
+              <div key={group.id} className="me-group ed-palette-layer">
+                {startsSection && <p className="me-section">{group.section}</p>}
                 <button
                   type="button"
-                  className="ed-thumb-btn ge-source-thumb"
-                  title={dimTitle}
-                  draggable
-                  onDragStart={(event) => setGeAssetDrag(event, item.kind, item.id)}
+                  className="me-group-tag"
+                  aria-expanded={isOpen}
+                  onClick={() => toggle(group.id)}
                 >
-                  {item.kind === 'tile' && tile ? (
-                    <TileThumbnail tile={tile} className="me-thumb-preview" animate={false} />
-                  ) : (
-                    <TemplatePieceThumbnail piece={piece} className="me-thumb-preview" animate={false} />
-                  )}
+                  <span className="me-group-arrow" aria-hidden="true">
+                    {isOpen ? '▾' : '▸'}
+                  </span>
+                  <span className="me-group-label">{group.label}</span>
+                  <span className="me-group-count">{group.items.length}</span>
                 </button>
-                <span className="ed-thumb-label">{item.label}</span>
+                {isOpen && <div className="ed-asset-grid">{group.items.map(renderThumb)}</div>}
               </div>
             )
-          })}
-        </div>
+          })
+        ) : (
+          <div className="ed-asset-grid" role="list">
+            {visible.map(renderThumb)}
+          </div>
+        )}
         {!visible.length && (
           <p className="ce-text ge-picker-empty">
             No {LAYER_LABELS[activeTab] ?? activeTab} assets in this catalogue.

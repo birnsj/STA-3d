@@ -30,6 +30,7 @@ import useCamera from '../combat/useCamera.js'
 import { useDisplaySettings } from '../../settings/DisplaySettingsContext.js'
 import './alphaMasks.js' // installs the alpha masks that ground-item picking reads
 import { boardLayout } from './canvasTiles.js'
+import { DEFAULT_EDITOR_GRID_SIZE } from './editorGrid.js'
 import { nearestGuideSnap } from './pixi/editorMarkers.js'
 import { startMapScene } from './pixi/mapScene.js'
 import usePixiScene from './pixi/usePixiScene.js'
@@ -216,7 +217,7 @@ export default function EditorBoard({
   lighting = true,
   animate = true,
   showGrid = true,
-  gridSize = 32,
+  gridSize = DEFAULT_EDITOR_GRID_SIZE,
   propFade = false,
   showBounds = true,
   showCentre = false,

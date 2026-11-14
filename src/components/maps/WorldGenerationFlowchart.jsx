@@ -13,6 +13,7 @@ export default function WorldGenerationFlowchart({
   selectedNodeId,
   onSelectNode,
   onPipelineChange,
+  onFloorsChange,
   onDoorsChange,
   onWallsChange,
   onOpenHelpTopic,
@@ -21,7 +22,6 @@ export default function WorldGenerationFlowchart({
   titleForTile = null,
 }) {
   const selected = WORLD_GENERATION_FLOW_NODES.find((node) => node.id === selectedNodeId) ?? WORLD_GENERATION_FLOW_NODES[0]
-  const showAssembly = selected.id === 'endCaps'
 
   const setSetting = (setting, value) => {
     if (setting.path === 'doors.preferOpenings') {
@@ -32,15 +32,33 @@ export default function WorldGenerationFlowchart({
       onDoorsChange?.({ minGap: Number(value) })
       return
     }
-    onPipelineChange?.({ [setting.key]: setting.type === 'boolean' ? Boolean(value) : Number(value) })
+    if (setting.type === 'boolean') {
+      onPipelineChange?.({ [setting.key]: Boolean(value) })
+      return
+    }
+    const num = Number(value)
+    // Door gap ↔ lining stay paired: cells×2 tip slots; lining is tipUnits (default cells×2−1 so one tip
+    // remains for the jamb). Changing one updates the other so Generate cannot drift out of sync.
+    if (setting.key === 'doorCells') {
+      const doorCells = Math.min(setting.max, Math.max(setting.min, Math.round(num) || setting.min))
+      const doorTipUnits = Math.min(6, Math.max(1, doorCells * 2 - 1))
+      onPipelineChange?.({ doorCells, doorTipUnits })
+      return
+    }
+    if (setting.key === 'doorTipUnits') {
+      const doorTipUnits = Math.min(setting.max, Math.max(setting.min, Math.round(num) || setting.min))
+      const doorCells = Math.min(4, Math.max(1, Math.ceil(doorTipUnits / 2)))
+      onPipelineChange?.({ doorTipUnits, doorCells })
+      return
+    }
+    onPipelineChange?.({ [setting.key]: num })
   }
 
   return (
-    <section className="ge-block ge-flowchart">
-      <h3 className="ge-block-title">Flowchart</h3>
+    <div className="ge-flowchart">
       <p className="ge-block-hint">
-        How generation decides walls from floors. Click a step to edit its settings. Role slots below still pick the art.
-        Corners opens a visual assembly of how pieces fit together.
+        How generation decides walls from floors. Click a step for its visual assembly (same style as Corners) and any
+        settings. Role slots below still pick the art.
       </p>
       <div className="ge-flow-row" role="list">
         {WORLD_GENERATION_FLOW_NODES.map((node, index) => (
@@ -73,21 +91,20 @@ export default function WorldGenerationFlowchart({
           ) : null}
         </div>
         <p className="ge-block-hint">{selected.summary}</p>
-        {showAssembly ? (
-          <WorldGenerationPackingAssembly
-            draft={draft}
-            onWallsChange={onWallsChange}
-            onPipelineChange={onPipelineChange}
-            resolveDropId={resolveDropId}
-            acceptId={acceptId}
-            titleForTile={titleForTile}
-          />
-        ) : selected.settings.length === 0 ? (
-          <p className="ge-block-hint">
-            No numeric settings on this step — use the role slots below for art, or Help for the full explanation.
-          </p>
-        ) : (
+        <WorldGenerationPackingAssembly
+          nodeId={selected.id}
+          draft={draft}
+          onFloorsChange={onFloorsChange}
+          onDoorsChange={onDoorsChange}
+          onWallsChange={onWallsChange}
+          onPipelineChange={onPipelineChange}
+          resolveDropId={resolveDropId}
+          acceptId={acceptId}
+          titleForTile={titleForTile}
+        />
+        {selected.settings.length > 0 ? (
           <div className="ge-flow-settings">
+            {selected.settingsHint ? <p className="ge-block-hint">{selected.settingsHint}</p> : null}
             {selected.settings.map((setting) => {
               const value = readSetting(draft, setting)
               if (setting.type === 'boolean') {
@@ -118,8 +135,8 @@ export default function WorldGenerationFlowchart({
               )
             })}
           </div>
-        )}
+        ) : null}
       </div>
-    </section>
+    </div>
   )
 }

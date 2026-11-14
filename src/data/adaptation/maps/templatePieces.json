@@ -8,7 +8,9 @@
     "R yaws 90° around the vertical through the south tip (isometric floor). Art is re-projected per yaw (orients); not a screen-space spin.",
     "Fitting / prop / console / biobed pieces include animation.overlay emission frames (blink). Art via scripts/makeTemplatePieces.mjs",
     "cover / fade match counterpart Starship tiles; animation.emissive / emitColour match wall overlay Properties (saved via /__templates).",
-    "Dimension Kit (tplDim*): solid-but-lit AA size/footprint tests. Separate from Starship templates and Calibration tiles. Art via scripts/makeDimensionKit.mjs."
+    "Dimension Kit (tplDim*): solid-but-lit AA size/footprint tests. Separate from Starship templates and Calibration tiles. Art via scripts/makeDimensionKit.mjs.",
+    "Outdoor Template 32 (tplOutdoor*): overlay copies of curated outdoor tiles (buildings, roads, trees, fields). Reuses existing tile PNG paths — no new art. Tag outdoor. Group: Outdoor Template 32.",
+    "Outdoor Template 32 walls (tplOutdoor*Wall32*): 32 thick (64 / 128 run); corner post 32×32. Faces match outdoor builtWall tiles (prefab / barn / city / timber / stone / ruin). Art via scripts/makeOutdoorTemplatePieces.mjs. Floors/props remain tile-art overlays."
   ],
   "pieces": [
     {
@@ -13363,6 +13365,1544 @@
       "cover": true,
       "fade": false,
       "face": "plain"
+    },
+    {
+      "id": "tplOutdoorGrass",
+      "label": "Grass",
+      "layer": "ground",
+      "href": "/art/sprites/environment/forest/grass.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorGround",
+      "label": "Ground",
+      "layer": "ground",
+      "href": "/art/sprites/environment/settlement/ground.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorSavanna",
+      "label": "Savanna Grass",
+      "layer": "ground",
+      "href": "/art/sprites/environment/grassland/savanna.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorPath",
+      "label": "Paved Path",
+      "layer": "ground",
+      "href": "/art/sprites/environment/settlement/path.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorPavement",
+      "label": "Pavement",
+      "layer": "ground",
+      "href": "/art/sprites/environment/city/pavement.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorCropRows",
+      "label": "Crop Rows",
+      "layer": "ground",
+      "href": "/art/sprites/environment/farm/cropRows.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorTallCrop",
+      "label": "Tall Crop",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/farm/tallCrop.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 22,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorMud",
+      "label": "Mud",
+      "layer": "ground",
+      "href": "/art/sprites/environment/swamp/mud.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorWater",
+      "label": "Deep Water",
+      "layer": "ground",
+      "href": "/art/sprites/environment/swamp/water.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorReeds",
+      "label": "Reeds",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/swamp/reeds.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 20,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorFence",
+      "label": "Fence",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/settlement/fence.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 12,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorTree",
+      "label": "Tree",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/settlement/tree.png",
+      "size": {
+        "width": 64,
+        "height": 128
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture",
+        "tall"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 88,
+      "cover": true,
+      "fade": true
+    },
+    {
+      "id": "tplOutdoorBroadleaf",
+      "label": "Broadleaf Tree",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/forest/broadleaf.png",
+      "size": {
+        "width": 64,
+        "height": 128
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture",
+        "tall"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 88,
+      "cover": true,
+      "fade": true
+    },
+    {
+      "id": "tplOutdoorPine",
+      "label": "Pine Tree",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/forest/pine.png",
+      "size": {
+        "width": 64,
+        "height": 134
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture",
+        "tall"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 96,
+      "cover": true,
+      "fade": true
+    },
+    {
+      "id": "tplOutdoorAcacia",
+      "label": "Acacia Tree",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/grassland/acacia.png",
+      "size": {
+        "width": 64,
+        "height": 108
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture",
+        "tall"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 68,
+      "cover": true,
+      "fade": true
+    },
+    {
+      "id": "tplOutdoorBush",
+      "label": "Bush",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/forest/bush.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 16,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorRock",
+      "label": "Boulder",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/settlement/rock.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 30,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorMossRock",
+      "label": "Mossy Boulder",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/forest/mossRock.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 30,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorLog",
+      "label": "Fallen Log",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/forest/log.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 10,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorSilo",
+      "label": "Silo",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/farm/silo.png",
+      "size": {
+        "width": 64,
+        "height": 130
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture",
+        "tall"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 92,
+      "cover": true,
+      "fade": true
+    },
+    {
+      "id": "tplOutdoorHayBale",
+      "label": "Hay Bale",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/farm/hayBale.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 12,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorPlanter",
+      "label": "Planter",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/city/planter.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 14,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorFountain",
+      "label": "Fountain",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/city/fountain.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 18,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorTent",
+      "label": "Tent",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/fieldCamp/tent.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 26,
+      "cover": true,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorCampfire",
+      "label": "Campfire",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/fieldCamp/campfire.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 8,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorSensorMast",
+      "label": "Sensor Mast",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/fieldCamp/sensorMast.png",
+      "size": {
+        "width": 64,
+        "height": 130
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "prop",
+        "furniture",
+        "tall"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 92,
+      "cover": true,
+      "fade": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32",
+      "label": "Prefab Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32.png",
+      "size": {
+        "width": 49,
+        "height": 105
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 105
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 105
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 105
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "prefab",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 80,
+      "cover": false,
+      "fade": true,
+      "face": "prefab"
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long",
+      "label": "Prefab Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 121
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 121
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 121
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 121
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "prefab",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 80,
+      "cover": false,
+      "fade": true,
+      "face": "prefab"
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner",
+      "label": "Prefab Corner 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 97
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 97
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 97
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorPrefabWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 97
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "prefab",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 80,
+      "cover": false,
+      "fade": true,
+      "face": "prefab"
+    },
+    {
+      "id": "tplOutdoorBarnWall32",
+      "label": "Barn Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32.png",
+      "size": {
+        "width": 49,
+        "height": 117
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "barn",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "barn"
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long",
+      "label": "Barn Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 133
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "barn",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "barn"
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner",
+      "label": "Barn Corner 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 109
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorBarnWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "barn",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "barn"
+    },
+    {
+      "id": "tplOutdoorCityWall32",
+      "label": "Building Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorCityWall32.png",
+      "size": {
+        "width": 49,
+        "height": 113
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "city",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "city"
+    },
+    {
+      "id": "tplOutdoorCityWall32Long",
+      "label": "Building Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 129
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "city",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "city"
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner",
+      "label": "Building Corner 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 105
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorCityWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "city",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "city"
+    },
+    {
+      "id": "tplOutdoorTimberWall32",
+      "label": "Timber Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32.png",
+      "size": {
+        "width": 49,
+        "height": 105
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 105
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 105
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 105
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "timber",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 80,
+      "cover": false,
+      "fade": true,
+      "face": "timber"
+    },
+    {
+      "id": "tplOutdoorTimberWall32Long",
+      "label": "Timber Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 121
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 121
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 121
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 121
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "timber",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 80,
+      "cover": false,
+      "fade": true,
+      "face": "timber"
+    },
+    {
+      "id": "tplOutdoorTimberWall32Corner",
+      "label": "Timber Corner 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 97
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 97
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 97
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorTimberWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 97
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "timber",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 80,
+      "cover": false,
+      "fade": true,
+      "face": "timber"
+    },
+    {
+      "id": "tplOutdoorStoneWall32",
+      "label": "Dry-Stone Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32.png",
+      "size": {
+        "width": 49,
+        "height": 93
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 93
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 93
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 93
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "stone",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 68,
+      "cover": false,
+      "fade": true,
+      "face": "stone"
+    },
+    {
+      "id": "tplOutdoorStoneWall32Long",
+      "label": "Dry-Stone Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 109
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 109
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 109
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 109
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "stone",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 68,
+      "cover": false,
+      "fade": true,
+      "face": "stone"
+    },
+    {
+      "id": "tplOutdoorStoneWall32Corner",
+      "label": "Dry-Stone Corner 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 85
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 85
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 85
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorStoneWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 85
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "stone",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 68,
+      "cover": false,
+      "fade": true,
+      "face": "stone"
+    },
+    {
+      "id": "tplOutdoorRuinWall32",
+      "label": "Ruined Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32.png",
+      "size": {
+        "width": 49,
+        "height": 77
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 77
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 77
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 77
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "ruin",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 52,
+      "cover": true,
+      "fade": true,
+      "face": "ruin"
+    },
+    {
+      "id": "tplOutdoorRuinWall32Long",
+      "label": "Ruined Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 93
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 93
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 93
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 93
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "ruin",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 52,
+      "cover": true,
+      "fade": true,
+      "face": "ruin"
+    },
+    {
+      "id": "tplOutdoorRuinWall32Corner",
+      "label": "Ruined Corner 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 69
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 69
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 69
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorRuinWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 69
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "outdoor",
+        "thick32",
+        "ruin",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 52,
+      "cover": true,
+      "fade": true,
+      "face": "ruin"
     }
   ]
 }

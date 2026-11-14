@@ -9,16 +9,23 @@ export default function LoadMapDialog({ maps, currentId, onLoad, onCancel }) {
   }, [onCancel])
 
   return (
-    <div className="me-dialog-backdrop" onPointerDown={(event) => event.target === event.currentTarget && onCancel()}>
-      <div className="me-dialog" role="dialog" aria-modal="true" aria-labelledby="me-load-title">
-        <p id="me-load-title" className="me-heading">
+    <div
+      className="me-dialog-backdrop ed-dialog-backdrop"
+      onPointerDown={(event) => event.target === event.currentTarget && onCancel()}
+    >
+      <div className="me-dialog ed-dialog" role="dialog" aria-modal="true" aria-labelledby="me-load-title">
+        <p id="me-load-title" className="me-heading ed-dialog-title">
           Load Map
         </p>
         {maps.length ? (
-          <ul className="me-load-list">
+          <ul className="me-load-list ed-dialog-list">
             {maps.map((entry) => (
               <li key={entry.id}>
-                <button type="button" className={`me-tool${entry.id === currentId ? ' is-selected' : ''}`} onClick={() => onLoad(entry.id)}>
+                <button
+                  type="button"
+                  className={`me-tool ed-dialog-list-item${entry.id === currentId ? ' is-selected' : ''}`}
+                  onClick={() => onLoad(entry.id)}
+                >
                   <span className="me-load-name">{entry.name}</span>
                   <span className="me-load-file">maps/{entry.id}.json</span>
                 </button>
@@ -26,10 +33,10 @@ export default function LoadMapDialog({ maps, currentId, onLoad, onCancel }) {
             ))}
           </ul>
         ) : (
-          <p className="me-text">No saved maps yet.</p>
+          <p className="me-text ed-dialog-text">No saved maps yet.</p>
         )}
-        <div className="me-dialog-actions">
-          <button type="button" className="me-button" onClick={onCancel}>
+        <div className="me-dialog-actions ed-dialog-actions">
+          <button type="button" className="me-button ed-dialog-btn" onClick={onCancel}>
             Cancel
           </button>
         </div>

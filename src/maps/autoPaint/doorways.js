@@ -1,4 +1,5 @@
-// Auto-Paint doorway openings: 96-wide (3× Doorway 32) on a 2-cell floor gap.
+// Auto-Paint doorway openings: 96px = 3× 32×32 Doorway tips on a 2-cell floor gap,
+// plus a near-side edge Doorway tip so a wall Corner cannot block the door centreline.
 // Openings paint as normal floor (no full-cell doorway tile). Independent of Legacy Map Generator.
 import { cellKey } from '../mapFormat.js'
 import { getTemplatePiece } from '../templatePieces.js'

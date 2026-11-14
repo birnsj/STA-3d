@@ -39,13 +39,25 @@ const SAMPLE_ENTRIES = [
   { story: { event: 'beamOut', name: 'Cmdr. Okafor' } },
 ]
 
-export default function StoryEditorScreen({ onBack }) {
+export default function StoryEditorScreen({ onBack, askConfirm = null }) {
   const [draft, setDraft] = useState(() => ({ ...STORY_TEMPLATES }))
   const [saved, setSaved] = useState(() => ({ ...STORY_TEMPLATES }))
   const [status, setStatus] = useState('')
   const dirty = FIELDS.some(({ key }) => draft[key] !== saved[key])
   const preview = useMemo(() => storyParagraphs(SAMPLE_ENTRIES, draft), [draft])
   const empty = FIELDS.filter(({ key }) => !draft[key]?.trim())
+
+  const confirmDiscard = async (message) => {
+    if (!dirty) return true
+    if (typeof askConfirm === 'function') {
+      return askConfirm({
+        title: 'Unsaved Changes',
+        message,
+        confirmLabel: 'Discard',
+      })
+    }
+    return window.confirm(message)
+  }
 
   const save = async () => {
     try {
@@ -58,8 +70,9 @@ export default function StoryEditorScreen({ onBack }) {
     }
   }
 
-  const load = () => {
-    if (dirty && !window.confirm('Discard unsaved story wording and reload the saved templates?')) return
+  const load = async () => {
+    const leave = await confirmDiscard('Discard unsaved story wording and reload the saved templates?')
+    if (!leave) return
     const next = { ...STORY_TEMPLATES }
     setDraft(next)
     setSaved({ ...next })
@@ -68,8 +81,9 @@ export default function StoryEditorScreen({ onBack }) {
 
   const revert = () => setDraft({ ...saved })
 
-  const discardAndBack = () => {
-    if (dirty && !window.confirm('Discard unsaved story wording changes?')) return
+  const discardAndBack = async () => {
+    const leave = await confirmDiscard('Discard unsaved story wording changes?')
+    if (!leave) return
     onBack()
   }
 

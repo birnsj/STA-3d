@@ -1,5 +1,5 @@
 // World Generation room grid — copied from Legacy makeDeckGenerator (option A), then owned here.
-// Generate New Map uses hazard:false and empty furnishRooms; helpers below cover that path only.
+// Generate Map uses hazard:false and empty furnishRooms; helpers below cover that path only.
 import { getTile } from '../mapFormat.js'
 import { WORLD_DOOR_MARK } from './constants.js'
 
@@ -112,7 +112,7 @@ function labelRegions(tiles, regions, names, random) {
 }
 
 /**
- * Deck room grid for Generate New Map.
+ * Deck room grid for Generate Map.
  * @param {{ floor: string, wall: string, door?: string, furnishRooms?: Function }} style
  */
 export function makeWorldDeckGenerator({

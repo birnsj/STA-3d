@@ -4,6 +4,12 @@ import { encodePng } from '../png.mjs'
 import { RESOLUTION, render, renderLights, shade, rgb, scale, clamp01 } from './engine.mjs'
 import { materialForKind } from './templateStarshipProps.mjs'
 import { fittingForFace, starshipWallMaterial } from './templateWallFaces.mjs'
+import { isOutdoorWallFace, outdoorWallMaterial } from './templateOutdoorWalls.mjs'
+
+function wallMaterialFor(face, height) {
+  if (isOutdoorWallFace(face)) return outdoorWallMaterial(height, face)
+  return starshipWallMaterial(height, fittingForFace(face, height))
+}
 
 export function itemSize(w, d, h) {
   const corners = [
@@ -228,7 +234,7 @@ export function paintPrismsAA(prisms, { subsamples = 3, face = 'plain', material
     // Per-prism material (e.g. console screen) wins over the piece-level kind.
     const prop = materialForKind(prism.material ?? material)
     if (prop) return prop
-    return starshipWallMaterial(h, fittingForFace(face, h))
+    return wallMaterialFor(face, h)
   }
   const scene = (px, py) => {
     let best = null
@@ -258,7 +264,7 @@ export function paintPrismsLightsAA(prisms, { face = 'plain', material = null, y
     const h = Math.max(1, (prism.z1 ?? 0) - (prism.z0 ?? 0))
     const prop = materialForKind(prism.material ?? material)
     if (prop) return prop
-    return starshipWallMaterial(h, fittingForFace(face, h))
+    return wallMaterialFor(face, h)
   }
   const scene = (px, py) => {
     let best = null

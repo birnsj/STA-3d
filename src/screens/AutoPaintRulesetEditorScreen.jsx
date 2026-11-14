@@ -1,16 +1,22 @@
 import { useMemo, useState } from 'react'
 import { autoPaintRoleThumbTitle } from '../components/maps/assetThumbTitle.js'
 import EditorBoard from '../components/maps/EditorBoard.jsx'
-import { EDITOR_GRID_SIZES } from '../components/maps/editorGrid.js'
+import { DEFAULT_EDITOR_GRID_SIZE, EDITOR_GRID_SIZES } from '../components/maps/editorGrid.js'
 import EditorGridOptions from '../components/maps/EditorGridOptions.jsx'
 import EditorSelect from '../components/maps/EditorSelect.jsx'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import { subEditorFileMenus } from '../components/maps/editorSubMenus.js'
 import GeSourcePalette from '../components/maps/GeSourcePalette.jsx'
+import {
+  PropertySection,
+  PropertySectionsProvider,
+  PropertySectionsToolbar,
+} from '../components/maps/PropertySections.jsx'
 import TileSpritePicker from '../components/maps/TileSpritePicker.jsx'
 import WorldGenerationAdjacencyEditor from '../components/maps/WorldGenerationAdjacencyEditor.jsx'
 import WorldGenerationFlowchart from '../components/maps/WorldGenerationFlowchart.jsx'
 import WorldGenerationHelpDialog from '../components/maps/WorldGenerationHelpDialog.jsx'
+import WorldGenerationMapPanel from '../components/maps/WorldGenerationMapPanel.jsx'
 import {
   AUTO_PAINT_ENVIRONMENTS,
   getAutoPaintRuleset,
@@ -28,14 +34,14 @@ import {
   saveAutoPaintRuleset,
 } from '../maps/autoPaintFiles.js'
 import { layerOfTile } from '../maps/layers.js'
-import { getTile, PALETTE_GROUPS, TILES } from '../maps/mapFormat.js'
+import { getTile, PALETTE_GROUPS, TILES, tileCatalogueEpochOf } from '../maps/mapFormat.js'
 import {
   editorTemplatePaletteItems,
   templatePieceCatalogueEpochOf,
 } from '../maps/templatePieces.js'
 import { WORLD_GENERATION_HELP_TOPICS } from '../data/adaptation/maps/worldGenerationWorkflow.js'
 
-// Tools → World Generation Ruleset. Palette = Dev Edit Template Pieces catalogue (one file). Wall roles place tiles.
+// Tools → World Generation Ruleset. Palette = Dev Edit Assets (Template Pieces + every tileset). Wall roles place tiles.
 // Help + flowchart copy/settings: edit worldGenerationWorkflow.js (not Legacy).
 
 const FLOOR_FIELD = {
@@ -64,10 +70,60 @@ const WALL_TILE_FIELDS = [
   { key: 'doorFrame', label: 'Door frame (optional)', required: false },
 ]
 
-/** Larger wall tiles from the Starship tileset (optional; Show all). Same PALETTE_GROUPS as Dev Edit Assets. */
-function starshipWallTiles() {
-  const group = PALETTE_GROUPS.find((entry) => entry.id === 'starship')
-  return (group?.tiles ?? []).map((id) => getTile(id)).filter((tile) => tile?.wall)
+/** Same tile list as Dev Edit Assets (all palette groups + Other). Null/empty authoring cells stay out. */
+function allEditorPaletteTiles() {
+  const grouped = new Set(PALETTE_GROUPS.flatMap((group) => group.tiles))
+  const byId = new Map()
+  for (const group of PALETTE_GROUPS) {
+    for (const id of group.tiles ?? []) {
+      const tile = getTile(id)
+      if (tile && !tile.empty) byId.set(tile.id, tile)
+    }
+  }
+  for (const tile of TILES) {
+    if (grouped.has(tile.id) || tile.role === 'destructible' || tile.empty) continue
+    byId.set(tile.id, tile)
+  }
+  return [...byId.values()]
+}
+
+/**
+ * GeSourcePalette items for every Dev Edit tileset, with the same category → tileset
+ * labels as Assets → Tiles (PALETTE_GROUPS.section / .label).
+ */
+function editorPaletteTileItems() {
+  const out = []
+  const seen = new Set()
+  for (const group of PALETTE_GROUPS) {
+    for (const id of group.tiles ?? []) {
+      const tile = getTile(id)
+      if (!tile || tile.empty || seen.has(tile.id)) continue
+      seen.add(tile.id)
+      out.push({
+        kind: 'tile',
+        id: tile.id,
+        label: tile.label,
+        layer: layerOfTile(tile),
+        groupId: group.id,
+        groupLabel: group.label,
+        section: group.section || null,
+      })
+    }
+  }
+  for (const tile of TILES) {
+    if (seen.has(tile.id) || tile.role === 'destructible' || tile.empty) continue
+    seen.add(tile.id)
+    out.push({
+      kind: 'tile',
+      id: tile.id,
+      label: tile.label,
+      layer: layerOfTile(tile),
+      groupId: 'other',
+      groupLabel: 'Other',
+      section: null,
+    })
+  }
+  return out
 }
 
 function cloneRuleset(ruleset) {
@@ -111,12 +167,32 @@ export default function AutoPaintRulesetEditorScreen({
   boardKey = 0,
   showGrid = true,
   onShowGrid,
-  gridSize = 32,
+  gridSize = DEFAULT_EDITOR_GRID_SIZE,
   onGridSize,
   showBounds = true,
   onShowBounds,
   showCentre = false,
   onShowCentre,
+  enemiesActive = true,
+  onEnemiesActive,
+  askConfirm = null,
+  showWeather = true,
+  onShowWeather,
+  edit,
+  onMapType,
+  onBiome,
+  onWeather,
+  onAmbient,
+  onAmbientColour,
+  onSize,
+  roomScale = 100,
+  onRoomScale,
+  buildingScale = 100,
+  onBuildingScale,
+  onLegacyGenerateMap,
+  generateHazards = false,
+  onGenerateHazards,
+  cardTools = { canGenerate: false, busy: false, onGenerate: () => {} },
   onBack,
   onGenerateMap,
   onStatus,
@@ -132,7 +208,8 @@ export default function AutoPaintRulesetEditorScreen({
   const [saved, setSaved] = useState(initial)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
-  const [showAll, setShowAll] = useState(false)
+  // Default on: full Dev Edit Assets catalogue (Template Pieces + every tileset).
+  const [showAll, setShowAll] = useState(true)
   // 'rules' | 'map' — right pane only; left palette stays.
   const [viewMode, setViewMode] = useState('rules')
   const [showGridOptions, setShowGridOptions] = useState(false)
@@ -141,9 +218,21 @@ export default function AutoPaintRulesetEditorScreen({
   const canSave = canEditAutoPaintRulesets
   const showingMap = viewMode === 'map' && map
 
-  const openRuleset = (id) => {
+  const confirmDiscard = async (message) => {
+    if (!dirty) return true
+    if (typeof askConfirm === 'function') {
+      return askConfirm({
+        title: 'Unsaved Changes',
+        message,
+        confirmLabel: 'Discard',
+      })
+    }
+    return window.confirm(message)
+  }
+
+  const openRuleset = async (id) => {
     if (dirty && id !== selectedId) {
-      const leave = window.confirm('Discard unsaved World Generation Ruleset changes?')
+      const leave = await confirmDiscard('Discard unsaved World Generation Ruleset changes?')
       if (!leave) return
     }
     const next = cloneRuleset(getAutoPaintRuleset(id) ?? rulesets[0])
@@ -172,11 +261,9 @@ export default function AutoPaintRulesetEditorScreen({
     setStatus('Reverted unsaved changes.')
   }
 
-  const discardAndBack = () => {
-    if (dirty) {
-      const leave = window.confirm('Discard unsaved World Generation Ruleset changes?')
-      if (!leave) return
-    }
+  const discardAndBack = async () => {
+    const leave = await confirmDiscard('Discard unsaved World Generation Ruleset changes?')
+    if (!leave) return
     onBack?.()
   }
 
@@ -227,7 +314,7 @@ export default function AutoPaintRulesetEditorScreen({
       if (!ok) return
       setViewMode('map')
       const label = draft.label || selectedId
-      const message = `Generate New Map (${label}). Still in World Generation Ruleset — Back to Map when done.`
+      const message = `Generate Map (${label}). Still in World Generation Ruleset — Back to Map when done.`
       setStatus(message)
       onStatus?.(message)
     } finally {
@@ -235,14 +322,14 @@ export default function AutoPaintRulesetEditorScreen({
     }
   }
 
-  // Same live Template Pieces catalogue as Dev Edit Assets (templatePieces.json via templatePieceGroups).
-  const templateEpoch = templatePieceCatalogueEpochOf()
+  // Same live catalogues as Dev Edit Assets (templatePieces.json + tile palette groups).
+  const catalogueEpoch = templatePieceCatalogueEpochOf() + tileCatalogueEpochOf()
   const templateItems = useMemo(
     () => editorTemplatePaletteItems({ includeDimension: showAll }),
-    [showAll, templateEpoch],
+    [showAll, catalogueEpoch],
   )
 
-  // Role options: tiles that Template Pieces resolve to, plus (Show all) Starship wall tiles for larger walls.
+  // Role options: tiles Template Pieces resolve to, plus (Show all) every Dev Edit tileset.
   const roleTiles = useMemo(() => {
     const byId = new Map()
     for (const item of templateItems) {
@@ -256,13 +343,10 @@ export default function AutoPaintRulesetEditorScreen({
       if (tile) byId.set(tile.id, tile)
     }
     if (showAll) {
-      for (const tile of starshipWallTiles()) byId.set(tile.id, tile)
-      for (const tile of TILES) {
-        if (!tile.wall && !tile.solid && !tile.empty) byId.set(tile.id, tile)
-      }
+      for (const tile of allEditorPaletteTiles()) byId.set(tile.id, tile)
     }
     return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label))
-  }, [templateItems, showAll])
+  }, [templateItems, showAll, catalogueEpoch])
 
   const emptyHint = showAll
     ? 'No matching assets.'
@@ -272,13 +356,8 @@ export default function AutoPaintRulesetEditorScreen({
 
   const paletteItems = useMemo(() => {
     if (!showAll) return templateItems
-    // Show all: Template Pieces + Starship wall tiles (larger walls) — still one Dev Edit tileset + one Template file.
-    const tiles = starshipWallTiles().map((tile) => ({
-      kind: 'tile',
-      id: tile.id,
-      label: tile.label,
-      layer: layerOfTile(tile),
-    }))
+    // Show all: Template Pieces + every Dev Edit Assets tileset (Starship, Other, …).
+    const tiles = editorPaletteTileItems()
     const seen = new Set(templateItems.map((item) => `${item.kind}:${item.id}`))
     const out = [...templateItems]
     for (const item of tiles) {
@@ -288,9 +367,9 @@ export default function AutoPaintRulesetEditorScreen({
       out.push(item)
     }
     return out
-  }, [templateItems, showAll])
+  }, [templateItems, showAll, catalogueEpoch])
 
-  // Keep Template Piece ids so Generate New Map uses the exact piece from the slot (not a collapsed wall32).
+  // Keep Template Piece ids so Generate Map uses the exact piece from the slot (not a collapsed wall32).
   const resolveDropToRole = (asset) => {
     if (!asset) return null
     if (asset.kind === 'piece' && getTemplatePiece(asset.id)) return asset.id
@@ -319,10 +398,10 @@ export default function AutoPaintRulesetEditorScreen({
   }
 
   const loadFromDisk = async () => {
-    if (dirty) {
-      const leave = window.confirm('Discard unsaved World Generation Ruleset changes and reload from disk?')
-      if (!leave) return
-    }
+    const leave = await confirmDiscard(
+      'Discard unsaved World Generation Ruleset changes and reload from disk?',
+    )
+    if (!leave) return
     setBusy(true)
     try {
       await reloadAutoPaintRulesetsFromDisk()
@@ -363,7 +442,7 @@ export default function AutoPaintRulesetEditorScreen({
       revert: true,
       loadLabel: 'Load from Disk',
       saveLabel: 'Save Ruleset',
-      extraFileItems: [{ id: 'generateMap', label: 'Generate New Map' }],
+      extraFileItems: [{ id: 'generateMap', label: 'Generate Map' }],
     }),
     {
       id: 'help',
@@ -399,7 +478,7 @@ export default function AutoPaintRulesetEditorScreen({
             className={`me-button${viewMode === 'map' ? ' is-on' : ''}`}
             aria-pressed={viewMode === 'map'}
             disabled={!map}
-            title={map ? 'Show the open map board' : 'Run Generate New Map first'}
+            title={map ? 'Show the open map board' : 'Run Generate Map first'}
             onClick={() => setViewMode('map')}
           >
             Map
@@ -414,16 +493,20 @@ export default function AutoPaintRulesetEditorScreen({
             type="button"
             className="me-button"
             disabled={busy || typeof onGenerateMap !== 'function'}
-            title="Generate a new map from the current ruleset and show it in Map view."
+            title="Generate a map from the current ruleset (new seed each press) and show it in Map view."
             onClick={generateMap}
           >
-            Generate New Map
+            Generate Map
           </button>
           <button
             type="button"
             className={`me-button${showAll ? ' is-on' : ''}`}
             onClick={() => setShowAll((value) => !value)}
-            title={showAll ? 'Template Pieces only (Dev Edit catalogue).' : 'Also show Starship wall tiles for larger walls.'}
+            title={
+              showAll
+                ? 'Template Pieces only (Dev Edit catalogue).'
+                : 'Show every Dev Edit Assets tileset plus Template Pieces.'
+            }
           >
             {showAll ? 'Template Pieces only' : 'Show all'}
           </button>
@@ -464,11 +547,21 @@ export default function AutoPaintRulesetEditorScreen({
               />
             </svg>
           </button>
+          <label className="me-check" title="Off: enemies never notice the away team or start a fight.">
+            <input
+              type="checkbox"
+              checked={enemiesActive}
+              onChange={(event) => onEnemiesActive?.(event.target.checked)}
+            />{' '}
+            Enemies
+          </label>
           <span className="me-text">
             {status ||
               (showingMap
                 ? `${map?.name || 'Untitled map'} · Grid ${gridSize}px`
-                : `${templateItems.length} Template Pieces from templatePieces.json (same as Dev Edit Assets).`)}
+                : showAll
+                  ? `${templateItems.length} Template Pieces + ${paletteItems.length - templateItems.length} tiles from Dev Edit Assets.`
+                  : `${templateItems.length} Template Pieces from templatePieces.json (same as Dev Edit Assets).`)}
             {!canSave && !showingMap && ' Dev server required to save.'}
           </span>
         </>
@@ -515,11 +608,16 @@ export default function AutoPaintRulesetEditorScreen({
         </label>
         <GeSourcePalette
           title="Palette"
-          hint="Same Template Pieces catalogue as Dev Edit Assets. Layer tabs. Drops resolve to wall/floor tiles for placement."
+          hint={
+            showAll
+              ? 'Same categories as Dev Edit Assets (Locations, Biomes, …). Layer tabs filter; Expand opens tilesets. Drag onto a slot.'
+              : 'Template Pieces only (same catalogue as Dev Edit Assets). Use Show all for every tileset category.'
+          }
           items={paletteItems}
         />
       </div>
 
+      <div className="ap-ruleset-center">
       {showingMap ? (
         <div className="me-board-area ap-ruleset-board-area">
           <div className="ed-viewport-title">{map.name || 'Untitled map'}</div>
@@ -540,92 +638,118 @@ export default function AutoPaintRulesetEditorScreen({
               Flowchart: Pack pieces = lengths; Corners = visual assembly of wall thumbs. Role slots and Adjacency
               (Palette drag pairs) are below. Help menu covers every step.
             </p>
-            <WorldGenerationFlowchart
-              draft={draft}
-              selectedNodeId={flowNodeId}
-              onSelectNode={setFlowNodeId}
-              onPipelineChange={patchPipeline}
-              onDoorsChange={patchDoors}
-              onWallsChange={patchWalls}
-              onOpenHelpTopic={setHelpTopicId}
-              resolveDropId={resolveDropToRole}
-              acceptId={roleIdAllowed}
-              titleForTile={roleThumbTitle}
-            />
+            <PropertySectionsProvider>
+              <PropertySectionsToolbar />
+              <PropertySection id="wg-flowchart" title="Flowchart" defaultOpen>
+                <WorldGenerationFlowchart
+                  draft={draft}
+                  selectedNodeId={flowNodeId}
+                  onSelectNode={setFlowNodeId}
+                  onPipelineChange={patchPipeline}
+                  onFloorsChange={patchFloors}
+                  onDoorsChange={patchDoors}
+                  onWallsChange={patchWalls}
+                  onOpenHelpTopic={setHelpTopicId}
+                  resolveDropId={resolveDropToRole}
+                  acceptId={roleIdAllowed}
+                  titleForTile={roleThumbTitle}
+                />
+              </PropertySection>
 
-            <section className="ge-block">
-              <h3 className="ge-block-title">1. Floors</h3>
-              <p className="ge-block-hint">
-                Drag Template floor pieces (or Show all → floor tiles) into the slot. Multiple allowed — mix % on each
-                thumb. Right-click to remove.
-              </p>
-              <TileSpritePicker
-                label={FLOOR_FIELD.label}
-                options={tileOptions(FLOOR_FIELD, draft.floors.defaultTile)}
-                value={draft.floors.defaultTile}
-                multi
-                weighted
-                emptyText={emptyHint}
-                resolveDropId={resolveDropToRole}
-                acceptId={roleIdAllowed}
-                titleForTile={roleThumbTitle}
-                onChange={onWeightedRoleChange((entries) => patchFloors({ defaultTile: entries }))}
-              />
-            </section>
-
-            <section className="ge-block">
-              <h3 className="ge-block-title">2. Walls / Structure</h3>
-              <p className="ge-block-hint">
-                Drop Template Pieces into each role (multiple allowed). Mix % is relative among pieces in that role.
-                Empty optional roles = rim uses straight/corner. Show all for full bulkhead tiles. Right-click to
-                remove.
-              </p>
-              {WALL_TILE_FIELDS.map((field) => (
+              <PropertySection id="wg-floors" title="1. Floors" defaultOpen>
+                <p className="ge-block-hint">
+                  Drag floor pieces or tiles from the Palette into the slot. Multiple allowed — mix % on each thumb.
+                  Right-click to remove.
+                </p>
                 <TileSpritePicker
-                  key={field.key}
-                  label={field.label}
-                  options={tileOptions(WALL_FIELD, draft.walls[field.key] ?? [])}
-                  value={draft.walls[field.key] ?? []}
+                  label={FLOOR_FIELD.label}
+                  options={tileOptions(FLOOR_FIELD, draft.floors.defaultTile)}
+                  value={draft.floors.defaultTile}
                   multi
                   weighted
                   emptyText={emptyHint}
                   resolveDropId={resolveDropToRole}
                   acceptId={roleIdAllowed}
                   titleForTile={roleThumbTitle}
-                  onChange={onWeightedRoleChange((entries) => patchWalls({ [field.key]: entries }), {
-                    allowEmpty: !field.required,
-                  })}
+                  onChange={onWeightedRoleChange((entries) => patchFloors({ defaultTile: entries }))}
                 />
-              ))}
-            </section>
+              </PropertySection>
 
-            <section className="ge-block">
-              <h3 className="ge-block-title">3. Doors / Openings</h3>
-              <p className="ge-block-hint">Doorway tile(s) for openings — multiple allowed with mix %.</p>
-              <TileSpritePicker
-                label={DOOR_TILE_FIELD.label}
-                options={tileOptions(DOOR_TILE_FIELD, draft.doors.underlayTile)}
-                value={draft.doors.underlayTile}
-                multi
-                weighted
-                emptyText={emptyHint}
-                resolveDropId={resolveDropToRole}
-                acceptId={roleIdAllowed}
-                titleForTile={roleThumbTitle}
-                onChange={onWeightedRoleChange((entries) => patchDoors({ underlayTile: entries }))}
-              />
-            </section>
+              <PropertySection id="wg-walls" title="2. Walls / Structure" defaultOpen>
+                <p className="ge-block-hint">
+                  Drop Template Pieces or tiles into each role (multiple allowed). Mix % is relative among pieces in
+                  that role. Empty optional roles = rim uses straight/corner. Right-click to
+                  remove.
+                </p>
+                {WALL_TILE_FIELDS.map((field) => (
+                  <TileSpritePicker
+                    key={field.key}
+                    label={field.label}
+                    options={tileOptions(WALL_FIELD, draft.walls[field.key] ?? [])}
+                    value={draft.walls[field.key] ?? []}
+                    multi
+                    weighted
+                    emptyText={emptyHint}
+                    resolveDropId={resolveDropToRole}
+                    acceptId={roleIdAllowed}
+                    titleForTile={roleThumbTitle}
+                    onChange={onWeightedRoleChange((entries) => patchWalls({ [field.key]: entries }), {
+                      allowEmpty: !field.required,
+                    })}
+                  />
+                ))}
+              </PropertySection>
 
-            <WorldGenerationAdjacencyEditor
-              draft={draft}
-              onAdjacencyChange={patchAdjacency}
-              resolveDropId={resolveDropToRole}
-              acceptId={roleIdAllowed}
-              titleForTile={roleThumbTitle}
-            />
+              <PropertySection id="wg-doors" title="3. Doors / Openings" defaultOpen>
+                <p className="ge-block-hint">Doorway tile(s) for openings — multiple allowed with mix %.</p>
+                <TileSpritePicker
+                  label={DOOR_TILE_FIELD.label}
+                  options={tileOptions(DOOR_TILE_FIELD, draft.doors.underlayTile)}
+                  value={draft.doors.underlayTile}
+                  multi
+                  weighted
+                  emptyText={emptyHint}
+                  resolveDropId={resolveDropToRole}
+                  acceptId={roleIdAllowed}
+                  titleForTile={roleThumbTitle}
+                  onChange={onWeightedRoleChange((entries) => patchDoors({ underlayTile: entries }))}
+                />
+              </PropertySection>
+
+              <PropertySection id="wg-adjacency" title="Adjacency rules" defaultOpen>
+                <WorldGenerationAdjacencyEditor
+                  draft={draft}
+                  onAdjacencyChange={patchAdjacency}
+                  resolveDropId={resolveDropToRole}
+                  acceptId={roleIdAllowed}
+                  titleForTile={roleThumbTitle}
+                />
+              </PropertySection>
+            </PropertySectionsProvider>
           </div>
         </div>
       )}
+      </div>
+      <WorldGenerationMapPanel
+        map={map}
+        edit={edit}
+        showWeather={showWeather}
+        onShowWeather={onShowWeather}
+        onMapType={onMapType}
+        onBiome={onBiome}
+        onWeather={onWeather}
+        onAmbient={onAmbient}
+        onAmbientColour={onAmbientColour}
+        onSize={onSize}
+        roomScale={roomScale}
+        onRoomScale={onRoomScale}
+        buildingScale={buildingScale}
+        onBuildingScale={onBuildingScale}
+        onGenerateMap={onLegacyGenerateMap}
+        generateHazards={generateHazards}
+        onGenerateHazards={onGenerateHazards}
+        cardTools={cardTools}
+      />
       <EditorGridOptions
         show={showGridOptions}
         onClose={() => setShowGridOptions(false)}

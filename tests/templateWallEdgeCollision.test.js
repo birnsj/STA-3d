@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import { blocksLineOfFire, blocksMovement, toBattleMap } from '../src/combat/battleMap.js'
 import { getReachableTiles } from '../src/combat/movementSystem.js'
 import { isClear, isClearLine, RADIUS } from '../src/exploration/navigation.js'
+import { placePackedWallPieces, pieceKitFromRuleset, resolveAutoPaintRuleset } from '../src/maps/autoPaint/index.js'
 import { createNullMap } from '../src/maps/mapFormat.js'
 import { circleHitsTemplateWalls } from '../src/maps/templatePieces.js'
 
@@ -97,5 +98,43 @@ describe('templateWall edge collision', () => {
     const battle = toBattleMap(map)
     assert.equal(battle.floorUnder['4,4'], 'floor')
     assert.equal(battle.templatePiecePlacements.length, 1)
+  })
+
+  it('lets a body walk north-south through both cells of a 96px Template 32 doorway', () => {
+    const map = createNullMap({ name: 'door', width: 12, height: 10 })
+    const tiles = map.tiles.map((row) => row.map(() => 'floor'))
+    for (const [x, y] of [
+      [2, 4],
+      [3, 4],
+      [6, 4],
+      [7, 4],
+    ]) {
+      tiles[y][x] = 'templateWall'
+    }
+    const packed = placePackedWallPieces(
+      { ...map, tiles, floorUnder: {}, templatePiecePlacements: [] },
+      pieceKitFromRuleset(
+        resolveAutoPaintRuleset({
+          id: 'door-clear',
+          walls: {
+            straight: 'tplStarshipWall32',
+            straightLong: 'tplStarshipWall32PlainLong',
+            corner: 'tplStarshipWall32Corner',
+            hull: null,
+            hullLong: null,
+            hullCorner: null,
+            doorFrame: null,
+          },
+          floors: { defaultTile: 'floor', variants: [] },
+          doors: { underlayTile: 'doorway' },
+        }),
+      ),
+      { doorKeys: ['4,4', '5,4'] },
+    )
+    // West door cell centreline must clear the wall strip (old west jamb sat on x=4).
+    assert.equal(isClear(packed, { x: 4, y: 4.5 }, RADIUS), true)
+    assert.equal(isClear(packed, { x: 5, y: 4.5 }, RADIUS), true)
+    assert.ok(isClearLine(packed, { x: 4, y: 3 }, { x: 4, y: 5 }))
+    assert.ok(isClearLine(packed, { x: 5, y: 3 }, { x: 5, y: 5 }))
   })
 })

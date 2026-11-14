@@ -180,31 +180,248 @@ function Connector({ text }) {
   )
 }
 
+function MarkerSlot({ label, text, active = true, toggleKey = null, onToggle = null, toggleHint = null }) {
+  const onClick = () => {
+    if (!toggleKey || !onToggle) return
+    onToggle(toggleKey)
+  }
+  const hints = [label, toggleKey ? (active ? 'On — click to turn off' : 'Off — click to turn on') : null, toggleHint]
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <div className={`ge-pack-slot ge-pack-marker${active ? '' : ' is-off'}${toggleKey ? ' is-toggle' : ''}`} title={hints}>
+      <span className="ge-pack-slot-label">{label}</span>
+      {toggleKey ? (
+        <button type="button" className={`ge-pack-marker-face${active ? '' : ' is-off'}`} onClick={onClick}>
+          {text}
+        </button>
+      ) : (
+        <span className="ge-pack-marker-face">{text}</span>
+      )}
+      {!active && toggleKey ? <span className="ge-pack-off-badge">Off</span> : null}
+    </div>
+  )
+}
+
 /**
- * Visual how-walls-fit-together editor: schematics with role thumbs + pipeline toggles.
- * Drop from Palette onto slots; click corner/fill/end-cap parts to toggle placement.
+ * Visual diagram for one flowchart step (Corners-style thumbs). nodeId selects the schematic.
+ * Drop from Palette onto role slots; click corner/fill/end-cap/Null parts to toggle when wired.
  */
 export default function WorldGenerationPackingAssembly({
+  nodeId = 'endCaps',
   draft,
+  onFloorsChange = null,
+  onDoorsChange = null,
   onWallsChange,
   onPipelineChange,
   resolveDropId = null,
   acceptId = null,
   titleForTile = null,
 }) {
+  const floors = draft.floors ?? {}
   const walls = draft.walls ?? {}
+  const doors = draft.doors ?? {}
   const pipeline = draft.pipeline ?? {}
+  const floorId = primaryId(floors.defaultTile)
   const longId = primaryId(walls.straightLong) || primaryId(walls.straight)
   const shortId = primaryId(walls.straight)
   const cornerId = primaryId(walls.corner)
+  const doorId = primaryId(doors.underlayTile)
   const placeJunctionCorners = pipeline.placeJunctionCorners !== false
   const junctionArmFills = pipeline.junctionArmFills !== false
   const trimRunAtJunction = pipeline.trimRunAtJunction !== false
   const cornerEndCaps = pipeline.cornerEndCaps !== false
+  const claimExteriorNull = pipeline.claimExteriorNull !== false
 
-  const shared = { resolveDropId, acceptId, titleForTile, onRoleChange: (key, entries) => onWallsChange?.({ [key]: entries }) }
+  const onRoleChange = (key, entries) => {
+    if (key === 'defaultTile') {
+      onFloorsChange?.({ defaultTile: entries })
+      return
+    }
+    if (key === 'underlayTile') {
+      onDoorsChange?.({ underlayTile: entries })
+      return
+    }
+    onWallsChange?.({ [key]: entries })
+  }
+  const shared = { resolveDropId, acceptId, titleForTile, onRoleChange }
   const toggle = (key) => onPipelineChange?.({ [key]: !(pipeline[key] !== false) })
 
+  const floorSlot = (label = 'Floor') => (
+    <AssemblySlot
+      {...shared}
+      id={floorId}
+      label={label}
+      emptyText="Drop floor…"
+      roleKey="defaultTile"
+      wallsRole={floors.defaultTile}
+      allowClear={false}
+    />
+  )
+  const shortSlot = (label, extra = {}) => (
+    <AssemblySlot
+      {...shared}
+      id={shortId}
+      label={label}
+      emptyText="Drop short…"
+      roleKey="straight"
+      wallsRole={walls.straight}
+      allowClear={false}
+      {...extra}
+    />
+  )
+  const cornerSlot = (label, extra = {}) => (
+    <AssemblySlot
+      {...shared}
+      id={cornerId}
+      label={label}
+      emptyText="Drop corner…"
+      roleKey="corner"
+      wallsRole={walls.corner}
+      allowClear={false}
+      {...extra}
+    />
+  )
+  const longSlot = () => (
+    <AssemblySlot
+      {...shared}
+      id={longId}
+      label="Long"
+      emptyText="Drop long…"
+      roleKey="straightLong"
+      wallsRole={walls.straightLong}
+      allowClear
+    />
+  )
+  const doorSlot = (label = 'Doorway') => (
+    <AssemblySlot
+      {...shared}
+      id={doorId}
+      label={label}
+      emptyText="Drop doorway…"
+      roleKey="underlayTile"
+      wallsRole={doors.underlayTile}
+      allowClear={false}
+    />
+  )
+
+  if (nodeId === 'floors') {
+    return (
+      <div className="ge-pack-assembly">
+        <p className="ge-block-hint">
+          Floor role pieces define which cells count as floor. Drop from the Palette onto a cell to set Floors.
+        </p>
+        <div className="ge-pack-diagram">
+          <h4 className="ge-pack-diagram-title">Floor footprint</h4>
+          <div className="ge-pack-grid3">
+            <span className="ge-pack-grid-empty" aria-hidden="true" />
+            {floorSlot('N')}
+            <span className="ge-pack-grid-empty" aria-hidden="true" />
+            {floorSlot('W')}
+            {floorSlot('Center')}
+            {floorSlot('E')}
+            <span className="ge-pack-grid-empty" aria-hidden="true" />
+            {floorSlot('S')}
+            <span className="ge-pack-grid-empty" aria-hidden="true" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (nodeId === 'exterior') {
+    return (
+      <div className="ge-pack-assembly">
+        <p className="ge-block-hint">
+          Empty (Null) cells next to any floor become wall candidates. Click a Null marker to toggle claiming them.
+        </p>
+        <div className="ge-pack-diagram">
+          <h4 className="ge-pack-diagram-title">Find edges</h4>
+          <div className="ge-pack-grid3">
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+            {floorSlot('Floor')}
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+            <MarkerSlot label="Null" text="→ wall" active={claimExteriorNull} toggleKey="claimExteriorNull" onToggle={toggle} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (nodeId === 'underlay') {
+    return (
+      <div className="ge-pack-assembly">
+        <p className="ge-block-hint">
+          Edge cells become invisible wall underlay; the neighboring floor is stored as floorUnder so deck shows through.
+        </p>
+        <div className="ge-pack-diagram">
+          <h4 className="ge-pack-diagram-title">Underlay + floorUnder</h4>
+          <div className="ge-pack-row">
+            {floorSlot('Room floor')}
+            <Connector text="→" />
+            <MarkerSlot label="Underlay" text="templateWall" />
+            <Connector text="+" />
+            {floorSlot('floorUnder')}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (nodeId === 'packing') {
+    return (
+      <div className="ge-pack-assembly">
+        <p className="ge-block-hint">
+          On each underlay run, packing prefers long, then short, then stub (corner length). Drop onto a slot to set Walls
+          roles; tip lengths are in the settings below.
+        </p>
+        <div className="ge-pack-diagram">
+          <h4 className="ge-pack-diagram-title">Pack on a run</h4>
+          <div className="ge-pack-row">
+            {cornerSlot('Stub', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
+            <Connector text="·" />
+            {longSlot()}
+            <Connector text="·" />
+            {shortSlot('Short')}
+            <Connector text="·" />
+            {cornerSlot('Stub', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (nodeId === 'doorways') {
+    return (
+      <div className="ge-pack-assembly">
+        <p className="ge-block-hint">
+          Opening = 2 underlay cells; line 96px with 3× Doorway 32. Leftover tip stays empty — Corner end caps sit on the
+          wall jambs, not inside the opening. Opening size is in the settings below.
+        </p>
+        <div className="ge-pack-diagram">
+          <h4 className="ge-pack-diagram-title">Opening (96px = 3×32)</h4>
+          <div className="ge-pack-row">
+            {cornerSlot('Jamb', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
+            <Connector text="|" />
+            {doorSlot('Door 32')}
+            <Connector text="·" />
+            {doorSlot('Door 32')}
+            <Connector text="·" />
+            {doorSlot('Door 32')}
+            <Connector text="|" />
+            {cornerSlot('Jamb', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // endCaps (Corners) — full visual packing assembly
   return (
     <div className="ge-pack-assembly">
       <p className="ge-block-hint">
@@ -216,51 +433,13 @@ export default function WorldGenerationPackingAssembly({
         <h4 className="ge-pack-diagram-title">Straight run</h4>
         <p className="ge-block-hint">Free ends get corner caps; middle packs long then short.</p>
         <div className="ge-pack-row">
-          <AssemblySlot
-            {...shared}
-            id={cornerId}
-            label="End cap"
-            emptyText="Drop corner…"
-            roleKey="corner"
-            wallsRole={walls.corner}
-            allowClear={false}
-            active={cornerEndCaps}
-            toggleKey="cornerEndCaps"
-            onToggle={toggle}
-          />
+          {cornerSlot('End cap', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
           <Connector text="·" />
-          <AssemblySlot
-            {...shared}
-            id={longId}
-            label="Long"
-            emptyText="Drop long…"
-            roleKey="straightLong"
-            wallsRole={walls.straightLong}
-            allowClear
-          />
+          {longSlot()}
           <Connector text="·" />
-          <AssemblySlot
-            {...shared}
-            id={shortId}
-            label="Short"
-            emptyText="Drop short…"
-            roleKey="straight"
-            wallsRole={walls.straight}
-            allowClear={false}
-          />
+          {shortSlot('Short')}
           <Connector text="·" />
-          <AssemblySlot
-            {...shared}
-            id={cornerId}
-            label="End cap"
-            emptyText="Drop corner…"
-            roleKey="corner"
-            wallsRole={walls.corner}
-            allowClear={false}
-            active={cornerEndCaps}
-            toggleKey="cornerEndCaps"
-            onToggle={toggle}
-          />
+          {cornerSlot('End cap', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
         </div>
       </div>
 
@@ -270,80 +449,35 @@ export default function WorldGenerationPackingAssembly({
           SE corner post, then half-cell fills on the −X / −Y arms so the edge stays continuous.
         </p>
         <div className="ge-pack-l">
-          <div className="ge-pack-l-cell ge-pack-l-north">
-            <AssemblySlot
-              {...shared}
-              id={shortId}
-              label="−Y arm"
-              emptyText="Drop short…"
-              roleKey="straight"
-              wallsRole={walls.straight}
-              allowClear={false}
-            />
-          </div>
+          <div className="ge-pack-l-cell ge-pack-l-north">{shortSlot('−Y arm')}</div>
           <div className="ge-pack-l-cell ge-pack-l-fill-y">
-            <AssemblySlot
-              {...shared}
-              id={shortId}
-              label="−Y fill"
-              emptyText="Drop short…"
-              roleKey="straight"
-              wallsRole={walls.straight}
-              allowClear={false}
-              active={junctionArmFills}
-              toggleKey="junctionArmFills"
-              onToggle={toggle}
-              toggleHint="Half-cell fill north of the SE post"
-            />
+            {shortSlot('−Y fill', {
+              active: junctionArmFills,
+              toggleKey: 'junctionArmFills',
+              onToggle: toggle,
+              toggleHint: 'Half-cell fill north of the SE post',
+            })}
           </div>
-          <div className="ge-pack-l-cell ge-pack-l-west">
-            <AssemblySlot
-              {...shared}
-              id={shortId}
-              label="−X arm"
-              emptyText="Drop short…"
-              roleKey="straight"
-              wallsRole={walls.straight}
-              allowClear={false}
-            />
-          </div>
+          <div className="ge-pack-l-cell ge-pack-l-west">{shortSlot('−X arm')}</div>
           <div className="ge-pack-l-cell ge-pack-l-fill-x">
-            <AssemblySlot
-              {...shared}
-              id={shortId}
-              label="−X fill"
-              emptyText="Drop short…"
-              roleKey="straight"
-              wallsRole={walls.straight}
-              allowClear={false}
-              active={junctionArmFills}
-              toggleKey="junctionArmFills"
-              onToggle={toggle}
-              toggleHint="Half-cell fill west of the SE post"
-            />
+            {shortSlot('−X fill', {
+              active: junctionArmFills,
+              toggleKey: 'junctionArmFills',
+              onToggle: toggle,
+              toggleHint: 'Half-cell fill west of the SE post',
+            })}
           </div>
           <div className="ge-pack-l-cell ge-pack-l-corner">
-            <AssemblySlot
-              {...shared}
-              id={cornerId}
-              label="SE post"
-              emptyText="Drop corner…"
-              roleKey="corner"
-              wallsRole={walls.corner}
-              allowClear={false}
-              active={placeJunctionCorners}
-              toggleKey="placeJunctionCorners"
-              onToggle={toggle}
-              toggleHint="Corner post at the junction tip"
-            />
+            {cornerSlot('SE post', {
+              active: placeJunctionCorners,
+              toggleKey: 'placeJunctionCorners',
+              onToggle: toggle,
+              toggleHint: 'Corner post at the junction tip',
+            })}
           </div>
         </div>
         <label className="ge-section-check ge-pack-trim">
-          <input
-            type="checkbox"
-            checked={trimRunAtJunction}
-            onChange={() => toggle('trimRunAtJunction')}
-          />
+          <input type="checkbox" checked={trimRunAtJunction} onChange={() => toggle('trimRunAtJunction')} />
           Trim straight-run tip where a junction fill already covers
         </label>
       </div>
@@ -352,28 +486,9 @@ export default function WorldGenerationPackingAssembly({
         <h4 className="ge-pack-diagram-title">Free end / doorway jamb</h4>
         <p className="ge-block-hint">A short run ending in a corner cap (same finish as door jambs).</p>
         <div className="ge-pack-row">
-          <AssemblySlot
-            {...shared}
-            id={shortId}
-            label="Short"
-            emptyText="Drop short…"
-            roleKey="straight"
-            wallsRole={walls.straight}
-            allowClear={false}
-          />
+          {shortSlot('Short')}
           <Connector text="→" />
-          <AssemblySlot
-            {...shared}
-            id={cornerId}
-            label="End cap"
-            emptyText="Drop corner…"
-            roleKey="corner"
-            wallsRole={walls.corner}
-            allowClear={false}
-            active={cornerEndCaps}
-            toggleKey="cornerEndCaps"
-            onToggle={toggle}
-          />
+          {cornerSlot('End cap', { active: cornerEndCaps, toggleKey: 'cornerEndCaps', onToggle: toggle })}
         </div>
       </div>
     </div>

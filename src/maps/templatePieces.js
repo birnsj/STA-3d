@@ -133,13 +133,16 @@ export function templatePieceSpriteInfo(piece) {
   const traits = [...(piece.tags ?? [])]
   if (piece.cover) traits.push('Cover')
   if (piece.fade) traits.push('Fade')
-  const dimension = (piece.tags ?? []).includes('dimension')
+  const tags = piece.tags ?? []
+  const group = tags.includes('dimension')
+    ? { id: 'template-dimension', label: 'Dimension', section: null }
+    : tags.includes('outdoor')
+      ? { id: 'template-outdoor-32', label: 'Outdoor Template 32', section: null }
+      : { id: 'template-pieces', label: 'Template Pieces', section: null }
   return {
     id: piece.id,
     label: piece.label,
-    group: dimension
-      ? { id: 'template-dimension', label: 'Dimension', section: null }
-      : { id: 'template-pieces', label: 'Template Pieces', section: null },
+    group,
     size: piece.size ? { width: piece.size.width, height: piece.size.height } : null,
     height: piece.height ?? null,
     footprint: piece.footprint ?? null,
@@ -191,10 +194,13 @@ export function templatePieceFootprint(def, rotation = 0) {
 
 export function templatePieceGroups() {
   if (!TEMPLATE_PIECES.length) return []
-  const starship = TEMPLATE_PIECES.filter((piece) => !(piece.tags ?? []).includes('dimension'))
-  const dimension = TEMPLATE_PIECES.filter((piece) => (piece.tags ?? []).includes('dimension'))
+  const hasTag = (piece, tag) => (piece.tags ?? []).includes(tag)
+  const outdoor = TEMPLATE_PIECES.filter((piece) => hasTag(piece, 'outdoor'))
+  const dimension = TEMPLATE_PIECES.filter((piece) => hasTag(piece, 'dimension'))
+  const starship = TEMPLATE_PIECES.filter((piece) => !hasTag(piece, 'outdoor') && !hasTag(piece, 'dimension'))
   const groups = []
   if (starship.length) groups.push({ id: 'template-pieces', label: 'Template Pieces', pieces: starship })
+  if (outdoor.length) groups.push({ id: 'template-outdoor-32', label: 'Outdoor Template 32', pieces: outdoor })
   if (dimension.length) groups.push({ id: 'template-dimension', label: 'Dimension', pieces: dimension })
   return groups
 }
@@ -211,14 +217,24 @@ export function listEditorTemplatePieces({ includeDimension = false } = {}) {
 
 /** GeSourcePalette items for the Template Pieces category (one catalogue, no parallel copy). */
 export function editorTemplatePaletteItems({ includeDimension = false } = {}) {
-  return listEditorTemplatePieces({ includeDimension }).map((piece) => ({
-    kind: 'piece',
-    id: piece.id,
-    label: piece.label,
-    href: piece.href,
-    // Catalogue already authors layer; GeSourcePalette falls back to layerOfTemplatePiece when missing.
-    layer: piece.layer ?? null,
-  }))
+  const out = []
+  for (const group of templatePieceGroups()) {
+    if (group.id === 'template-dimension' && !includeDimension) continue
+    for (const piece of group.pieces) {
+      out.push({
+        kind: 'piece',
+        id: piece.id,
+        label: piece.label,
+        href: piece.href,
+        // Catalogue already authors layer; GeSourcePalette falls back to layerOfTemplatePiece when missing.
+        layer: piece.layer ?? null,
+        groupId: group.id,
+        groupLabel: group.label,
+        section: group.id === 'template-dimension' ? 'Calibration' : 'Templates',
+      })
+    }
+  }
+  return out
 }
 
 /** Tip-anchored footprint AABB in tile units (tip = +X/+Y corner). */
@@ -234,7 +250,8 @@ export function templatePieceWorldAabb(entry) {
   return { minX: tip.x - w, maxX: tip.x, minY: tip.y - d, maxY: tip.y, def }
 }
 
-function isTemplateWallCollider(def) {
+/** Wall/structure Template Pieces (not floor/doorway underlays) — collision and minimap silhouettes. */
+export function isTemplateWallCollider(def) {
   const tags = new Set((def.tags ?? []).map((tag) => String(tag).toLowerCase()))
   if (tags.has('floor') || tags.has('doorway') || tags.has('carpet') || tags.has('grating')) return false
   if (tags.has('wall') || tags.has('halfbulkhead') || tags.has('column') || tags.has('pillar')) return true

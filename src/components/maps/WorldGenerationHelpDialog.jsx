@@ -15,9 +15,17 @@ export default function WorldGenerationHelpDialog({ topicId, onClose, onSelectTo
   if (!topic) return null
 
   return (
-    <div className="me-dialog-backdrop" onPointerDown={(event) => event.target === event.currentTarget && onClose?.()}>
-      <div className="me-dialog ge-help-dialog" role="dialog" aria-modal="true" aria-labelledby="wg-help-title">
-        <p id="wg-help-title" className="me-heading">
+    <div
+      className="me-dialog-backdrop ed-dialog-backdrop"
+      onPointerDown={(event) => event.target === event.currentTarget && onClose?.()}
+    >
+      <div
+        className="me-dialog ed-dialog ge-help-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wg-help-title"
+      >
+        <p id="wg-help-title" className="me-heading ed-dialog-title">
           Help
         </p>
         <div className="ge-help-layout">
@@ -45,8 +53,8 @@ export default function WorldGenerationHelpDialog({ topicId, onClose, onSelectTo
             </p>
           </div>
         </div>
-        <div className="me-dialog-actions">
-          <button type="button" className="me-button is-primary" onClick={onClose}>
+        <div className="me-dialog-actions ed-dialog-actions">
+          <button type="button" className="me-button ed-dialog-btn is-primary" onClick={onClose}>
             Close
           </button>
         </div>

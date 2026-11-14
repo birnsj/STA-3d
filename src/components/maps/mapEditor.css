@@ -642,6 +642,137 @@
   background: #0c1719;
 }
 
+/* Confirm / text / load popups: Mission Editor chrome (not the game/creator teal panels).
+   Classes are on the dialog itself so popups still match when rendered outside .ed-shell. */
+.ed-dialog-backdrop,
+.ed-shell .me-dialog-backdrop {
+  --ed-bg: #12151a;
+  --ed-panel: #181c22;
+  --ed-panel-2: #1e232b;
+  --ed-border: #2e3540;
+  --ed-accent: #4f9cff;
+  --ed-accent-soft: rgba(79, 156, 255, 0.16);
+  --ed-text: #dce2ea;
+  --ed-muted: #7e8796;
+  z-index: 120;
+  background: rgba(8, 10, 14, 0.72);
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+.ed-dialog,
+.ed-shell .me-dialog {
+  width: min(380px, calc(100% - 24px));
+  padding: 12px 14px;
+  border: 1px solid var(--ed-border, #2e3540);
+  border-radius: 2px;
+  background: var(--ed-panel, #181c22);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  color: var(--ed-text, #dce2ea);
+}
+
+.ed-dialog-title,
+.ed-dialog .me-heading,
+.ed-shell .me-dialog .me-heading {
+  margin: 0 0 8px;
+  color: var(--ed-text, #dce2ea);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.ed-dialog-text,
+.ed-dialog .me-text,
+.ed-shell .me-dialog .me-text {
+  margin: 0 0 10px;
+  color: var(--ed-muted, #7e8796);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ed-dialog-actions,
+.ed-shell .me-dialog-actions {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ed-dialog-input,
+.ed-dialog .me-name,
+.ed-shell .me-dialog .me-name {
+  box-sizing: border-box;
+  width: 100%;
+  height: 26px;
+  margin-top: 4px;
+  padding: 0 8px;
+  border: 1px solid var(--ed-border, #2e3540);
+  border-radius: 2px;
+  background: #252b35;
+  color: var(--ed-text, #dce2ea);
+  font: inherit;
+}
+
+.ed-dialog-btn,
+.ed-dialog .me-button,
+.ed-shell .me-dialog .me-button {
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ed-border, #2e3540);
+  border-radius: 2px;
+  background: #252b35;
+  color: var(--ed-text, #dce2ea);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 22px;
+  cursor: var(--cursor-pointer);
+}
+
+.ed-dialog-btn:hover,
+.ed-dialog .me-button:hover,
+.ed-shell .me-dialog .me-button:hover {
+  border-color: #4a5566;
+  background: #2d3440;
+  color: #fff;
+}
+
+.ed-dialog-btn.is-primary,
+.ed-dialog .me-button.is-primary,
+.ed-shell .me-dialog .me-button.is-primary {
+  border-color: #3d7ec4;
+  background: #2a5080;
+  color: #fff;
+}
+
+.ed-dialog-btn.is-primary:hover,
+.ed-dialog .me-button.is-primary:hover,
+.ed-shell .me-dialog .me-button.is-primary:hover {
+  border-color: var(--ed-accent, #4f9cff);
+  background: #336299;
+}
+
+.ed-dialog-list-item,
+.ed-dialog .me-tool {
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ed-text, #dce2ea);
+}
+
+.ed-dialog-list-item:hover,
+.ed-dialog .me-tool:hover {
+  background: var(--ed-panel-2, #1e232b);
+}
+
+.ed-dialog-list-item.is-selected,
+.ed-dialog .me-tool.is-selected {
+  border-color: var(--ed-accent, #4f9cff);
+  background: var(--ed-accent-soft, rgba(79, 156, 255, 0.16));
+}
+
+.ed-dialog .me-load-file {
+  color: var(--ed-muted, #7e8796);
+}
+
 .me-load-list {
   margin: 0;
   padding: 0;
@@ -1873,10 +2004,22 @@
   background: #0a0c10;
 }
 
-/* Auto-Paint Ruleset Editor: left palette stays; Rules/Map toggles the right pane. */
+/* Auto-Paint Ruleset Editor: left palette | Rules/Map center | Map settings (like Dev Edit Properties). */
 .ed-shell.ap-ruleset-editor .ess-body {
   position: relative;
   min-height: 0;
+}
+.ed-shell.ap-ruleset-editor .ap-ruleset-center {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.ed-shell.ap-ruleset-editor .ap-ruleset-center > .oe-detail {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 .ed-shell.ap-ruleset-editor .ap-ruleset-board-area {
   position: relative;
@@ -1890,6 +2033,9 @@
 .ed-shell.ap-ruleset-editor .ap-ruleset-board-area .me-board {
   flex: 1;
   min-height: 0;
+}
+.ed-shell.ap-ruleset-editor .wg-map-panel {
+  flex-shrink: 0;
 }
 
 .ed-viewport.is-float-busy,

@@ -404,9 +404,17 @@ describe('placePackedWallPieces coverage', () => {
     const packed = placePackedWallPieces(map, kit(), { doorKeys: ['4,3', '5,3'] })
     const pieces = autoPieces(packed)
     assert.ok(!pieces.some((p) => /DoorFrame/i.test(p.pieceId)))
-    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 3, '96px = 3× Doorway 32')
-    assert.ok(pieces.some((p) => /Corner/i.test(p.pieceId)), 'Corner 32 on leftover tip / free wall ends')
+    // Edge tip + 3× Doorway 32 (96px) — edge tip blocks a wall Corner on the door centreline.
+    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 4, 'edge tip + 96px Doorway 32')
+    assert.ok(pieces.some((p) => /Corner/i.test(p.pieceId)), 'Corner 32 end caps on free wall ends / jambs')
     assert.ok(!pieces.some((p) => p.pieceId === 'tplStarshipFloor32'), 'no Floor 32 overlay on openings')
+    // Doorway tips (edge + 96px) must not get a Corner; leftover tip holds the far jamb.
+    const doorTips = new Set(['4,4', '4.5,4', '5,4', '5.5,4'])
+    for (const entry of pieces) {
+      if (!/Corner/i.test(entry.pieceId)) continue
+      const key = `${entry.position.x},${entry.position.y}`
+      assert.ok(!doorTips.has(key), `Corner must not sit on doorway tip ${key}`)
+    }
   })
 
   it('snaps every tip to the 32px tip grid', () => {
@@ -624,7 +632,7 @@ describe('placePackedWallPieces geometric continuity', () => {
     const packed = placePackedWallPieces(map, kit(), { doorKeys })
     const pieces = autoPieces(packed)
     assert.ok(!pieces.some((p) => /DoorFrame/i.test(p.pieceId)))
-    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 3)
+    assert.equal(pieces.filter((p) => p.pieceId === 'tplStarshipDoorway32').length, 4)
     assert.ok(!pieces.some((p) => p.pieceId === 'tplStarshipFloor32'))
     // Wall run pieces must not cover the first 96px (3 tips) of the opening south edge [4, 5.5] at y=5.
     for (const entry of pieces) {
@@ -634,6 +642,11 @@ describe('placePackedWallPieces geometric continuity', () => {
       const overlap = Math.min(box.maxX, 5.5) - Math.max(box.minX, 4)
       assert.ok(overlap <= 1e-9, `wall must not bridge 96px doorway south edge, overlap=${overlap}`)
     }
+    // Jamb Corner seats on leftover tip 6,5 (after 4.5/5/5.5 doorway tips) so the gap is continuous.
+    assert.ok(
+      pieces.some((p) => /Corner/i.test(p.pieceId) && p.position.x === 6 && p.position.y === 5),
+      'jamb Corner on leftover tip after 96px doorway',
+    )
     assert.equal(wallEdgesContinuouslyCovered(packed, pieces, { doorKeys }), true)
   })
 
@@ -665,18 +678,19 @@ describe('placePackedWallPieces geometric continuity', () => {
 })
 
 describe('Auto-Paint Generate Map', () => {
-  it('snaps custom sizes to Template Deck presets', () => {
-    const exact = snapAutoPaintGenerateSize('templateDeck', 20, 14)
+  it('snaps custom sizes to the same Dev Edit map size presets', () => {
+    // templateDeck medium in mapSizes.json is 20×20 (same list as Properties → Size preset).
+    const exact = snapAutoPaintGenerateSize('templateDeck', 20, 20)
     assert.equal(exact.snapped, false)
     assert.equal(exact.sizeId, 'medium')
-    const custom = snapAutoPaintGenerateSize('templateDeck', 19, 13)
+    const custom = snapAutoPaintGenerateSize('templateDeck', 19, 19)
     assert.equal(custom.snapped, true)
     assert.equal(custom.width, 20)
-    assert.equal(custom.height, 14)
+    assert.equal(custom.height, 20)
   })
 
   it('packs 128/64 walls with corners and floor under underlay', () => {
-    const source = createNullMap({ name: 'gen', width: 20, height: 14 })
+    const source = createNullMap({ name: 'gen', width: 20, height: 20 })
     const { map, error } = generateAutoPaintMap(source, 'template-32', () => 0.25)
     assert.equal(error, undefined)
     assert.equal(map.autoPaint?.rulesetId, 'template-32')
@@ -708,8 +722,8 @@ describe('Auto-Paint Generate Map', () => {
       assert.ok(!getTile(map.tiles[y][x])?.wall, `opening ${key} is walkable floor`)
     }
     const doorway32 = autoPieces.filter((entry) => entry.pieceId === 'tplStarshipDoorway32')
-    assert.ok(doorway32.length >= 3, 'at least one 96px (3× Doorway 32) opening')
-    assert.equal(doorway32.length % 3, 0, 'Doorway 32 count is multiples of 3')
+    assert.ok(doorway32.length >= 4, 'at least one opening (edge tip + 3× Doorway 32)')
+    assert.equal(doorway32.length % 4, 0, 'Doorway 32 count is multiples of 4 (edge + 96px)')
     assert.ok(
       !autoPieces.some((entry) => entry.pieceId === 'tplStarshipFloor32'),
       'no Floor 32 overlay on openings',

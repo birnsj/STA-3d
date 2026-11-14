@@ -210,6 +210,17 @@ function wallSections(map) {
 // memory: what faded last time ({ map, keys, spaces: { [figureId]: space index } }), for stickiness.
 export const NO_WALL_FADE = { map: null, keys: new Set(), spaces: {} }
 
+/** True when the wall cell is closer to the camera than the figure (figure stands behind it). */
+function cellInFrontOfFigure(key, position) {
+  const [x, y] = key.split(',').map(Number)
+  return position.x + position.y + 0.5 < x + y
+}
+
+/** Keep only wall keys that sit in front of at least one figure — never fade walls behind the party. */
+function keysInFrontOfFigures(keyList, figures) {
+  return keyList.filter((key) => figures.some(({ position }) => cellInFrontOfFigure(key, position)))
+}
+
 // The fading blocks to draw see-through now, and the memory for next time. figures: [{ id, position }] (tile
 // positions, fractional while moving). bigGroups: getBigObjects(map) when big objects are drawn, so their tiles are
 // tested against the whole object. mode: 'room' (room cutaway and wall sections) or 'single' (Settings: each block
@@ -229,8 +240,12 @@ export function wallFadeStep(map, figures, bigGroups = null, memory = NO_WALL_FA
   const { spaceAt, spaces: spaceList, sectionOf, frontGroupOf } = analyseWalls(map)
   // The front walls of the rooms the figures are in: only their distance from a side decides those.
   const ownFront = new Set()
-  const addGroup = (group) => group.forEach((key) => keys.add(key))
-  const addSection = (key) => (sectionOf.get(key) ?? [key]).forEach((sectionKey) => !ownFront.has(sectionKey) && keys.add(sectionKey))
+  // Whole side / section, but drop cells behind every figure (tighten cutaway at the party's back).
+  const addGroup = (group) => keysInFrontOfFigures(group, figures).forEach((key) => keys.add(key))
+  const addSection = (key) =>
+    keysInFrontOfFigures(sectionOf.get(key) ?? [key], figures).forEach(
+      (sectionKey) => !ownFront.has(sectionKey) && keys.add(sectionKey),
+    )
   // Some figure within fadeRange tiles (diagonal steps count as one) of any wall in the section.
   const nearSection = (section) =>
     section.some((key) => {
@@ -259,13 +274,28 @@ export function wallFadeStep(map, figures, bigGroups = null, memory = NO_WALL_FA
   for (const space of new Set(Object.values(spaces))) {
     if (space >= 0) for (const side of spaceList[space].frontGroups ?? []) if (nearSide(side)) addGroup(side.keys)
   }
+  // Hide-driven sections only from figures on floor (in a space). Standing in a doorway / on a
+  // wall keeps room cutaway via previous.spaces + nearSide, but does not invent a fresh section fade.
   for (const { key, shape } of fadingBlocks(map, bigGroups)) {
     const margin = previous.keys.has(key) ? tuning.releaseMargin : 0
-    if (figures.some(({ position }) => hides(shape, position, margin))) addSection(key)
+    if (
+      figures.some(({ position }) => {
+        const fx = Math.round(position.x)
+        const fy = Math.round(position.y)
+        const here =
+          fx >= 0 && fy >= 0 && fx < map.width && fy < map.height ? spaceAt[fy * map.width + fx] : -1
+        if (here < 0) return false
+        return hides(shape, position, margin)
+      })
+    ) {
+      addSection(key)
+    }
   }
   // A faded side or section comes back only once every figure is more than fadeRange tiles from it.
   for (const key of previous.keys) {
     if (keys.has(key)) continue
+    // Don't sticky-keep a wall that has moved behind the party.
+    if (!figures.some(({ position }) => cellInFrontOfFigure(key, position))) continue
     const sides = frontGroupOf.get(key)
     if (sides) sides.filter(nearSide).forEach((side) => addGroup(side.keys))
     else if (nearSection(sectionOf.get(key) ?? [key])) addSection(key)
@@ -352,9 +382,14 @@ export function templatePieceFadeIds(map, figures, previousIds = new Set(), { mo
     return ids
   }
 
+  const pieceInFrontOfFigures = (piece) =>
+    figures.some(({ position }) => piece.cells.some((key) => cellInFrontOfFigure(key, position)))
+
   // Room mode: pieces on cells already faded by wallFadeStep (room fronts / sticky sections).
+  // Skip pieces that only sit behind the party (same depth tighten as wallFadeStep).
   if (fadedCellKeys?.size) {
     for (const piece of pieces) {
+      if (!pieceInFrontOfFigures(piece)) continue
       if (piece.cells.some((key) => fadedCellKeys.has(key))) ids.add(piece.id)
     }
   }
@@ -364,18 +399,20 @@ export function templatePieceFadeIds(map, figures, previousIds = new Set(), { mo
   const { sectionOf } = analyseWalls(map)
   const sectionKeys = new Set()
   const addSectionKeys = (cells) => {
-    for (const key of cells) {
-      for (const sectionKey of sectionOf.get(key) ?? [key]) sectionKeys.add(sectionKey)
+    for (const key of keysInFrontOfFigures(cells, figures)) {
+      for (const sectionKey of keysInFrontOfFigures(sectionOf.get(key) ?? [key], figures)) {
+        sectionKeys.add(sectionKey)
+      }
     }
   }
   for (const piece of pieces) {
     const margin = previousIds.has(piece.id) ? tuning.releaseMargin : 0
     if (figures.some(({ position }) => templatePieceHides(piece, position, margin))) addSectionKeys(piece.cells)
   }
-  // Stickiness for previously faded pieces: keep the whole section while a figure is still nearby.
+  // Stickiness for previously faded pieces: keep the in-front section while a figure is still nearby.
   if (previousIds.size) {
     for (const piece of pieces) {
-      if (!previousIds.has(piece.id)) continue
+      if (!previousIds.has(piece.id) || !pieceInFrontOfFigures(piece)) continue
       const section = []
       for (const key of piece.cells) {
         for (const sectionKey of sectionOf.get(key) ?? [key]) section.push(sectionKey)
@@ -384,11 +421,12 @@ export function templatePieceFadeIds(map, figures, previousIds = new Set(), { mo
         const [x, y] = key.split(',').map(Number)
         return figures.some(({ position }) => Math.max(Math.abs(position.x - x), Math.abs(position.y - y)) <= tuning.fadeRange)
       })
-      if (near) section.forEach((key) => sectionKeys.add(key))
+      if (near) keysInFrontOfFigures(section, figures).forEach((key) => sectionKeys.add(key))
     }
   }
   if (sectionKeys.size) {
     for (const piece of pieces) {
+      if (!pieceInFrontOfFigures(piece)) continue
       if (piece.cells.some((key) => sectionKeys.has(key))) ids.add(piece.id)
     }
   }

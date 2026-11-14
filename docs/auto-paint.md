@@ -2,7 +2,7 @@
 
 **New map-construction path** (fully separate from **Legacy Map Generator** / `generators/*` — no shared generator code). Two separate functions share the same rulesets:
 
-- **Generate New Map** — builds a full floor plan + walls from the ruleset.
+- **Generate Map** — builds a full floor plan + walls from the ruleset (new seed each press).
 - **Auto-Paint** — paint floors by hand; walls rebuild from the footprint (also Rebuild Auto-Paint Walls).
 
 Editor overview / menu placement: `docs/editor-authoring-summary.md` (§8 World Generation Ruleset; Tools File menus).
@@ -10,7 +10,7 @@ Editor overview / menu placement: `docs/editor-authoring-summary.md` (§8 World 
 ## Current behaviour
 
 1. **Tools → World Generation Ruleset** — palette is the Dev Edit **Template Pieces** catalogue (`templatePieces.json`). **Help** menu + **Flowchart** (pipeline settings) + role slots + **Adjacency rules** (per-ruleset wall↔wall and wall↔floor whitelists; empty = allow all). Edit Help copy in `src/data/adaptation/maps/worldGenerationWorkflow.js`. Pipeline / adjacency save on the ruleset. Default ruleset **Template 32** stores **Template Piece ids** in wall roles. Save → `autoPaintRulesets.json` (`/__autopaint`).
-2. **Generate New Map** (in World Generation Ruleset) — builds into the open map and shows it in **Map** view (left palette stays; **Rules** / **Map** toggles). Grid settings are shared with main Dev Edit. Template 32: deck room grid + `templateWall` underlay + **96-wide** openings (two floor cells; **3× Doorway 32** + Corner 32 leftover) + wall runs with **Corner 32 end caps** on every free edge + floorUnder + **128 / 64 / 32** packing (`placeWallRuns.js`). Does not call frozen `placeTemplateWalls`.
+2. **Generate Map** (in World Generation Ruleset) — builds into the open map and shows it in **Map** view (left palette stays; **Rules** / **Map** toggles). Each press draws a new seed. Grid settings are shared with main Dev Edit. Template 32: deck room grid + `templateWall` underlay + **96-wide** openings (two floor cells; **3× Doorway 32**) + wall runs with **Corner 32 end caps** on jambs + floorUnder + **128 / 64 / 32** packing (`placeWallRuns.js`). Does not call frozen `placeTemplateWalls`.
 3. **Edit → Toggle Auto-Paint** — paint floors; walls rebuild from the footprint.
 4. **Edit → Rebuild Auto-Paint Walls** — regenerate auto walls from current floors.
 
@@ -42,7 +42,7 @@ Optional `autoPaint` block (`rulesetId`, regions with floor / underlay / piece /
 
 ## Doorways
 
-Openings are **96px** (three Doorway 32 tips) on a **two-cell** floor gap — no full-cell `doorway` tile and no Floor 32 overlay (underlay is already deck). Generate keeps the frozen deck’s two-tile cuts (trims longer runs to two cells), paints them as floor, then packs **3× Doorway 32** on the wall strip and a **Corner 32** on any leftover tip; wall runs at the jambs also get Corner 32 end caps. Keys live in `autoPaint.regions[].generatedDoorKeys`. Optional `walls.doorFrame` still places a frame piece when set.
+Openings are **96px** (three **32×32** Doorway tips) on a **two-cell** floor gap — no full-cell `doorway` tile and no Floor 32 overlay (underlay is already deck). Generate keeps the frozen deck’s two-tile cuts (trims longer runs to two cells), paints them as floor, then packs **3× Doorway 32** on the opening strip. Leftover tip(s) in the 128px gap stay empty so **Corner 32 end caps** on the wall runs at the jambs finish the edge (do not plant a Corner inside the opening). Keys live in `autoPaint.regions[].generatedDoorKeys`. Optional `walls.doorFrame` still places a frame piece when set.
 
 ## Not yet
 
@@ -50,4 +50,4 @@ Props / furnishings, Auto-Paint-native layouts beyond the shared deck grid.
 
 ## Frozen / locked
 
-Legacy Map Generator (Tools → Legacy Map Generator) is **read-only**. Location generators live in `src/maps/generators/*` and `templateDeckStyle` — do not edit them for World Generation work. Generate New Map uses `src/maps/autoPaint/deckLayout.js` (owned copy of the old deck room grid).
+Legacy Map Generator (Tools → Legacy Map Generator) is **read-only**. Location generators live in `src/maps/generators/*` and `templateDeckStyle` — do not edit them for World Generation work. Generate Map uses `src/maps/autoPaint/deckLayout.js` (owned copy of the old deck room grid).

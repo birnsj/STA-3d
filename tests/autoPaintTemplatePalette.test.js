@@ -5,14 +5,18 @@ import { editorTemplatePaletteItems, listEditorTemplatePieces, templatePieceGrou
 
 describe('Auto-Paint shares Dev Edit Template catalogue', () => {
   it('editorTemplatePaletteItems matches templatePieceGroups Template Pieces', () => {
-    const group = templatePieceGroups().find((entry) => entry.id === 'template-pieces')
-    assert.ok(group?.pieces?.length > 20)
+    const groups = templatePieceGroups().filter((entry) => entry.id !== 'template-dimension')
+    const groupPieces = groups.flatMap((entry) => entry.pieces)
+    assert.ok(groups.some((entry) => entry.id === 'template-pieces'))
+    assert.ok(groups.some((entry) => entry.id === 'template-outdoor-32'))
+    assert.ok(groupPieces.length > 20)
     const listed = listEditorTemplatePieces()
-    assert.equal(listed.length, group.pieces.length)
+    assert.equal(listed.length, groupPieces.length)
     const items = editorTemplatePaletteItems()
-    assert.equal(items.length, group.pieces.length)
+    assert.equal(items.length, groupPieces.length)
     assert.ok(items.every((item) => item.kind === 'piece'))
     assert.ok(items.some((item) => item.id === 'tplStarshipWall32'))
+    assert.ok(items.some((item) => item.id === 'tplOutdoorPrefabWall'))
   })
 
   it('resolves Template Pieces to wall32 tiles without a parallel id table', () => {

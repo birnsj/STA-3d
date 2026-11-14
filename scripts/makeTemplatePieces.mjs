@@ -812,11 +812,18 @@ for (const entry of pieces) {
   console.log(`${entry.id} ${entry.size.width}×${entry.size.height} anchorX=${entry.anchorX} (+r90/180/270)`)
 }
 
-// Keep Dimension Kit entries (tplDim*) — this bake only replaces Starship pieces.
+// Keep Dimension Kit + Outdoor Template 32 — this bake only replaces Starship pieces.
 const prior = fs.existsSync(cataloguePath) ? JSON.parse(fs.readFileSync(cataloguePath, 'utf8')) : { pieces: [] }
-const dimension = (prior.pieces ?? []).filter(
+const keepOther = (prior.pieces ?? []).filter((entry) => {
+  const tags = entry.tags ?? []
+  if (tags.includes('dimension') || String(entry.id).startsWith('tplDim')) return true
+  if (tags.includes('outdoor') || String(entry.id).startsWith('tplOutdoor')) return true
+  return false
+})
+const dimensionCount = keepOther.filter(
   (entry) => (entry.tags ?? []).includes('dimension') || String(entry.id).startsWith('tplDim'),
-)
+).length
+const outdoorCount = keepOther.length - dimensionCount
 const notes = [
   'Starship Template Pieces: overlay duplicate of the Starship & Station palette (walls, floors, half bulkheads, props, furniture).',
   'Overlays only — sit on deck underlay; do not replace ground tiles. Pathing/sight use the underlay.',
@@ -827,10 +834,17 @@ const notes = [
   'Fitting / prop / console / biobed pieces include animation.overlay emission frames (blink). Art via scripts/makeTemplatePieces.mjs',
   'cover / fade match counterpart Starship tiles; animation.emissive / emitColour match wall overlay Properties (saved via /__templates).',
 ]
-if (dimension.length) {
+if (dimensionCount) {
   notes.push(
     'Dimension Kit (tplDim*): solid-but-lit AA size/footprint tests. Separate from Starship templates and Calibration tiles. Art via scripts/makeDimensionKit.mjs.',
   )
 }
-fs.writeFileSync(cataloguePath, `${JSON.stringify({ notes, pieces: [...pieces, ...dimension] }, null, 2)}\n`)
-console.log(`Wrote ${pieces.length} Starship template pieces (${pngFiles.length} PNGs); kept ${dimension.length} Dimension entries`)
+if (outdoorCount) {
+  notes.push(
+    'Outdoor Template 32 (tplOutdoor*): outdoor walls are 32-thick modular pieces (makeOutdoorTemplatePieces.mjs); floors/props may reuse outdoor tile art.',
+  )
+}
+fs.writeFileSync(cataloguePath, `${JSON.stringify({ notes, pieces: [...pieces, ...keepOther] }, null, 2)}\n`)
+console.log(
+  `Wrote ${pieces.length} Starship template pieces (${pngFiles.length} PNGs); kept ${dimensionCount} Dimension + ${outdoorCount} Outdoor entries`,
+)

@@ -3,7 +3,7 @@ import { getPlaytestParty, hasAuthoredCharacter } from '../character/authoredCha
 import { normalizeCharacterRecord } from '../character/runtimeCharacter.js'
 import { ENEMY_SPAWNS_NEEDED } from '../combat/encounters.js'
 import EditorBoard from '../components/maps/EditorBoard.jsx'
-import { EDITOR_GRID_SIZES } from '../components/maps/editorGrid.js'
+import { DEFAULT_EDITOR_GRID_SIZE, EDITOR_GRID_SIZES } from '../components/maps/editorGrid.js'
 import EditorGridOptions from '../components/maps/EditorGridOptions.jsx'
 import EditorHelp, { STA_BUILDER_VERSION } from '../components/maps/EditorHelp.jsx'
 import EditorLayersWindow from '../components/maps/EditorLayersWindow.jsx'
@@ -29,11 +29,9 @@ import { canSaveMaps } from '../maps/mapFiles.js'
 import { mapPlayErrors, validateMap } from '../maps/mapFormat.js'
 import { challengeMapWarnings } from '../world/objectAuthoring.js'
 import { canDrawEpisodeArt } from '../maps/episodeArt.js'
-import { randomMapName } from '../maps/mapGenerators.js'
 import { weatherFor } from '../maps/mapWeather.js'
 import WeatherFx from '../effects/WeatherFx.jsx'
 import { npcPortraitOptions } from '../character/npcAppearance.js'
-import { randomEpisodeName } from '../rules/locationNames.js'
 
 // Dev map editor (Main Menu → Dev Edit). Shell: menu + slim toolbar, Assets | Viewport | Properties, floating windows.
 
@@ -84,7 +82,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   const [showSurfaces, setShowSurfaces] = useState(false)
   const [showWeather, setShowWeather] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
-  const [gridSize, setGridSize] = useState(32)
+  const [gridSize, setGridSize] = useState(DEFAULT_EDITOR_GRID_SIZE)
   const [propFade, setPropFade] = useState(false)
   const [showBounds, setShowBounds] = useState(true)
   const [showCentre, setShowCentre] = useState(false)
@@ -152,7 +150,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
       if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault()
         const index = EDITOR_GRID_SIZES.indexOf(gridSize)
-        const from = index >= 0 ? index : EDITOR_GRID_SIZES.indexOf(32)
+        const from = index >= 0 ? index : EDITOR_GRID_SIZES.indexOf(DEFAULT_EDITOR_GRID_SIZE)
         const step = event.shiftKey ? -1 : 1
         const size = EDITOR_GRID_SIZES[(from + step + EDITOR_GRID_SIZES.length) % EDITOR_GRID_SIZES.length]
         setShowGrid(true)
@@ -366,7 +364,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   if (storyEditor) {
     return (
       <Suspense fallback={null}>
-        <StoryEditorScreen onBack={() => setStoryEditor(false)} />
+        <StoryEditorScreen onBack={() => setStoryEditor(false)} askConfirm={askConfirm} />
+        {dialogs}
       </Suspense>
     )
   }
@@ -430,6 +429,26 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           onShowBounds={setShowBounds}
           showCentre={showCentre}
           onShowCentre={setShowCentre}
+          enemiesActive={enemiesActive}
+          onEnemiesActive={setEnemiesActive}
+          askConfirm={askConfirm}
+          showWeather={showWeather}
+          onShowWeather={setShowWeather}
+          edit={edit}
+          onMapType={doc.onMapType}
+          onBiome={doc.onBiome}
+          onWeather={(weather) => edit({ ...map, weather })}
+          onAmbient={(ambient) => edit({ ...map, ambient })}
+          onAmbientColour={(ambientColour) => edit({ ...map, ambientColour })}
+          onSize={doc.onSize}
+          roomScale={doc.roomScale}
+          onRoomScale={doc.setRoomScale}
+          buildingScale={doc.buildingScale}
+          onBuildingScale={doc.setBuildingScale}
+          onLegacyGenerateMap={() => doc.onGenerate()}
+          generateHazards={doc.generateHazards}
+          onGenerateHazards={doc.setGenerateHazards}
+          cardTools={{ canGenerate: canDrawEpisodeArt, busy: doc.drawingCard, onGenerate: onGenerateCard }}
           onBack={() => setAutoPaintRulesetEditor(false)}
           onGenerateMap={async (rulesetId) => {
             tools.setAutoPaintRulesetId(rulesetId)
@@ -566,10 +585,13 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
         animateTiles={animateTiles}
         onAnimateTiles={setAnimateTiles}
         onGenerateMap={doc.onGenerate}
-        onGenerateName={() => edit({ ...map, name: randomMapName(map) })}
-        onGenerateEpisode={() => edit({ ...map, episodeName: randomEpisodeName(map.episodeName, Math.random, map.name) })}
-        onGenerateCard={onGenerateCard}
+        onObjectives={() => setObjectiveEditor({ index: 0 })}
+        onObjects={() => setObjectEditor({ id: tools.selectedObjectId ?? null })}
+        onConversations={() => setConversationEditor({ id: null })}
+        onCharacters={() => setCharacterLibrary(true)}
         onGeneratorEditor={() => setGeneratorEditor(true)}
+        onAutoPaintRuleset={() => setAutoPaintRulesetEditor(true)}
+        onStory={() => setStoryEditor(true)}
         overviewOpen={overviewOpen}
         onOverview={() => setOverviewOpen((value) => !value)}
         layersOpen={layersOpen}

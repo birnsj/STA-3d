@@ -5,7 +5,7 @@ alwaysApply: true
 
 # World Generation vs Legacy Map Generator
 
-**Active work:** World Generation Ruleset, Generate New Map, and Auto-Paint (paint / rebuild walls).
+**Active work:** World Generation Ruleset, Generate Map, and Auto-Paint (paint / rebuild walls).
 
 Code and data live under `src/maps/autoPaint/`, World Generation Ruleset UI, and `autoPaintRulesets.json`.
 

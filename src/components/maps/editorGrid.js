@@ -3,6 +3,8 @@
 import { TILE_W } from '../../maps/iso.js'
 
 export const EDITOR_GRID_SIZES = [2, 4, 8, 16, 32, 64, 128, 256]
+// Default guide/snap cell: one tile (64 world px).
+export const DEFAULT_EDITOR_GRID_SIZE = 64
 
 // Fine steps that already hit tile edges keep origin 0. Coarse steps (64+) start on tile edges (−0.5) so the
 // guide matches floor diamonds and the map boundary — same rule as EditorGridView.

@@ -128,7 +128,7 @@ export const randomEpisodeCard = (map, random = Math.random) =>
 export const MAP_SIZES = mapSizes.sizes
 export const DEFAULT_SIZE = 'medium'
 export function sizeFor(typeId, sizeId) {
-  const [width, height] = (mapSizes.byType[generatorFor(typeId).id] ?? mapSizes.byType.starshipDeck)[sizeId] ?? [16, 12]
+  const [width, height] = (mapSizes.byType[generatorFor(typeId).id] ?? mapSizes.byType.starshipDeck)[sizeId] ?? [16, 16]
   return { width, height }
 }
 // The preset the map's current dimensions match for its location, or 'custom'.

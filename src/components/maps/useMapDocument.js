@@ -5,6 +5,7 @@ import { resizeMap } from '../../maps/mapEdits.js'
 import { canSaveMaps, deleteMap, listMaps, loadMap, saveMap } from '../../maps/mapFiles.js'
 import { createNullMap, DEFAULT_BIOME, DEFAULT_MAP_TYPE, mapFileId } from '../../maps/mapFormat.js'
 import { generateAutoPaintMap, getAutoPaintRuleset } from '../../maps/autoPaint/index.js'
+import { seededRandom } from '../../rules/seededRandom.js'
 import { biomeFor, DEFAULT_SIZE, generateNamedMap, generatorFor, sizeFor, sizeIdOf, withGeneratedHazards } from '../../maps/mapGenerators.js'
 import {
   beginMapHistoryStroke,
@@ -176,15 +177,16 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     setGenerated(true)
   }
 
-  // World Generation Ruleset → Generate New Map: full layout + wall packing (separate from Auto-Paint paint/rebuild).
-  // Does not call the frozen Legacy Map Generator / generators/* path.
+  // World Generation Ruleset → Generate Map: full layout + wall packing (separate from Auto-Paint paint/rebuild).
+  // Does not call the frozen Legacy Map Generator / generators/* path. Each press draws a new seed.
   const onGenerateAutoPaint = async (rulesetId) => {
     const operation = beginMapDocumentOperation(guardRef.current)
     const proceed =
       onlySetupChanged ||
-      (await confirmDiscard('The open map has unsaved changes. Generate New Map replaces it, and those changes will be lost.', 'Generate'))
+      (await confirmDiscard('The open map has unsaved changes. Generate Map replaces it, and those changes will be lost.', 'Generate'))
     if (!proceed || !isMapDocumentOperationCurrent(guardRef.current, operation)) return false
-    const result = generateAutoPaintMap(map, rulesetId, Math.random)
+    const seed = Math.random()
+    const result = generateAutoPaintMap(map, rulesetId, seededRandom(seed))
     if (result.error) {
       setStatus(result.error)
       return false
@@ -193,10 +195,11 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     next = { ...next, weather: randomWeather(next) }
     const label = getAutoPaintRuleset(rulesetId)?.label ?? rulesetId
     const detail = result.status ? ` ${result.status}` : ''
+    const seedLabel = Math.floor(seed * 1e9)
     replaceMap(
       next,
       null,
-      `Generate New Map (${label}).${detail} Not saved yet: press Save to keep it.`,
+      `Generate Map (${label}, seed ${seedLabel}).${detail} Not saved yet: press Save to keep it.`,
       { unsaved: true },
     )
     setCleanMap(next)

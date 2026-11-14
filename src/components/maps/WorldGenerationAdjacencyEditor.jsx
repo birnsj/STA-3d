@@ -273,8 +273,7 @@ export default function WorldGenerationAdjacencyEditor({
   const shared = { wallIds, floorIds, resolveDropId, acceptId, titleForTile }
 
   return (
-    <section className="ge-block ge-adjacency">
-      <h3 className="ge-block-title">Adjacency rules</h3>
+    <div className="ge-adjacency">
       <p className="ge-block-hint">
         Drag pieces from the Palette onto the two sides of a pair to say they may sit next to each other. Empty list =
         allow all. Once you add pairs, only those pairs are allowed. Pieces should already be in Floors / Walls slots
@@ -360,6 +359,6 @@ export default function WorldGenerationAdjacencyEditor({
           </div>
         )}
       </div>
-    </section>
+    </div>
   )
 }

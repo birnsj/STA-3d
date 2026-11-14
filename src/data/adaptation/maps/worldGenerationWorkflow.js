@@ -8,8 +8,8 @@ export const WORLD_GENERATION_HELP_TOPICS = [
     title: 'World Generation overview',
     body: [
       'This is the active map-construction path. Legacy Map Generator is locked (read-only; do not use it for new construction).',
-      'One ruleset drives both Generate New Map (full build) and Auto-Paint (paint floors; walls rebuild).',
-      'Flowchart: click each step for its settings. Pack pieces = tip lengths. Corners = visual assembly (how wall thumbs fit together).',
+      'One ruleset drives both Generate Map (full build) and Auto-Paint (paint floors; walls rebuild).',
+      'Flowchart: click each step for a Corners-style visual assembly plus any settings. Pack pieces = tip lengths; Corners = junction/end-cap assembly.',
       'Below the flowchart: Floors / Walls / Doors role slots (Palette drag), then Adjacency (graphic neighbor pairs).',
       'Help menu opens this guide. Save the ruleset, then Generate or Rebuild to see packing + adjacency apply.',
     ],
@@ -49,7 +49,7 @@ export const WORLD_GENERATION_HELP_TOPICS = [
     body: [
       'On each wall run, packing prefers long pieces, then short, then 32 stubs (corner length).',
       'Pack pieces flowchart step: edit tip lengths in px (defaults long 128, short 64, stub 32). Tip grid stays 32px (Template Piece size).',
-      'Doorways step: opening width in underlay cells, doorway tip units, prefer openings, min gap.',
+      'Doorways step: 96px = 3× Doorway 32 on a 2-cell gap (defaults); leftover tip stays empty for jamb Corner end caps — not a Corner inside the opening.',
       'After lengths are set, open the Corners step for the visual assembly of how those pieces sit on a run, an L, and a free end.',
     ],
   },
@@ -85,9 +85,9 @@ export const WORLD_GENERATION_HELP_TOPICS = [
   {
     id: 'generate-vs-paint',
     label: 'Generate vs Auto-Paint',
-    title: 'Generate New Map vs Auto-Paint',
+    title: 'Generate Map vs Auto-Paint',
     body: [
-      'Generate New Map (in this screen): builds a room grid of floors, cuts openings, then runs the wall pipeline (packing + corners + adjacency).',
+      'Generate Map (in this screen): builds a room grid of floors, cuts openings, then runs the wall pipeline (packing + corners + adjacency). Each press uses a new seed.',
       'After Generate, use Rules / Map toggles — Map shows the result; left Palette stays.',
       'Auto-Paint (Edit menu on the main map): you paint floors; Rebuild / live paint runs the same wall pipeline on the current footprint.',
       'Same ruleset, same flowchart and adjacency — different starting point (full layout vs your floors).',
@@ -141,18 +141,35 @@ export const WORLD_GENERATION_FLOW_NODES = [
     summary: 'Floor gaps + Doorway 32 lining',
     helpTopicId: 'roles',
     settings: [
-      { key: 'doorCells', type: 'number', label: 'Opening width (underlay cells)', min: 1, max: 4, step: 1 },
-      { key: 'doorTipUnits', type: 'number', label: 'Doorway tip units (×32px)', min: 1, max: 6, step: 1 },
+      {
+        key: 'doorCells',
+        type: 'number',
+        label: 'Opening width (underlay cells)',
+        min: 1,
+        max: 4,
+        step: 1,
+      },
+      {
+        key: 'doorTipUnits',
+        type: 'number',
+        label: 'Doorway tip units (×32px)',
+        min: 1,
+        max: 6,
+        step: 1,
+      },
       { key: 'preferOpenings', type: 'boolean', label: 'Prefer openings when generating', path: 'doors.preferOpenings' },
       { key: 'minGap', type: 'number', label: 'Min gap between openings', min: 1, max: 8, step: 1, path: 'doors.minGap' },
     ],
+    // Hint under the Doorways settings (paired: cells ↔ tip units).
+    settingsHint:
+      'Default 2 cells + 3 tip units = 96px of Doorway 32 on a 128px gap; the jamb Corner fills the leftover tip. Changing either number updates the other.',
   },
   {
     id: 'endCaps',
     label: 'Corners',
     summary: 'Visual assembly — how pieces fit together',
     helpTopicId: 'corners',
-    // Settings UI is WorldGenerationPackingAssembly (not checkbox fields).
+    // Visual UI is WorldGenerationPackingAssembly (every flowchart node has a diagram).
     settings: [],
   },
 ]

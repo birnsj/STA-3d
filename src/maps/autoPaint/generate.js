@@ -1,4 +1,4 @@
-// Generate New Map: World Generation deck room grid + 128/64/32 Template wall packing.
+// Generate Map: World Generation deck room grid + 128/64/32 Template wall packing.
 import { createNullMap, cellKey, FLOOR_TILE } from '../mapFormat.js'
 import { WORLD_DOOR_MARK, WORLD_WALL_UNDERLAY } from './constants.js'
 import { makeWorldDeckGenerator } from './deckLayout.js'
@@ -43,7 +43,7 @@ export function generateAutoPaintMap(source, rulesetId, random = Math.random) {
   const width = snapped.width
   const height = snapped.height
   if (width < 6 || height < 6) {
-    return { map: source, error: 'Map is too small for Generate New Map (need at least 6×6).' }
+    return { map: source, error: 'Map is too small for Generate Map (need at least 6×6).' }
   }
 
   const kit = pieceKitFromRuleset(ruleset)
@@ -156,7 +156,7 @@ export function generateAutoPaintMap(source, rulesetId, random = Math.random) {
   if (snapped.snapped) {
     return {
       map,
-      status: `Generate New Map snapped size to ${width}×${height} (${snapped.sizeId}) for Template 32 runs.`,
+      status: `Generate Map snapped size to ${width}×${height} (${snapped.sizeId}) for Template 32 runs.`,
     }
   }
   return { map }

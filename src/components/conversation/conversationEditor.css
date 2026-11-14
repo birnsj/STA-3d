@@ -821,12 +821,66 @@
 .ed-shell .ge-pack-trim {
   margin-top: 0.55rem;
 }
+.ed-shell .ge-pack-grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 0.35rem;
+  justify-content: start;
+  align-items: end;
+  margin-top: 0.35rem;
+}
+.ed-shell .ge-pack-grid-empty {
+  min-width: 4.5rem;
+  min-height: 1px;
+}
+.ed-shell .ge-pack-marker-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.25rem;
+  min-height: 4.25rem;
+  margin: 0;
+  padding: 0.35rem;
+  border: 1px dashed var(--ed-border);
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--ed-muted, #9aa3ad);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-transform: uppercase;
+}
+button.ge-pack-marker-face {
+  cursor: pointer;
+}
+button.ge-pack-marker-face:hover {
+  border-color: var(--ed-accent, #6ec6ff);
+  color: var(--ed-accent, #6ec6ff);
+}
+.ed-shell .ge-pack-marker-face.is-off {
+  opacity: 0.55;
+}
 
 .ed-shell .ge-lead {
   margin: 0 0 12px;
   color: var(--ed-muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+/* World Generation middle column — collapsible sections (same control as Properties). */
+.ed-shell.ap-ruleset-editor .oe-detail .ed-prop-sections-bar {
+  margin: 0 0 8px;
+  border: 1px solid var(--ed-border);
+}
+.ed-shell.ap-ruleset-editor .oe-detail .ed-prop-section {
+  margin-bottom: 8px;
+}
+.ed-shell.ap-ruleset-editor .oe-detail .ed-prop-section-title {
+  font-size: 11px;
+  letter-spacing: 0.06em;
 }
 
 .ed-shell .ge-block {

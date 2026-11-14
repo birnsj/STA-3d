@@ -154,35 +154,44 @@ export default function MapProperties({
         </label>
       </PropertySection>
 
-      <PropertySection id="generate" title="Generate">
-        <ScaleSlider label="Room size" title="How big Legacy Map Generator makes rooms." min="70" value={roomScale} onChange={onRoomScale} />
-        <ScaleSlider label="Building size" title="How big Legacy Map Generator makes buildings and city blocks." min="100" value={buildingScale} onChange={onBuildingScale} />
+      <PropertySection
+        id="name-episode-card"
+        title="Name, episode & card"
+        defaultOpen={false}
+        forceOpen={revealEpisodeCard > 0}
+        key={`name-episode-card-${revealEpisodeCard}`}
+      >
+        <label className="me-field">
+          Map name
+          <input
+            className="me-name me-wide"
+            value={map.name}
+            placeholder="Map name"
+            aria-label="Map name"
+            title="The map's name is also its file name"
+            onChange={(event) => edit({ ...map, name: event.target.value })}
+          />
+        </label>
         <button type="button" className="me-button me-generate" onClick={() => edit({ ...map, name: randomMapName(map) })}>
           Generate Name
         </button>
-        <button type="button" className="me-button me-generate" title="Builds a new map with the frozen location generators. Nothing is saved until you press Save." onClick={onGenerateMap}>
-          Legacy Map Generator
-        </button>
-        <label className="me-check">
-          <input type="checkbox" checked={generateHazards} onChange={(event) => onGenerateHazards?.(event.target.checked)} />
-          Generate hazards
+        <label className="me-field">
+          Episode name
+          <input
+            className="me-name me-episode me-wide"
+            value={map.episodeName}
+            placeholder="Shown in Load Episode"
+            aria-label="Episode name"
+            onChange={(event) => edit({ ...map, episodeName: event.target.value })}
+          />
         </label>
-      </PropertySection>
-
-      <PropertySection id="episode" title="Episode">
-        <input
-          className="me-name me-episode"
-          value={map.episodeName}
-          placeholder="Shown in Load Episode"
-          aria-label="Episode name"
-          onChange={(event) => edit({ ...map, episodeName: event.target.value })}
-        />
-        <button type="button" className="me-button me-generate" onClick={() => edit({ ...map, episodeName: randomEpisodeName(map.episodeName, Math.random, map.name) })}>
+        <button
+          type="button"
+          className="me-button me-generate"
+          onClick={() => edit({ ...map, episodeName: randomEpisodeName(map.episodeName, Math.random, map.name) })}
+        >
           Generate Episode Name
         </button>
-      </PropertySection>
-
-      <PropertySection id="episode-card" title="Episode Card" defaultOpen={false} forceOpen={revealEpisodeCard > 0} key={`episode-card-${revealEpisodeCard}`}>
         <EpisodeCardPicker
           cardId={map.card}
           weatherFx={showWeather ? weatherFor(map.weather).fx : null}
@@ -191,6 +200,18 @@ export default function MapProperties({
           onCard={(card) => edit({ ...map, card })}
           onGenerate={cardTools.onGenerate}
         />
+      </PropertySection>
+
+      <PropertySection id="generate" title="Generate" defaultOpen={false}>
+        <ScaleSlider label="Room size" title="How big Legacy Map Generator makes rooms." min="70" value={roomScale} onChange={onRoomScale} />
+        <ScaleSlider label="Building size" title="How big Legacy Map Generator makes buildings and city blocks." min="100" value={buildingScale} onChange={onBuildingScale} />
+        <button type="button" className="me-button me-generate" title="Builds a new map with the frozen location generators. Nothing is saved until you press Save." onClick={onGenerateMap}>
+          Legacy Map Generator
+        </button>
+        <label className="me-check">
+          <input type="checkbox" checked={generateHazards} onChange={(event) => onGenerateHazards?.(event.target.checked)} />
+          Generate hazards
+        </label>
       </PropertySection>
 
       <PropertySection id="captains-log" title="Captain's Log" defaultOpen={false}>

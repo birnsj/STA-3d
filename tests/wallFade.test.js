@@ -101,9 +101,9 @@ describe('walls that fade together (Prototype: room cutaway, sections, stickines
     assert.equal(spaceAt[10 * yard.width + 6], -1, 'the doorway belongs to no space')
   })
 
-  it('a room side is solid again once every figure is 4 tiles out from it', () => {
-    assert.ok(wallFadeStep(yard, [{ id: 'a', position: { x: 5, y: 6.1 } }]).keys.has('5,10'), '3.9 tiles: faded')
-    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 5, y: 6 } }]).keys.has('5,10'), false, '4 tiles: solid')
+  it('a room side is solid again once every figure is roomSideRange tiles out from it', () => {
+    assert.ok(wallFadeStep(yard, [{ id: 'a', position: { x: 5, y: 7.1 } }]).keys.has('5,10'), '2.9 tiles: faded')
+    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 5, y: 7 } }]).keys.has('5,10'), false, '3 tiles: solid')
   })
 
   it('a room side stays solid when the figure is past it (wall behind them)', () => {
@@ -113,26 +113,38 @@ describe('walls that fade together (Prototype: room cutaway, sections, stickines
     assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 14, y: 5 } }]).keys.has('12,5'), false)
   })
 
-  it("a room side fades whole when a figure is near it, straight out from the wall", () => {
+  it('a room side fades in-front cells when a figure is near it, not cells behind them', () => {
     const corner = wallFadeStep(yard, [{ id: 'a', position: { x: 11, y: 9 } }]).keys
-    for (const key of ['12,1', '12,5', '12,10', '7,10', '1,10']) assert.ok(corner.has(key), key)
-    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 5, y: 4 } }]).keys.size, 0, 'no side within 2 tiles')
+    assert.ok(corner.has('12,10'), 'SE corner toward the camera fades')
+    assert.ok(corner.has('11,10') || corner.has('12,9'), 'near side cells in front of the figure fade')
+    assert.equal(corner.has('12,1'), false, 'east wall cells behind the figure stay solid')
+    assert.equal(corner.has('1,10'), false, 'south wall cells behind the figure stay solid')
+    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 5, y: 4 } }]).keys.size, 0, 'no side within range')
     const south = wallFadeStep(yard, [{ id: 'a', position: { x: 3, y: 8 } }]).keys
-    for (const key of ['1,10', '5,10', '7,10', '12,10']) assert.ok(south.has(key), `${key}: the whole south side, past the doorway`)
-    assert.equal(south.has('12,4'), false, 'the east side is 9 tiles away')
+    assert.ok(south.has('5,10') && south.has('7,10'), 'south cells in front of the figure fade')
+    assert.equal(south.has('1,10'), false, 'south cells behind the figure stay solid')
+    assert.equal(south.has('12,4'), false, 'the east side is out of range')
     assert.equal(south.has('1,8'), false, 'the west wall is behind the room')
     assert.equal(south.has('3,1'), false, 'the north wall is behind the room')
   })
 
-  it("corners fade with the room's sides: the main corner with either side, a far post never with a back wall", () => {
+  it("corners fade in front of the figure; back walls and behind-side cells stay solid", () => {
     const east = wallFadeStep(yard, [{ id: 'a', position: { x: 11, y: 3 } }]).keys
-    assert.ok(east.has('12,1') && east.has('12,10'), 'both ends of the east side')
+    assert.ok(east.has('12,5') || east.has('12,4') || east.has('12,10'), 'east cells in front of the figure fade')
+    assert.equal(east.has('12,1'), false, 'east cells behind the figure stay solid')
     assert.equal(east.has('11,1') || east.has('7,1'), false, 'the north wall behind stays solid')
     assert.equal(east.has('9,10'), false, 'the south side is out of range')
   })
 
+  it('walls behind a party in the far corner stay solid', () => {
+    // Back-north of the walled room: front sides are far; only in-front cells may fade.
+    const faded = wallFadeStep(yard, [{ id: 'a', position: { x: 3, y: 3 } }]).keys
+    assert.equal(faded.has('3,1') || faded.has('1,3') || faded.has('1,1'), false, 'north/west back walls stay solid')
+  })
+
   it("'single' mode (Settings) fades only the blocks hiding the figure, not the room's sides", () => {
-    const figure = [{ id: 'a', position: { x: 11, y: 9 } }]
+    // Deeper into the SE corner so room cutaway covers a longer in-front run than single hides.
+    const figure = [{ id: 'a', position: { x: 10, y: 8 } }]
     const single = wallFadeStep(yard, figure, null, undefined, 'single').keys
     const room = wallFadeStep(yard, figure).keys
     assert.ok(single.size > 0 && single.size < room.size)
@@ -142,17 +154,20 @@ describe('walls that fade together (Prototype: room cutaway, sections, stickines
 
   it('in the doorway a figure keeps the room it came from', () => {
     const inside = wallFadeStep(yard, [{ id: 'a', position: { x: 6, y: 9 } }])
+    assert.ok(inside.keys.has('7,10') || inside.keys.has('8,10'), 'south cells in front of the figure fade inside')
     const doorway = wallFadeStep(yard, [{ id: 'a', position: { x: 6, y: 10 } }], null, inside)
-    assert.ok(doorway.keys.has('4,10'))
-    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 6, y: 10 } }]).keys.has('4,10'), false)
+    assert.ok(doorway.keys.has('7,10') || doorway.keys.has('8,10'), 'doorway keeps in-front south fade from the room')
+    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 6, y: 10 } }]).keys.size, 0, 'doorway alone is not in the room')
   })
 
   it('a faded section comes back once every figure is more than 2 tiles from it', () => {
     const near = wallFadeStep(yard, [{ id: 'a', position: { x: 11, y: 4 } }])
-    assert.ok(near.keys.has('12,2'))
-    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 7, y: 4 } }], null, near).keys.has('12,2'), false)
+    assert.ok(near.keys.has('12,5') || near.keys.has('12,4'), 'east cells in front of the figure fade')
+    const kept = [...near.keys].find((key) => key.startsWith('12,'))
+    assert.ok(kept)
+    assert.equal(wallFadeStep(yard, [{ id: 'a', position: { x: 7, y: 4 } }], null, near).keys.has(kept), false)
     const pair = wallFadeStep(yard, [{ id: 'a', position: { x: 7, y: 4 } }, { id: 'b', position: { x: 10, y: 4 } }], null, near)
-    assert.ok(pair.keys.has('12,2'), 'one figure still near keeps it')
+    assert.ok(pair.keys.has(kept), 'one figure still near keeps it')
   })
 
   it('a narrow passage is a corridor, and a hiding wall fades with its section', () => {
@@ -221,11 +236,11 @@ describe('Template Piece wall fade (Settings room vs single)', () => {
       [W, F, F, F, F, F, F, W],
       [W, W, W, W, W, W, W, W],
     ],
-    // Three 32-thick pieces along the south underlay (y=7), tip-anchored at +X/+Y of each cell.
+    // Three 32-thick pieces on south underlay cells (2,7)/(3,7)/(4,7) — tipAlongX = cell+(1,1).
     templatePiecePlacements: [
-      { id: 'p0', pieceId: 'tplStarshipWall32', position: { x: 2, y: 8 }, rotation: 0 },
-      { id: 'p1', pieceId: 'tplStarshipWall32', position: { x: 3, y: 8 }, rotation: 0 },
-      { id: 'p2', pieceId: 'tplStarshipWall32', position: { x: 4, y: 8 }, rotation: 0 },
+      { id: 'p0', pieceId: 'tplStarshipWall32', position: { x: 3, y: 8 }, rotation: 0 },
+      { id: 'p1', pieceId: 'tplStarshipWall32', position: { x: 4, y: 8 }, rotation: 0 },
+      { id: 'p2', pieceId: 'tplStarshipWall32', position: { x: 5, y: 8 }, rotation: 0 },
     ],
   }
 
@@ -238,15 +253,16 @@ describe('Template Piece wall fade (Settings room vs single)', () => {
   })
 
   it('room mode fades every piece on a faded room-front underlay', () => {
-    const figure = [{ id: 'a', position: { x: 3, y: 5.5 } }]
+    // Depth clear of the west-most cell so all three south tips are in front of the figure.
+    const figure = [{ id: 'a', position: { x: 3, y: 5 } }]
     const fadedCells = wallFadeStep(templateRoom, figure).keys
-    assert.ok(fadedCells.has('3,7'), 'south front underlay fades')
+    assert.ok(fadedCells.has('2,7') && fadedCells.has('3,7') && fadedCells.has('4,7'), 'south front underlay fades')
     const ids = templatePieceFadeIds(templateRoom, figure, new Set(), { mode: 'room', fadedCellKeys: fadedCells })
     assert.ok(ids.has('p0') && ids.has('p1') && ids.has('p2'), 'whole wall of pieces fades together')
   })
 
   it("'single' mode fades only pieces that hide the figure", () => {
-    const figure = [{ id: 'a', position: { x: 3, y: 5.5 } }]
+    const figure = [{ id: 'a', position: { x: 3, y: 5 } }]
     const roomIds = templatePieceFadeIds(templateRoom, figure, new Set(), {
       mode: 'room',
       fadedCellKeys: wallFadeStep(templateRoom, figure).keys,
