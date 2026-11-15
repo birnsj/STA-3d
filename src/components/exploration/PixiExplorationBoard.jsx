@@ -599,12 +599,19 @@ export default function PixiExplorationBoard(props) {
         portraitId: null,
         colour: null,
         image: null,
-        name: 'Horse',
+        name: horse.label ? `${horse.label} Horse` : 'Horse',
         ring: menuOpen ? 'selected' : 'neutral',
         ringScale: 1.55,
         arrowColour: menuOpen ? YELLOW : PURPLE,
         bodyColour: PURPLE,
-        label: { text: 'Horse', y: tagY, size: 9, weight: '700', colour: menuOpen ? YELLOW : PURPLE, letterSpacing: 0.36 },
+        label: {
+          text: horse.label ? `${horse.label} Horse` : 'Horse',
+          y: tagY,
+          size: 9,
+          weight: '700',
+          colour: menuOpen ? YELLOW : PURPLE,
+          letterSpacing: 0.36,
+        },
         hideSprite: true,
         mount: true,
         position: horse.position,
@@ -621,25 +628,39 @@ export default function PixiExplorationBoard(props) {
         kind: 'horse',
         id: horse.id,
         depth,
-        shapes: figureShapes(centre, { scale: FIGURE_SCALE * 1.75, label: 'Horse', labelY: tagY }),
+        shapes: figureShapes(centre, {
+          scale: FIGURE_SCALE * 1.75,
+          label: horse.label ? `${horse.label} Horse` : 'Horse',
+          labelY: tagY,
+        }),
       })
     }
   })
   const walkSpeed = partyControlData.movement.walkSpeed
+  const runSpeed = partyControlData.movement.runSpeed
+  const rideWalk = walkSpeed * RIDE_SPEED_MULT
+  const rideRun = runSpeed * RIDE_SPEED_MULT
+  const rideMid = (rideWalk + rideRun) * 0.5
   const horsePoses = horseList.map((horse) => {
     const rider = horse.riderId ? state.members?.[horse.riderId] : null
-    const moving = Boolean(rider?.moving || rider?.running)
-    // Foot `running` alone rarely stays true while riding (short holds / ease-in). Mounted cruise is
-    // walkSpeed × RIDE_SPEED_MULT — trot once pace is near that so the horse reaches full trot.
+    // Order counts as moving so the walk clip starts on the click — waiting on smoothed pace skates the horse.
+    const moving = Boolean(rider?.moving || rider?.running || rider?.order)
+    // Walk → trot → run by mounted pace; foot `running` always picks run.
     const pace = rider?.pace ? Math.hypot(rider.pace.x, rider.pace.y) : 0
-    const trotting = Boolean(rider?.running) || pace >= walkSpeed * RIDE_SPEED_MULT * 0.85
+    let gait = 'idle'
+    if (moving) {
+      if (rider?.running || pace >= rideRun * 0.82) gait = 'run'
+      else if (pace >= rideMid) gait = 'trot'
+      else gait = 'walk'
+    }
     return {
       id: `horse:${horse.id}`,
       kind: 'horse',
       position: horse.position,
       facing: { x: Math.cos(horse.heading), y: Math.sin(horse.heading) },
-      gait: moving ? (trotting ? 'trot' : 'walk') : 'idle',
+      gait,
       riderId: horse.riderId ? `u${horse.riderId}` : null,
+      coat: horse.coat || 'bay',
     }
   })
   // X clip overlay: people + horses (mount ring figures use a different id; skip them).

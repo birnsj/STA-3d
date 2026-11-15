@@ -10,14 +10,16 @@ import {
   isMounted,
   mapSupportsMount,
   mountHorse,
+  planMountAssignments,
   removeHorse,
   RIDE_SPEED_MULT,
   syncMountAfterParty,
   tickRideAnims,
+  togglePartyMount,
 } from '../src/exploration/mount.js'
 import { createPartyState } from '../src/exploration/partyControl.js'
 
-function outdoorMap() {
+function outdoorMap(horseSpawns = [{ x: 5, y: 4, facing: 0 }]) {
   return {
     width: 16,
     height: 16,
@@ -25,7 +27,11 @@ function outdoorMap() {
     biome: 'temperate',
     name: 'Mount Test',
     tiles: Array.from({ length: 16 }, () => Array(16).fill('grass')),
-    markers: { playerStarts: [{ x: 4, y: 4, facing: 0 }], enemySpawns: [] },
+    markers: {
+      playerStarts: [{ x: 4, y: 4, facing: 0 }],
+      enemySpawns: [],
+      horseSpawns,
+    },
   }
 }
 
@@ -41,7 +47,15 @@ function testCharacter(id = 'c1') {
 }
 
 describe('exploration mount', () => {
-  it('spawns a horse on outdoor maps and supports mount / dismount', () => {
+  it('does not spawn a horse without Horse Spawn markers', () => {
+    const map = outdoorMap([])
+    map.markers.horseSpawns = []
+    assert.equal(mapSupportsMount(map), false)
+    const party = createPartyState(map, [testCharacter()])
+    assert.equal(createMountState(map, party), null)
+  })
+
+  it('spawns from Horse Spawn markers and supports mount / dismount', () => {
     const map = outdoorMap()
     assert.equal(mapSupportsMount(map), true)
     const party = createPartyState(map, [testCharacter()])
@@ -155,5 +169,57 @@ describe('exploration mount', () => {
     state = mountHorse(state, lead)
     state = dismountAll(state)
     assert.equal(isMounted(state, lead), false)
+  })
+
+  it('assigns one horse per member and leaves extras on foot', () => {
+    const map = outdoorMap([
+      { x: 5, y: 4, facing: 0 },
+      { x: 8, y: 4, facing: 0 },
+    ])
+    const party = createPartyState(map, [testCharacter('c1'), testCharacter('c2'), testCharacter('c3')])
+    const mount = createMountState(map, party)
+    assert.equal(mount.horses.length, 2)
+    const state = { mode: 'EXPLORATION', party, mount, world: { time: 0 } }
+    const ids = party.memberIds
+    const assignments = planMountAssignments(state, ids)
+    assert.equal(assignments.length, 2)
+    assert.ok(assignments.some((entry) => entry.memberId === party.leaderId))
+
+    const next = togglePartyMount(state, ids)
+    const claimed = Object.values(next.party.members).filter(
+      (member) => member.mounted || member.pendingMountHorseId,
+    )
+    assert.equal(claimed.length, 2)
+    const walker = ids.find((id) => !next.party.members[id].mounted && !next.party.members[id].pendingMountHorseId)
+    assert.ok(walker, 'third member stays on foot')
+  })
+
+  it('Ride preference locks the clicked horse to the lead, then fills the rest of the team', () => {
+    const map = outdoorMap([
+      { x: 12, y: 12, facing: 0 },
+      { x: 5, y: 4, facing: 0 },
+      { x: 8, y: 4, facing: 0 },
+    ])
+    const party = createPartyState(map, [testCharacter('c1'), testCharacter('c2'), testCharacter('c3')])
+    const mount = createMountState(map, party)
+    const state = { mode: 'EXPLORATION', party, mount, world: { time: 0 } }
+    // Far horse is a worse nearest match — preferHorseId still gives it to the lead.
+    const farId = mount.horses[0].id
+    const assignments = planMountAssignments(state, party.memberIds, {
+      preferHorseId: farId,
+      preferMemberId: party.leaderId,
+    })
+    assert.equal(assignments.length, 3)
+    assert.equal(assignments.find((entry) => entry.memberId === party.leaderId)?.horseId, farId)
+
+    const next = togglePartyMount(state, party.memberIds, {
+      preferHorseId: farId,
+      preferMemberId: party.leaderId,
+    })
+    const claimed = Object.values(next.party.members).filter(
+      (member) => member.mounted || member.pendingMountHorseId,
+    )
+    assert.equal(claimed.length, 3)
+    assert.equal(next.party.members[party.leaderId].pendingMountHorseId, farId)
   })
 })

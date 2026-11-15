@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-// Soft foot blob for the Three overlay. Pixi draws the floor, so directional shadows never land —
-// this fake contact shadow is what grounds the figure on Deck 10.
+// Soft foot fill for the Three overlay. Mesh cast shadows land on Spike3dScene's ShadowMaterial
+// floor; this blob only softens the contact under the feet.
 
 let sharedTexture = null
 
@@ -39,5 +39,13 @@ export function createContactShadow({ width = 0.95, depth = 0.55 } = {}) {
   mesh.position.y = 0.02
   mesh.renderOrder = -1
   mesh.frustumCulled = false
+  // Foot blob must not cast into the hybrid floor shadow map.
+  mesh.castShadow = false
+  mesh.receiveShadow = false
   return mesh
 }
+
+/** Base opacity when mesh cast shadows are on (keeps a soft foot fill without doubling the silhouette). */
+export const CONTACT_SHADOW_FILL_OPACITY = 0.18
+/** Horses are large — keep the foot blob faint so it does not stack with the cast umbra. */
+export const HORSE_CONTACT_SHADOW_FILL_OPACITY = 0.06

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { clearLiveClip, reportLiveClip } from '../dev/animClipDebug.js'
-import { createContactShadow } from './contactShadow.js'
+import { HORSE_CONTACT_SHADOW_FILL_OPACITY, createContactShadow } from './contactShadow.js'
 import { facingToYaw } from './isoProjection.js'
 import { HorseBody, HORSE_HEIGHT } from './HorseBody.js'
 import { PROCEDURAL_HEIGHT } from './ProceduralBody.js'
@@ -15,15 +15,16 @@ const SADDLE_SEAT_BIAS = 0.06
  * World horse in Spike3dScene — position from exploration mount state; optional rider attach.
  */
 export class HorseActor {
-  constructor(id, host) {
+  constructor(id, host, { coat = 'bay' } = {}) {
     this.id = id
     this.host = host
     this.scene = host.scene
     this._lastSeen = performance.now()
+    this._coat = coat
 
     this.root = new THREE.Group()
     this.root.name = `spike_horse_${id}`
-    this.body = new HorseBody({ height: HORSE_HEIGHT })
+    this.body = new HorseBody({ height: HORSE_HEIGHT, coat })
     this.root.add(this.body.root)
     this.shadow = createContactShadow({ width: HORSE_HEIGHT * 1.15, depth: HORSE_HEIGHT * 0.65 })
     this.root.add(this.shadow)
@@ -34,10 +35,14 @@ export class HorseActor {
     this._yawTarget = this._yaw
     this._posReady = false
     this._pendingTravel = 0
+    // Smoothed tiles/s — pose updates can land on fewer frames than paint, so raw travel flickers to 0.
+    this._speedEma = 0
     this._riderId = null
     this._gait = 'idle'
     this._gaitWant = 'idle'
     this._gaitHold = 0
+    // After a click-to-move from standstill / stop settle, trust the wanted gait briefly so legs don't lag the root.
+    this._startupGrace = 0
 
     this.scene.add(this.root)
   }
@@ -55,14 +60,26 @@ export class HorseActor {
     if (this.shadow) this.shadow.visible = Boolean(visible)
   }
 
-  setPose({ position, facing, gait, riderId }) {
+  setPose({ position, facing, gait, riderId, coat }) {
     this._lastSeen = performance.now()
     this._riderId = riderId ?? null
-    this._gaitWant = gait === 'walk' || gait === 'trot' ? gait : 'idle'
+    const nextWant = gait === 'walk' || gait === 'trot' || gait === 'run' ? gait : 'idle'
+    // Idle/stop → walk: start the stride immediately (waiting on travel EMA skates the body).
+    if (this._isMovingGait(nextWant) && !this._isMovingGait(this._gaitWant)) {
+      this._startupGrace = 0.4
+      this._speedEma = Math.max(this._speedEma, 1.4)
+      if (this._gait === 'stop') this.body.finishStop?.()
+    }
+    this._gaitWant = nextWant
+    if (coat != null && coat !== this._coat) {
+      this._coat = coat
+      this.body.setCoat?.(coat)
+    }
     if (!position) return
     this._yawTarget = facingToYaw(facing)
     if (this._posReady) {
-      this._pendingTravel = Math.hypot(position.x - this._tx, position.y - this._tz)
+      // Accumulate — multiple setPose calls can land before update; overwriting dropped travel.
+      this._pendingTravel += Math.hypot(position.x - this._tx, position.y - this._tz)
     }
     this._tx = position.x
     this._tz = position.y
@@ -111,34 +128,45 @@ export class HorseActor {
     return dy
   }
 
+  _isMovingGait(name) {
+    return name === 'walk' || name === 'trot' || name === 'run'
+  }
+
   /** Resolve playable clip from wanted gait + stop settle + actual travel. */
   _resolveClip(travelPerSec, yawErr) {
+    const movingWant = this._isMovingGait(this._gaitWant)
+    const actuallyMoving = travelPerSec > 0.22 || this._startupGrace > 0
+    const turningHard = Math.abs(yawErr) > 0.45
+
+    // New click-to-move must cancel settle — holding stop while the root translates is the post-ride skate.
+    if (movingWant && (actuallyMoving || turningHard || this._startupGrace > 0)) {
+      return this._gaitWant
+    }
+
     if (this._gait === 'stop' && !this.body.actionDone) return 'stop'
 
-    // No real translation (blocked / yaw-only): don't keep walk/trot — that skates in place.
-    const movingWant = this._gaitWant === 'walk' || this._gaitWant === 'trot'
-    const actuallyMoving = travelPerSec > 0.35
-    const turningHard = Math.abs(yawErr) > 0.45
+    // No real translation (blocked / yaw-only): don't keep walk/trot/run — that skates in place.
     if (movingWant && !actuallyMoving && !turningHard) {
-      const wasMoving = this._gait === 'walk' || this._gait === 'trot'
-      if (wasMoving) return 'stop'
+      if (this._isMovingGait(this._gait)) return 'stop'
       return 'idle'
     }
 
     if (this._gaitWant === 'idle') {
-      const wasMoving = this._gait === 'walk' || this._gait === 'trot'
-      if (wasMoving) return 'stop'
+      if (this._isMovingGait(this._gait)) return 'stop'
       return 'idle'
     }
     return this._gaitWant
   }
 
   update(dt) {
-    let travelPerSec = 0
     let yawErr = 0
+    if (this._startupGrace > 0) this._startupGrace = Math.max(0, this._startupGrace - dt)
     if (this._posReady && dt > 0) {
-      travelPerSec = this._pendingTravel / dt
+      const travelPerSec = this._pendingTravel / dt
       this._pendingTravel = 0
+      // Rise fast, fall slow — keeps walk/trot alive between sparse sim pose updates.
+      const k = travelPerSec >= this._speedEma ? 1 - Math.exp(-22 * dt) : 1 - Math.exp(-5 * dt)
+      this._speedEma += (travelPerSec - this._speedEma) * k
       this.root.position.set(this._tx, 0, this._tz)
       yawErr = this._wrapYawDelta(this._yawTarget, this._yaw)
       // Snap yaw when nearly aligned; ease only small corrections (big turns used to skate the body).
@@ -155,14 +183,13 @@ export class HorseActor {
       yawErr = this._wrapYawDelta(this._yawTarget, this._yaw)
     }
 
-    const wantClip = this._resolveClip(travelPerSec, yawErr)
-    // Walk↔trot: hold ~0.22s so pace flicker doesn't reset the stride. Stop/idle switch immediately.
+    const wantClip = this._resolveClip(this._speedEma, yawErr)
+    // Walk↔trot↔run: hold ~0.18s so pace flicker doesn't reset the stride. Stop/idle / new move: immediate.
     if (wantClip !== this._gait) {
-      const bothPace =
-        (this._gait === 'walk' || this._gait === 'trot') &&
-        (wantClip === 'walk' || wantClip === 'trot')
+      const bothPace = this._isMovingGait(this._gait) && this._isMovingGait(wantClip)
+      const fromStopOrIdle = this._gait === 'stop' || this._gait === 'idle'
       this._gaitHold += dt
-      if (!bothPace || this._gaitHold >= 0.22) {
+      if (!bothPace || fromStopOrIdle || this._gaitHold >= 0.18) {
         this._gait = wantClip
         this._gaitHold = 0
       }
@@ -171,12 +198,13 @@ export class HorseActor {
     }
 
     this.body.play(this._gait)
-    this.body.update(dt, null)
+    // Steady time-based stride (travel-lock fought sparse pose updates and read as a constant slide).
+    this.body.update(dt)
     // X overlay reads this (same id as horse pose: horse:<id>).
     reportLiveClip(this.id, this._gait)
     if (this.shadow) {
       this.shadow.rotation.y = -this._yaw
-      this.shadow.material.opacity = 0.75
+      this.shadow.material.opacity = HORSE_CONTACT_SHADOW_FILL_OPACITY
     }
   }
 

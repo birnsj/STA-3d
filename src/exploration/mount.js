@@ -1,11 +1,11 @@
-// Prototype mount / ride (not STA book). One procedural horse on outdoor maps; climb on / off in exploration.
+// Prototype mount / ride (not STA book). Horses only from authored Horse Spawn markers; climb on / off in exploration.
 // Do not import challengeObjects here: PlayerController → mount → challengeObjects → partyControl → controllers
 // is a cycle that TDZ-crashes INTERACT_RANGE and blacks the app.
 import challengeData from '../data/adaptation/exploration/challenges.json'
-import { usesBiome } from '../maps/mapGenerators.js'
-import { canAct, getMembers } from './partyControl.js'
-import { isClear, nearestWalkableTile } from './navigation.js'
+import { canAct } from './partyControl.js'
+import { isClear, nearestWalkableTile, planRoute, RADIUS } from './navigation.js'
 import { RIDE_SPEED_MULT } from './mountConstants.js'
+import { horseCoatForSpawnIndex, horseCoatLabel } from '../spike3d/horseTexture.js'
 
 export { RIDE_SPEED_MULT }
 
@@ -26,25 +26,9 @@ function dist(a, b) {
   return Math.hypot((a?.x ?? 0) - (b?.x ?? 0), (a?.y ?? 0) - (b?.y ?? 0))
 }
 
-/** Authored Horse Spawn markers, or outdoor / colony-style maps (auto-spawn beside the lead). */
+/** True when the map has at least one authored Horse Spawn marker. */
 export function mapSupportsMount(map) {
-  return Boolean(map && ((map.markers?.horseSpawns?.length ?? 0) > 0 || usesBiome(map)))
-}
-
-function spawnBeside(map, origin, offset) {
-  const candidates = [
-    { x: origin.x + offset.x, y: origin.y + offset.y },
-    { x: origin.x - offset.x, y: origin.y + offset.y },
-    { x: origin.x + offset.x, y: origin.y - offset.y },
-    { x: origin.x + 2, y: origin.y },
-    { x: origin.x, y: origin.y + 2 },
-  ]
-  for (const at of candidates) {
-    const tile = { x: Math.round(at.x), y: Math.round(at.y) }
-    const walk = nearestWalkableTile(map, tile)
-    if (walk && isClear(map, { x: walk.x, y: walk.y })) return { x: walk.x, y: walk.y }
-  }
-  return { x: origin.x + 1.5, y: origin.y + 1.5 }
+  return Boolean(map && (map.markers?.horseSpawns?.length ?? 0) > 0)
 }
 
 function headingFromFacingDegrees(facing) {
@@ -61,37 +45,25 @@ function horsesFromMap(map) {
       entry.heading != null && Number.isFinite(entry.heading)
         ? entry.heading
         : headingFromFacingDegrees(entry.facing ?? 0)
+    const coat = horseCoatForSpawnIndex(index)
     return {
       id: index === 0 ? HORSE_ID : `${HORSE_ID}-${index + 1}`,
       position,
       heading,
       riderId: null,
+      coat,
+      label: horseCoatLabel(coat),
     }
   })
 }
 
 /**
- * @returns {{ horses: Array<{ id: string, position: {x,y}, heading: number, riderId: string|null }> } | null}
+ * @returns {{ horses: Array<{ id: string, position: {x,y}, heading: number, riderId: string|null, coat: string, label: string }> } | null}
  */
-export function createMountState(map, party) {
-  if (!mapSupportsMount(map)) return null
-  const authored = horsesFromMap(map)
-  if (authored?.length) return { horses: authored }
-  const lead = party?.members?.[party.leaderId] ?? getMembers(party)?.[0]
-  const origin = lead?.position ?? map.markers?.playerStarts?.[0] ?? { x: 2, y: 2 }
-  const facing = lead?.facing ?? { x: 1, y: 0 }
-  const heading = Math.atan2(facing.y || 0, facing.x || 1)
-  const position = spawnBeside(map, origin, { x: facing.y * 2.2 || 2.2, y: -(facing.x * 2.2) || 0 })
-  return {
-    horses: [
-      {
-        id: HORSE_ID,
-        position,
-        heading,
-        riderId: null,
-      },
-    ],
-  }
+export function createMountState(map, _party) {
+  const horses = horsesFromMap(map)
+  if (!horses?.length) return null
+  return { horses }
 }
 
 export function getHorses(state) {
@@ -197,6 +169,7 @@ export function mountHorse(state, memberId, horseId = null) {
       facing: { x: Math.cos(heading), y: Math.sin(heading) },
       sneaking: false,
       mounted: true,
+      pendingMountHorseId: null,
       rideAnim: { clip: 'mount', endsAt: worldTime(state) + MOUNT_CLIP_SECONDS },
       order: null,
       path: [],
@@ -206,6 +179,107 @@ export function mountHorse(state, memberId, horseId = null) {
     },
   }
   return withHorses({ ...state, party: { ...state.party, members } }, nextHorses)
+}
+
+/** Horses already ridden or claimed by a walk-to-mount. */
+function unavailableHorseIds(state) {
+  const taken = new Set()
+  for (const horse of getHorses(state)) {
+    if (horse.riderId) taken.add(horse.id)
+  }
+  for (const member of Object.values(state.party?.members ?? {})) {
+    if (member?.pendingMountHorseId) taken.add(member.pendingMountHorseId)
+  }
+  return taken
+}
+
+/**
+ * Pair able members with free horses (nearest first; leader preferred).
+ * Extra members get no horse and stay on foot.
+ * opts.preferHorseId + opts.preferMemberId: lock that pair first (Ride on a specific horse).
+ */
+export function planMountAssignments(state, memberIds, opts = {}) {
+  const taken = unavailableHorseIds(state)
+  let free = getHorses(state).filter((horse) => !taken.has(horse.id))
+  const freeCount = free.length
+  const leaderId = state.party?.leaderId
+  const order = [...(memberIds ?? [])].filter((id) => {
+    const member = state.party?.members?.[id]
+    return member && canAct(member) && !member.mounted && !member.sneaking && !member.rideAnim && !member.pendingMountHorseId
+  })
+  order.sort((a, b) => {
+    if (a === leaderId) return -1
+    if (b === leaderId) return 1
+    return (state.party.memberIds?.indexOf(a) ?? 0) - (state.party.memberIds?.indexOf(b) ?? 0)
+  })
+  if (!free.length || !order.length) return []
+
+  const usedMembers = new Set()
+  const usedHorses = new Set()
+  const assignments = []
+  const maxAssign = Math.min(order.length, freeCount)
+
+  // Ride click: give the chosen horse to the preferred member (usually the lead) before nearest-fill.
+  const preferHorseId = opts.preferHorseId ?? null
+  const preferMemberId = opts.preferMemberId ?? leaderId
+  if (preferHorseId && preferMemberId && order.includes(preferMemberId) && free.some((horse) => horse.id === preferHorseId)) {
+    usedMembers.add(preferMemberId)
+    usedHorses.add(preferHorseId)
+    assignments.push({ memberId: preferMemberId, horseId: preferHorseId })
+    free = free.filter((horse) => horse.id !== preferHorseId)
+  }
+
+  const pairs = []
+  for (const memberId of order) {
+    if (usedMembers.has(memberId)) continue
+    const member = state.party.members[memberId]
+    for (const horse of free) {
+      pairs.push({
+        memberId,
+        horseId: horse.id,
+        d: dist(member.position, horse.position),
+      })
+    }
+  }
+  pairs.sort((a, b) => a.d - b.d || String(a.memberId).localeCompare(String(b.memberId)))
+
+  for (const pair of pairs) {
+    if (usedMembers.has(pair.memberId) || usedHorses.has(pair.horseId)) continue
+    usedMembers.add(pair.memberId)
+    usedHorses.add(pair.horseId)
+    assignments.push({ memberId: pair.memberId, horseId: pair.horseId })
+    if (assignments.length >= maxAssign) break
+  }
+  return assignments
+}
+
+function walkToMountSide(state, memberId, horse) {
+  const map = state.party.map
+  const member = state.party.members[memberId]
+  const side = mountSidePoint(map, horse)
+  return {
+    ...member,
+    pendingMountHorseId: horse.id,
+    sneaking: false,
+    order: { type: 'point', target: side, run: false },
+    path: planRoute(map, member.position, side, RADIUS),
+    replanIn: 0.5,
+    stall: { seconds: 0, best: Infinity },
+  }
+}
+
+/** Drop walk-to-mount claims (fresh move order, Escape, etc.). */
+export function clearPendingMountClaims(state) {
+  const members = state.party?.members
+  if (!members) return state
+  let changed = false
+  const next = { ...members }
+  for (const id of Object.keys(next)) {
+    if (!next[id]?.pendingMountHorseId) continue
+    next[id] = { ...next[id], pendingMountHorseId: null }
+    changed = true
+  }
+  return changed ? { ...state, party: { ...state.party, members: next } } : state
 }
 
 /** Start the dismount clip while still seated; finishDismount lands them when it ends. */
@@ -253,6 +327,7 @@ export function finishDismount(state, memberId) {
       running: false,
       pace: null,
       mounted: false,
+      pendingMountHorseId: null,
       rideAnim: null,
       order: null,
       path: [],
@@ -275,7 +350,28 @@ export function tickRideAnims(state) {
   if (!members) return state
   const now = worldTime(state)
   let next = state
-  for (const id of Object.keys(members)) {
+  // Walk-to-mount: climb on when each claimant reaches their horse.
+  for (const id of Object.keys(next.party.members)) {
+    const member = next.party.members[id]
+    const horseId = member?.pendingMountHorseId
+    if (!horseId) continue
+    const horse = horseById(next, horseId)
+    if (!horse || horse.riderId) {
+      next = {
+        ...next,
+        party: {
+          ...next.party,
+          members: {
+            ...next.party.members,
+            [id]: { ...member, pendingMountHorseId: null },
+          },
+        },
+      }
+      continue
+    }
+    if (canMount(next, id, horseId)) next = mountHorse(next, id, horseId)
+  }
+  for (const id of Object.keys(next.party.members)) {
     const member = next.party.members[id]
     const anim = member?.rideAnim
     if (!anim || !(anim.endsAt <= now)) continue
@@ -297,11 +393,75 @@ export function tickRideAnims(state) {
   return next
 }
 
-/** Toggle mount for the lead (or given member): dismount if riding, else mount nearest horse. */
+/**
+ * Team mount: assign free horses to the given members (leader first). Enough horses → they
+ * walk over and climb on; shortfall → the rest stay on foot. If any are already riding /
+ * walking to a horse, those dismount / cancel instead.
+ * opts: { preferHorseId, preferMemberId } — Ride on a specific horse locks that saddle first.
+ */
+export function togglePartyMount(state, memberIds, opts = {}) {
+  const ids = (memberIds?.length ? memberIds : [state.party?.leaderId]).filter(
+    (id) => id && state.party?.members?.[id],
+  )
+  const able = ids.filter((id) => canAct(state.party.members[id]))
+  if (!able.length) return state
+
+  const anyMounted = able.some((id) => {
+    const member = state.party.members[id]
+    return member.mounted || member.rideAnim || member.pendingMountHorseId || isMounted(state, id)
+  })
+  if (anyMounted) {
+    let next = state
+    for (const id of able) {
+      const member = next.party.members[id]
+      if (member?.pendingMountHorseId) {
+        next = {
+          ...next,
+          party: {
+            ...next.party,
+            members: {
+              ...next.party.members,
+              [id]: {
+                ...member,
+                pendingMountHorseId: null,
+                order: null,
+                path: [],
+                moving: false,
+                running: false,
+                pace: null,
+              },
+            },
+          },
+        }
+      }
+      if (canDismount(next, id)) next = beginDismount(next, id)
+      else if (next.party.members[id]?.mounted) next = finishDismount(next, id)
+    }
+    return next
+  }
+
+  const assignments = planMountAssignments(state, able, opts)
+  if (!assignments.length) return state
+  let next = state
+  for (const { memberId, horseId } of assignments) {
+    const horse = horseById(next, horseId)
+    if (!horse || horse.riderId) continue
+    if (canMount(next, memberId, horseId)) {
+      next = mountHorse(next, memberId, horseId)
+      continue
+    }
+    const walked = walkToMountSide(next, memberId, horse)
+    next = {
+      ...next,
+      party: { ...next.party, members: { ...next.party.members, [memberId]: walked } },
+    }
+  }
+  return next
+}
+
+/** Toggle mount for one member (ring / legacy); prefer togglePartyMount for M. */
 export function toggleMount(state, memberId) {
-  if (canDismount(state, memberId)) return beginDismount(state, memberId)
-  if (canMount(state, memberId)) return mountHorse(state, memberId)
-  return state
+  return togglePartyMount(state, memberId ? [memberId] : null)
 }
 
 /** Whether this member can climb onto this horse now (in range, free saddle). */

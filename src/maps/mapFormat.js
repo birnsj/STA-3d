@@ -47,8 +47,8 @@
 // Fractional x/y are allowed for the 32×32 drop grid. name overrides the hover label; pickable/visible default true and
 // are left out on disk when true. on: { tile: [x, y] } or { placement: id } when elevated on a support surface; omitted
 // on the floor. Entries missing id get one on parse. Runtime drops never write back into the map file.
-// markers.horseSpawns: [x, y] or [x, y, facing] — Horse Spawn markers (Markers palette). Play uses them for the
-// procedural mount (exploration/mount.js); when empty, outdoor maps still auto-spawn one beside the lead. Facing is
+// markers.horseSpawns: [x, y] or [x, y, facing] — Horse Spawn markers (Markers palette). Play only spawns
+// mounts from these (exploration/mount.js); empty means no horse. Facing is
 // degrees (0 = +x), same as player starts. Legacy top-level `horses: [{ id, position, facing? }]` is migrated on load.
 // templatePiecePlacements: [{ id, pieceId (templatePieces.json), position: [x, y], rotation?, scale?, order, autoPaint? }] —
 // modular Starship-look overlays (not tiles). Sit on the deck underlay; pathing/sight use underlay tiles. Pieces snap to

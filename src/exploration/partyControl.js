@@ -11,7 +11,7 @@ import { controllerFor, isUp } from '../actors/controllers.js'
 import data from '../data/adaptation/exploration/partyControl.json'
 import { placeAwayTeam } from './awayTeam.js'
 import { assignSlots, DEFAULT_FORMATION_ID, formationTargets, getFormation } from './formations.js'
-import { RIDE_BODY_RADIUS, RIDE_NOSE_REACH } from './mountConstants.js'
+import { RIDE_BODY_RADIUS, RIDE_FORMATION_SPACING_MULT, RIDE_NOSE_REACH } from './mountConstants.js'
 import { distance, isClear, isClearLine, nearestWalkableTile, planRoute, RADIUS, slide, tileOf, walkingDistances, walkingDistanceTo } from './navigation.js'
 
 const MOVE = data.movement
@@ -114,6 +114,17 @@ export function withAbleSelection(state) {
   return { ...state, selectedIds, leaderId }
 }
 
+/** Party spacing, widened when the formation lead is on horseback. */
+function formationSpacingFor(state, leader) {
+  const base = state.spacing ?? 1
+  return leader?.mounted ? base * RIDE_FORMATION_SPACING_MULT : base
+}
+
+/** Personal-space used when placing slots — horses need a wider clear radius. */
+function formationPersonalSpace(leader) {
+  return leader?.mounted ? MOVE.personalSpace * RIDE_FORMATION_SPACING_MULT : MOVE.personalSpace
+}
+
 // Where every following character is heading right now: { [id]: point }. Worked out per leader so the followers'
 // spots never coincide, and kept clear of anyone standing still outside the group.
 export function getFollowTargets(state) {
@@ -125,7 +136,11 @@ export function getFollowTargets(state) {
     const bySlot = [...ids].sort((a, b) => state.members[a].order.slot - state.members[b].order.slot)
     const avoid = members.filter((member) => !member.order && member.id !== leaderId && canAct(member)).map((member) => member.position)
     const slots = bySlot.map((id) => state.members[id].order.slot)
-    const points = formationTargets(state.map, formation, slots, leader.position, leader.heading, state.spacing, { avoid, personalSpace: MOVE.personalSpace })
+    const spacing = formationSpacingFor(state, leader)
+    const points = formationTargets(state.map, formation, slots, leader.position, leader.heading, spacing, {
+      avoid,
+      personalSpace: formationPersonalSpace(leader),
+    })
     bySlot.forEach((id, i) => {
       targets[id] = points[i]
     })
@@ -167,7 +182,14 @@ const followOrder = (member, leaderId, slot) => ({
 function formUp(state, members, leaderId, followerIds, heading) {
   if (!followerIds.length) return members
   const leader = members[leaderId]
-  const slots = assignSlots(getFormation(state.formationId), followerIds.map((id) => members[id]), leader.position, heading, state.spacing)
+  const spacing = formationSpacingFor(state, leader)
+  const slots = assignSlots(
+    getFormation(state.formationId),
+    followerIds.map((id) => members[id]),
+    leader.position,
+    heading,
+    spacing,
+  )
   const next = { ...members }
   followerIds.forEach((id) => {
     next[id] = followOrder(members[id], leaderId, slots[id])

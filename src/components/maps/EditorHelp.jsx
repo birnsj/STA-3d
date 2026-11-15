@@ -11,7 +11,7 @@ const SHORTCUTS = [
       { keys: 'Ctrl+Z', action: 'Undo' },
       { keys: 'Ctrl+Y / Ctrl+Shift+Z', action: 'Redo' },
       { keys: 'Ctrl+D', action: 'Duplicate selected destructible or ground item' },
-      { keys: 'R', action: 'Rotate tile brush; yaw Template Piece brush / selection +90° on the isometric floor' },
+      { keys: 'R / Space', action: 'Flip tile paint axis; yaw Template Piece brush / selection +90°' },
       { keys: 'Delete / Backspace', action: 'Remove selected Template Piece, ground item, or patrol waypoint' },
       { keys: 'Esc', action: 'Cancel move / link / patrol / place; clear tool and Place Tiles' },
     ],
@@ -20,7 +20,8 @@ const SHORTCUTS = [
     group: 'Mouse',
     rows: [
       { keys: 'Left click / drag', action: 'Paint or place with the current tool' },
-      { keys: 'Right click', action: 'Pick tile (Place Tiles); turn NPC facing; remove Template Piece / Inventory under the pointer' },
+      { keys: 'Right click', action: 'Delete object under pointer (Paint / Move); else pick tile brush or turn facing' },
+      { keys: 'Middle click', action: 'Same as R / Space (flip axis / rotate Template Piece)' },
       { keys: 'Right-drag / Middle-drag', action: 'Pan the camera' },
       { keys: 'Mouse wheel', action: 'Zoom' },
     ],

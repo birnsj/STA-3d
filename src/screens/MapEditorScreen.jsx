@@ -702,6 +702,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
             onPaintEnd={boardBlocked ? undefined : tools.onPaintEnd}
             onHover={boardBlocked ? undefined : setHover}
             onRightClick={boardBlocked ? undefined : tools.onRightClick}
+            onRotateAxis={boardBlocked ? undefined : tools.onRotateAxis}
           />
           {showWeather && <WeatherFx fx={weatherFor(map.weather).fx} follow=".me-board" />}
           <EditorGridOptions

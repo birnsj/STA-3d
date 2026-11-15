@@ -65,6 +65,10 @@ export async function tryAttachRaceGltf(model, url, raceId) {
   const remove = []
   clone.traverse((obj) => {
     if (obj.isLight || obj.isCamera) remove.push(obj)
+    if (obj.isMesh) {
+      obj.castShadow = true
+      obj.receiveShadow = false
+    }
   })
   for (const obj of remove) obj.parent?.remove(obj)
 

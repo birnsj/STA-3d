@@ -20,9 +20,10 @@ import {
   horseById,
   mountHorse,
   removeHorse,
+  clearPendingMountClaims,
   syncMountAfterParty,
   tickRideAnims,
-  toggleMount,
+  togglePartyMount,
 } from './mount.js'
 import { canAct, createPartyState, getMembers, partyReducer } from './partyControl.js'
 import { createPartyKnowledge, updatePartyKnowledge } from './partyKnowledge.js'
@@ -300,9 +301,18 @@ function reduceExploration(state, action) {
       // A fight breaking out ends any conversation.
       return next.mode === MODE.COMBAT && next.conversation ? { ...next, conversation: null } : endConversationOutOfRange(next)
     }
-    // { memberId }: climb on / off the nearby horse (mount.js).
-    case 'toggleMount':
-      return state.mode === MODE.COMBAT ? state : toggleMount(state, action.memberId ?? state.party.leaderId)
+    // { memberIds } or { memberId }: team mount — claim free horses; extras walk on foot.
+    // preferHorseId: Ride on a specific horse locks that saddle for preferMemberId / lead first.
+    case 'toggleMount': {
+      if (state.mode === MODE.COMBAT) return state
+      const ids = action.memberIds?.length
+        ? action.memberIds
+        : [action.memberId ?? state.party.leaderId]
+      return togglePartyMount(state, ids, {
+        preferHorseId: action.preferHorseId ?? null,
+        preferMemberId: action.preferMemberId ?? action.memberId ?? state.party.leaderId,
+      })
+    }
     // { memberId, horseId }: climb onto a specific horse when in range.
     case 'mountHorse':
       return state.mode === MODE.COMBAT ? state : mountHorse(state, action.memberId ?? state.party.leaderId, action.horseId)
@@ -452,7 +462,10 @@ function reduceExploration(state, action) {
       // Party orders are frozen while combat runs: the combat screen gives the orders then.
       if (state.mode === MODE.COMBAT) return state
       const party = partyReducer(state.party, action)
-      return party === state.party ? state : { ...state, party }
+      let next = party === state.party ? state : { ...state, party }
+      // A fresh move cancels walk-to-mount claims so the team follows the new order on foot / ridden.
+      if (action.type === 'moveTo' && action.fresh) next = clearPendingMountClaims(next)
+      return next
     }
   }
 }

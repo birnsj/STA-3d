@@ -516,7 +516,7 @@ export class HumanoidModel {
     this._owned.push(geo)
     const mesh = new THREE.Mesh(geo, material)
     mesh.position.set(pos[0], pos[1], pos[2])
-    mesh.castShadow = false
+    mesh.castShadow = true
     mesh.receiveShadow = false
     parent.add(mesh)
     return mesh

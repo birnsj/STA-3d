@@ -4,8 +4,11 @@ export default function EditorControlsHelp() {
     <>
       <p className="me-heading">Controls</p>
       <p className="me-text">
-        Place Tiles on, left click or drag: paint the chosen tile (a long wall lays both of its tiles). Right click: pick up the
-        tile under the pointer as the brush. Place Tiles off, right click an NPC, player start or enemy spawn: turn it 45°
+        Place Tiles on, left click or drag: paint the chosen tile (a long wall lays both of its tiles). Right click: delete a
+        Template Piece, inventory item, destructible or markers under the pointer; on empty ground, pick up the tile as the
+        brush. R, Space, or middle-click (no drag): flip the tile paint axis, or rotate a Template Piece brush / selection.
+        Move: right-click deletes the same way (or cancels a carry). Place Tiles off, right click an NPC, player start or
+        enemy spawn: turn it 45°
         clockwise (the arrow shows which way it faces). Red: enemies and hostile NPCs (Wary, Hostile, Aggressive); purple:
         other NPCs. R: rotate the tile brush (long walls run the other way, other tiles are mirrored).
         Move on, drag a tile onto another: the two swap places; a tile with a player start, enemy spawn, NPC, label or

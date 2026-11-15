@@ -10,3 +10,6 @@ export const RIDE_SPEED_MULT = 1.15
 export const RIDE_BODY_RADIUS = 0.4
 /** How far ahead of the feet must stay clear for neck / muzzle. */
 export const RIDE_NOSE_REACH = 0.5
+
+/** Formation slot scale while the group lead is mounted (horses need more room than foot). */
+export const RIDE_FORMATION_SPACING_MULT = 1.85

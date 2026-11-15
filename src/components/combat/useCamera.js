@@ -74,7 +74,21 @@ const overControl = (target) => target instanceof Element && Boolean(target.clos
 // turning follow back on glides the camera back to focus.point).
 // onFollow(): Space asks the caller to turn following back on after a free pan (exploration flips followCamera).
 // edgeScrollEnabled: the pointer at the map's edge pans. Exploration and combat leave it on. The map editor passes false.
-export default function useCamera(bounds, view, focus, follow = true, onRightClick = null, rightPans = true, onPan = null, onFollow = null, edgeScrollEnabled = true) {
+// onSpace: when set (map editor), Space runs this instead of camera re-follow (rotate / flip paint axis).
+// onMiddleClick: middle button released without dragging (map editor: same as Space / R).
+export default function useCamera(
+  bounds,
+  view,
+  focus,
+  follow = true,
+  onRightClick = null,
+  rightPans = true,
+  onPan = null,
+  onFollow = null,
+  edgeScrollEnabled = true,
+  onSpace = null,
+  onMiddleClick = null,
+) {
   const wasdCoast = useDisplaySettings().wasdCoast ?? 100
   const [camera, setCamera] = useState(() => clamp(centredOn(focus.point, view), bounds, view))
   const [zoom, setZoom] = useState(1)
@@ -90,6 +104,8 @@ export default function useCamera(bounds, view, focus, follow = true, onRightCli
   const wasFollowingRef = useRef(follow)
   const onPanRef = useRef(onPan)
   const onFollowRef = useRef(onFollow)
+  const onSpaceRef = useRef(onSpace)
+  const onMiddleClickRef = useRef(onMiddleClick)
   const wasdCoastRef = useRef(wasdCoast)
   // True while WASD / arrows are held, so the first coast frame can scale after-glide by wasdCoast.
   const keyPanningRef = useRef(false)
@@ -107,6 +123,8 @@ export default function useCamera(bounds, view, focus, follow = true, onRightCli
   useEffect(() => {
     onPanRef.current = onPan
     onFollowRef.current = onFollow
+    onSpaceRef.current = onSpace
+    onMiddleClickRef.current = onMiddleClick
   })
   useEffect(() => {
     wasdCoastRef.current = wasdCoast
@@ -206,8 +224,13 @@ export default function useCamera(bounds, view, focus, follow = true, onRightCli
     const down = (event) => {
       if (isTyping(event.target) || event.ctrlKey || event.metaKey || event.altKey) return
       if (event.code === 'Space' && !event.repeat) {
-        // After WASD / drag free-pan: glide back onto the followed point and ask the caller to turn follow on.
         event.preventDefault()
+        // Map editor: Space flips paint axis / rotates Template Piece (same as R). Play: re-follow.
+        if (onSpaceRef.current) {
+          onSpaceRef.current()
+          return
+        }
+        // After WASD / drag free-pan: glide back onto the followed point and ask the caller to turn follow on.
         beginReturnToFocus()
         if (!followRef.current.follow) onFollowRef.current?.()
         return
@@ -388,6 +411,7 @@ export default function useCamera(bounds, view, focus, follow = true, onRightCli
       }
       if (isTouch && panning) swallowNextClick()
       if (!isTouch && !dragged && event.button === 2) onRightClick?.()
+      if (!isTouch && !dragged && event.button === 1) onMiddleClickRef.current?.()
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', end)

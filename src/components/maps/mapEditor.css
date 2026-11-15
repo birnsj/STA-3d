@@ -2031,14 +2031,169 @@
 }
 
 /* Colour rows: label | swatch | hex — same width for Ambient Colour and object emit Colour. */
-.ed-emissive:has(.ed-colour) {
+.ed-emissive:has(.ed-colour),
+.ed-colour-field {
   grid-template-columns: 56px 28px 1fr;
+}
+
+.ed-colour-field {
+  display: grid;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: var(--ed-muted);
+}
+
+.ed-colour-field-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ed-colour-swatch {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--ed-border);
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.ed-colour-swatch:hover,
+.ed-colour-swatch:focus-visible {
+  border-color: var(--ed-accent, #f2a33a);
+  outline: none;
 }
 
 .ed-colour-hex {
   width: 100%;
   min-width: 0;
   grid-column: auto;
+}
+
+/* In-theme HSV popover (replaces native OS colour picker for EditorColourField). */
+.ed-colour-panel {
+  position: fixed;
+  z-index: 10050;
+  width: 220px;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--ed-border);
+  border-radius: 6px;
+  background: var(--ed-panel, #1a222c);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  color: var(--ed-text);
+}
+
+.ed-colour-sv {
+  position: relative;
+  width: 100%;
+  height: 128px;
+  border-radius: 4px;
+  border: 1px solid var(--ed-border);
+  cursor: crosshair;
+  touch-action: none;
+  overflow: hidden;
+}
+
+.ed-colour-sv-white,
+.ed-colour-sv-black {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ed-colour-sv-white {
+  background: linear-gradient(to right, #fff, transparent);
+}
+
+.ed-colour-sv-black {
+  background: linear-gradient(to top, #000, transparent);
+}
+
+.ed-colour-thumb {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.ed-colour-hue {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  margin-top: 10px;
+  border-radius: 7px;
+  border: 1px solid var(--ed-border);
+  cursor: pointer;
+  touch-action: none;
+  background: linear-gradient(
+    to right,
+    #ff0000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0000ff,
+    #ff00ff,
+    #ff0000
+  );
+}
+
+.ed-colour-hue-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.ed-colour-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.ed-colour-preview {
+  width: 28px;
+  height: 22px;
+  border-radius: 2px;
+  border: 1px solid var(--ed-border);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.ed-colour-presets {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.ed-colour-preset {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--ed-border);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.ed-colour-preset.is-active,
+.ed-colour-preset:hover {
+  border-color: var(--ed-accent, #f2a33a);
+  box-shadow: 0 0 0 1px var(--ed-accent, #f2a33a);
 }
 
 .ed-emit-cell figcaption {

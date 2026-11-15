@@ -21,7 +21,8 @@ import { loadSheet } from '../useRecolouredSheet.js'
 import { exploreGetUpComplete, startExploreGetUp } from '../blastGetUpSync.js'
 import { HAZARD_FRAMES, characterHazardOverlayLook } from '../environmentArt.js'
 import { resolveHazardOverlayDisplay } from '../../../world/characterHazardOverlay.js'
-import { FIGURE_CAST } from '../../../maps/mapShadows.js'
+import { FIGURE_CAST, figureCastForAzimuth } from '../../../maps/mapShadows.js'
+import { getBoardSunSettings } from '../../../spike3d/boardSunSettings.js'
 import { frameColumn, LOCOMOTION, playbackProgress, restColumn, startTiming, steadyGait } from '../spriteTiming.js'
 import { getDivisionColour } from '../../../rules/uniform.js'
 import { uniformImageUrl } from '../../useUniformImage.js'
@@ -604,9 +605,17 @@ export class FigureView {
     }
   }
 
+  applySunCast() {
+    const cast = figureCastForAzimuth(getBoardSunSettings().azimuthDeg) ?? FIGURE_CAST
+    this.shadow.position.set(cast.x, cast.y)
+    this.shadow.scale.set(cast.scaleX / SHADOW_RES, cast.scaleY / SHADOW_RES)
+    this.shadow.skew.x = cast.skewX
+  }
+
   // revealed: the map has faded in (MapRevealedContext).
   update(figure, now, revealed) {
     const { centre, depth } = figure
+    this.applySunCast()
     // Spike3d: Three.js draws the body on the overlay; keep rings/labels, skip sprite sheets.
     // Hazard + hit-glow are drawn in the SVG layer above Spike3d (Spike3dCharacterFx) — Pixi FX would sit under the mesh.
     if (figure.hideSprite) {

@@ -737,9 +737,8 @@ export async function drawLoneTiles(layout, positions, resolution, time = null) 
 }
 
 // Floor lighting: soft contact shadows along floor edges that meet a block, plus coloured ground spill from
-// emitColour / glow colour (drawn here under walls — not on the darkness veil, which stacked into slabs).
-// Directional cast blobs were pulled (hard dark planes). Character foot shadows still use mapShadows.js.
-// A map's shadow strips, worked out once per map.
+// emitColour / glow colour (drawn here under walls). Character foot shadows still use mapShadows.js.
+// (Directional sun wash / cast blobs were removed — they punched holes in floor chunks.)
 const lightingCache = new WeakMap()
 function lightingOf(map) {
   const cached = lightingCache.get(map)

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import missionLogData from '../../data/adaptation/exploration/missionLog.json'
 import { MAX_AWAY_TEAM } from '../../exploration/awayTeam.js'
 import { authoredDefinitionsFor } from '../../exploration/challengeObjects.js'
@@ -6,6 +7,12 @@ import { getAutoPaintRuleset, listAutoPaintRulesets, mapTypeForEnvironment } fro
 import { BIOME_WORLDS, BIOMES, MAP_SIZES, randomMapName, sizeFor, sizeIdOf, usesBiome } from '../../maps/mapGenerators.js'
 import { isIndoors, weatherFor, weatherOptions } from '../../maps/mapWeather.js'
 import { randomEpisodeName } from '../../rules/locationNames.js'
+import {
+  getBoardSunSettings,
+  setBoardSunSettings,
+  subscribeBoardSunSettings,
+} from '../../spike3d/boardSunSettings.js'
+import EditorColourField, { SUN_COLOUR_PRESETS } from './EditorColourField.jsx'
 import EditorControlsHelp from './EditorControlsHelp.jsx'
 import EpisodeCardPicker from './EpisodeCardPicker.jsx'
 import MusicSettings from './MusicSettings.jsx'
@@ -73,6 +80,8 @@ export default function MapProperties({
   const sizeId = sizeIdOf(map)
   const rulesets = listAutoPaintRulesets()
   const activeRulesetId = rulesetId || rulesets[0]?.id || ''
+  const [sun, setSun] = useState(() => getBoardSunSettings())
+  useEffect(() => subscribeBoardSunSettings(setSun), [])
 
   const onRulesetChange = (id) => {
     if (!id) return
@@ -88,7 +97,7 @@ export default function MapProperties({
       <PropertySection
         id="map"
         title="Map"
-        tip="Ruleset, biome, weather, size, and ambient light. Generate Map uses the ruleset plus size, light, and weather from here."
+        tip="Ruleset, biome, weather, size, ambient light, and sun orbit. Generate Map uses the ruleset plus size, light, and weather from here."
       >
         {!worldGeneration && rulesets.length > 0 && (
           <label className="me-field">
@@ -170,19 +179,44 @@ export default function MapProperties({
           <input type="range" min="0" max={FULL_LIGHT} step="5" value={map.ambient ?? FULL_LIGHT} aria-label="Ambient light" onChange={(event) => onAmbient(Number(event.target.value))} />
           <span className="me-ambient-value">{map.ambient ?? FULL_LIGHT}%</span>
         </label>
-        <label className="me-ambient ed-emissive" title="Ambient light colour: the tint of the room when light is low.">
-          Colour
+        <EditorColourField
+          label="Colour"
+          title="Ambient light colour: the tint of the room when light is low."
+          ariaLabel="Ambient light colour"
+          value={map.ambientColour || DEFAULT_AMBIENT_COLOUR}
+          onChange={(colour) => onAmbientColour?.(colour)}
+        />
+        <label
+          className="me-ambient"
+          title="Orbit the 3D key light (Play). Same control as World Generation → Sun."
+        >
+          Sun
           <input
-            className="ed-colour"
-            type="color"
-            value={(() => {
-              const value = map.ambientColour || DEFAULT_AMBIENT_COLOUR
-              return value.length === 4 ? `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}` : value
-            })()}
-            aria-label="Ambient light colour"
-            onChange={(event) => onAmbientColour?.(event.target.value)}
+            type="range"
+            min="0"
+            max="359"
+            step="1"
+            value={sun.azimuthDeg}
+            aria-label="Sun orbit"
+            onChange={(event) => {
+              const azimuthDeg = Number(event.target.value)
+              setSun((prev) => ({ ...prev, azimuthDeg }))
+              setBoardSunSettings({ azimuthDeg })
+            }}
           />
+          <span className="me-ambient-value">{sun.azimuthDeg}°</span>
         </label>
+        <EditorColourField
+          label="Sun colour"
+          title="Sun key colour: tints 3D figure lighting in Play."
+          ariaLabel="Sun colour"
+          value={sun.colour}
+          presets={SUN_COLOUR_PRESETS}
+          onChange={(colour) => {
+            setSun((prev) => ({ ...prev, colour }))
+            setBoardSunSettings({ colour })
+          }}
+        />
       </PropertySection>
 
       <PropertySection

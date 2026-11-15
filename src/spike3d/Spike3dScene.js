@@ -7,12 +7,27 @@ import { clipSeconds, IDLE_FIDGET_GAP, IDLE_FIDGETS } from './clips.js'
 import { ProceduralBody, PROCEDURAL_HEIGHT } from './ProceduralBody.js'
 import { HorseActor } from './HorseActor.js'
 import { HumanoidRagdoll } from './HumanoidRagdoll.js'
-import { createContactShadow } from './contactShadow.js'
+import {
+  boardSunColourSaturation,
+  boardSunFillOffset,
+  boardSunOffset,
+  getBoardSunSettings,
+} from './boardSunSettings.js'
+import { CONTACT_SHADOW_FILL_OPACITY, createContactShadow } from './contactShadow.js'
 import { addColliderMeshes, addOccluderMeshes, buildMapColliders, occluderPunchesActor } from './mapColliders.js'
 import { PhysicsWorld } from './PhysicsWorld.js'
 import { cloneRagdollSettings, DEFAULT_RAGDOLL_SETTINGS } from './ragdollSettings.js'
 
 const HEIGHT = PROCEDURAL_HEIGHT
+
+// Soft enough that large horse meshes do not stamp opaque black slabs on the board.
+const SHADOW_FLOOR_OPACITY = 0.28
+/** Key must outrank hemi/fill so the Sun slider’s orbit reads on mesh shading and cast direction. */
+const HEMI_INTENSITY = 0.55
+const SUN_INTENSITY = 1.35
+const FILL_INTENSITY = 0.22
+const RIM_INTENSITY = 0.16
+const TONE_EXPOSURE = 1.05
 
 // Knock direction = damage source → victim (map x/y → world x/z). Strength from ragdollSettings.
 // Never treat the victim tile as the blast origin — that zeros the vector and used to flop everyone the same way.
@@ -75,7 +90,7 @@ class SpikeActor {
     const resolved = appearance ?? resolveSpike3dAppearance({ uniform, enemy })
     this.body = new ProceduralBody({ height: HEIGHT, uniform: resolved.uniform ?? uniform, appearance: resolved })
     this.root.add(this.body.root)
-    // Soft foot blob — Pixi owns the floor, so real shadow maps never land.
+    // Soft foot fill; mesh cast shadows land on the scene ShadowMaterial floor plane.
     this.shadow = createContactShadow({ width: HEIGHT * 0.55, depth: HEIGHT * 0.32 })
     this.root.add(this.shadow)
     this.ragdoll = null
@@ -389,7 +404,8 @@ class SpikeActor {
       const squash = 1 + Math.min(0.12, bounce * 0.8)
       // Plane lies in local XY; after rot.x = -π/2 that is the floor.
       this.shadow.scale.set(squash, 1 / squash, 1)
-      this.shadow.material.opacity = 0.7 + Math.min(0.2, bounce * 1.5)
+      // Soft fill only — cast silhouette comes from the scene shadow map.
+      this.shadow.material.opacity = CONTACT_SHADOW_FILL_OPACITY + Math.min(0.08, bounce * 0.5)
     }
   }
 
@@ -427,11 +443,14 @@ export class Spike3dScene {
       preserveDrawingBuffer: true,
     })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-    // Contact blobs ground the figures; map floor is Pixi so PCF maps never land — skip the cost.
-    this.renderer.shadowMap.enabled = false
+    // Cast onto an invisible Three floor plane (Pixi still owns the art); bake once per frame
+    // before painter-order passes so every character keeps a silhouette.
+    this.renderer.shadowMap.enabled = true
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.renderer.shadowMap.autoUpdate = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 0.92
+    this.renderer.toneMappingExposure = TONE_EXPOSURE
     this.renderer.setClearColor(0x000000, 0)
     this.renderer.autoClear = false
     this.renderer.sortObjects = true
@@ -441,20 +460,30 @@ export class Spike3dScene {
     /** True after at least one frame drew with a real SVG viewBox (handoff cover waits on this). */
     this._paintedOnce = false
 
-    // Soft board-matched light: ambient carries most of the look; key is weak so cloth stays matte.
-    const hemi = new THREE.HemisphereLight(0xc8d4e4, 0x2a3038, 0.95)
-    this.scene.add(hemi)
-    this.sun = new THREE.DirectionalLight(0xfff2e0, 0.55)
-    this.sun.position.set(6, 12, 5)
-    this.sun.castShadow = false
+    // Soft board-matched light: hemi carries most of the look; key casts floor shadows without crushing cloth.
+    this.hemi = new THREE.HemisphereLight(0xd0dae8, 0x3a424c, HEMI_INTENSITY)
+    this.scene.add(this.hemi)
+    this.sun = new THREE.DirectionalLight(0xfff2e0, SUN_INTENSITY)
+    this.sun.castShadow = true
+    this.sun.shadow.mapSize.set(1024, 1024)
+    this.sun.shadow.bias = -0.0004
+    this.sun.shadow.normalBias = 0.035
+    this.sun.shadow.camera.near = 1
+    this.sun.shadow.camera.far = 80
+    this._fitShadowCamera(map)
     this.scene.add(this.sun)
     this.scene.add(this.sun.target)
-    const fill = new THREE.DirectionalLight(0xa8b8c8, 0.35)
-    fill.position.set(-5, 7, -3)
-    this.scene.add(fill)
-    const rim = new THREE.DirectionalLight(0xb0c4d8, 0.22)
-    rim.position.set(-2, 5, 8)
-    this.scene.add(rim)
+    // Fill tracks opposite the Sun slider so one side stays bright as the key orbits.
+    this.fill = new THREE.DirectionalLight(0xc8d4e4, FILL_INTENSITY)
+    this.scene.add(this.fill)
+    this.scene.add(this.fill.target)
+    this.rim = new THREE.DirectionalLight(0xb0c4d8, RIM_INTENSITY)
+    this.rim.position.set(-2, 5, 8)
+    this.scene.add(this.rim)
+    this._placeSun(0, 0)
+
+    this.shadowFloor = this._makeShadowFloor(map)
+    this.scene.add(this.shadowFloor)
 
     this.colliders = buildMapColliders(map)
     // Depth-only wall/prop boxes: characters fail the depth test behind solids so Pixi art shows through.
@@ -466,6 +495,77 @@ export class Spike3dScene {
 
     this._viewBox = null
     this._poses = []
+  }
+
+  /** Orthographic shadow frustum sized to the map (tile units = world x/z). */
+  _fitShadowCamera(map) {
+    const span = Math.max(map?.width ?? 32, map?.height ?? 32) * 0.65 + 8
+    const cam = this.sun.shadow.camera
+    cam.left = -span
+    cam.right = span
+    cam.top = span
+    cam.bottom = -span
+    cam.updateProjectionMatrix()
+  }
+
+  /** Aim key + opposite fill from boardSunSettings (World Generation Sun slider / colour). */
+  _placeSun(tx, tz) {
+    const settings = getBoardSunSettings()
+    const key = boardSunOffset(settings)
+    const fill = boardSunFillOffset(settings)
+    const sat = boardSunColourSaturation(settings)
+    this.sun.color.set(settings.colour)
+    // Saturated keys outrank hemi so red/blue suns read on cloth; pale warm white stays soft.
+    this.sun.intensity = SUN_INTENSITY * (1 + sat * 0.55)
+    if (this.hemi) {
+      this.hemi.intensity = HEMI_INTENSITY * (1 - sat * 0.35)
+      this.hemi.color.set(settings.colour).lerp(new THREE.Color(0xd0dae8), 0.55 - sat * 0.25)
+    }
+    this.sun.target.position.set(tx, 0, tz)
+    this.sun.target.updateMatrixWorld()
+    this.sun.position.set(tx + key.x, key.y, tz + key.z)
+    if (this.fill) {
+      this.fill.target.position.set(tx, 0, tz)
+      this.fill.target.updateMatrixWorld()
+      this.fill.position.set(tx + fill.x, fill.y, tz + fill.z)
+    }
+  }
+
+  /** Invisible receiver — ShadowMaterial draws only where the shadow map hits. */
+  _makeShadowFloor(map) {
+    const pad = 6
+    const w = (map?.width ?? 32) + pad * 2
+    const d = (map?.height ?? 32) + pad * 2
+    const geo = new THREE.PlaneGeometry(w, d)
+    const mat = new THREE.ShadowMaterial({
+      opacity: SHADOW_FLOOR_OPACITY,
+      transparent: true,
+      depthWrite: false,
+    })
+    const mesh = new THREE.Mesh(geo, mat)
+    mesh.name = 'shadow_floor'
+    mesh.rotation.x = -Math.PI / 2
+    mesh.position.set((map?.width ?? 32) / 2 - 0.5, 0.01, (map?.height ?? 32) / 2 - 0.5)
+    mesh.receiveShadow = true
+    mesh.castShadow = false
+    mesh.renderOrder = -2
+    mesh.frustumCulled = false
+    return mesh
+  }
+
+  /** Toggle colorWrite on body meshes so a bake pass can refresh the shadow map without painting bodies. */
+  _setCasterColorWrite(on) {
+    const visit = (root) => {
+      root?.traverse?.((obj) => {
+        if (!obj.isMesh || obj.name === 'contact_shadow' || obj.name === 'shadow_floor') return
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+        for (const mat of mats) {
+          if (mat && 'colorWrite' in mat) mat.colorWrite = on
+        }
+      })
+    }
+    for (const actor of this.actors.values()) visit(actor.root)
+    for (const horse of this.horses.values()) visit(horse.root)
   }
 
   async init() {
@@ -581,7 +681,7 @@ export class Spike3dScene {
         seenHorses.add(pose.id)
         let horse = this.horses.get(pose.id)
         if (!horse) {
-          horse = new HorseActor(pose.id, this)
+          horse = new HorseActor(pose.id, this, { coat: pose.coat })
           this.horses.set(pose.id, horse)
         }
         horse.setPose(pose)
@@ -648,17 +748,22 @@ export class Spike3dScene {
     syncIsoCamera(this.camera, this._viewBox, this.renderer)
     this._paintedOnce = true
 
-    if (this._poses.length) {
+    {
       let sx = 0
       let sz = 0
-      for (const p of this._poses) {
-        sx += p.position?.x ?? 0
-        sz += p.position?.y ?? 0
-      }
       const n = this._poses.length
-      this.sun.target.position.set(sx / n, 0, sz / n)
-      this.sun.target.updateMatrixWorld()
-      this.sun.position.set(sx / n + 8, 14, sz / n + 6)
+      if (n) {
+        for (const p of this._poses) {
+          sx += p.position?.x ?? 0
+          sz += p.position?.y ?? 0
+        }
+        sx /= n
+        sz /= n
+      } else {
+        sx = (this.map?.width ?? 0) / 2
+        sz = (this.map?.height ?? 0) / 2
+      }
+      this._placeSun(sx, sz)
     }
 
     // Painter order by tile x+z. Mounted horse+rider share one pass so depth sorts
@@ -689,10 +794,19 @@ export class Spike3dScene {
       const d = a.paint - b.paint
       return d !== 0 ? d : String(a.id).localeCompare(String(b.id))
     })
-    for (const g of groups) for (const item of g.items) item.setVisible(false)
+
+    // Bake the shadow map with every caster visible, then painter-order color passes reuse it
+    // (autoUpdate is false — otherwise each pass would only cast the visible group).
     if (groups.length === 0) {
+      this.renderer.shadowMap.needsUpdate = true
       this.renderer.render(this.scene, this.camera)
     } else {
+      for (const g of groups) for (const item of g.items) item.setVisible(true)
+      this._setCasterColorWrite(false)
+      this.renderer.shadowMap.needsUpdate = true
+      this.renderer.render(this.scene, this.camera)
+      this._setCasterColorWrite(true)
+      for (const g of groups) for (const item of g.items) item.setVisible(false)
       for (const g of groups) {
         this.renderer.clearDepth()
         this._syncOccludersForActor(g.lead)
@@ -715,6 +829,12 @@ export class Spike3dScene {
     this.physics?.dispose()
     this.physics = null
     this._physicsPromise = null
+    if (this.shadowFloor) {
+      this.scene.remove(this.shadowFloor)
+      this.shadowFloor.geometry?.dispose?.()
+      this.shadowFloor.material?.dispose?.()
+      this.shadowFloor = null
+    }
     this.occluderGroup?.userData?.dispose?.()
     if (this.occluderGroup) this.scene.remove(this.occluderGroup)
     this.occluderGroup = null

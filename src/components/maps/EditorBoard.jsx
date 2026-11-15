@@ -365,6 +365,8 @@ export default function EditorBoard({
   onPaintEnd,
   onHover,
   onRightClick,
+  /** Space / middle-click (no drag): flip paint axis or rotate Template Piece (same as R). */
+  onRotateAxis,
 }) {
   // Destructible objects show in the state they start the mission in, force fields up, as play will draw them.
   const environment = useMemo(() => createEnvironment(map), [map])
@@ -398,6 +400,8 @@ export default function EditorBoard({
     null,
     null,
     false,
+    () => onRotateAxis?.(),
+    () => onRotateAxis?.(),
   )
   const sceneRef = useRef(null)
   const cursorClientRef = useRef(null)

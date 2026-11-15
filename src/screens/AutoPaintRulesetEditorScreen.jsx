@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { autoPaintRoleThumbTitle } from '../components/maps/assetThumbTitle.js'
 import EditorBoard from '../components/maps/EditorBoard.jsx'
 import { DEFAULT_EDITOR_GRID_SIZE, EDITOR_GRID_SIZES } from '../components/maps/editorGrid.js'
@@ -7,6 +7,7 @@ import EditorSelect from '../components/maps/EditorSelect.jsx'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import { subEditorFileMenus } from '../components/maps/editorSubMenus.js'
 import AssetProperties from '../components/maps/AssetProperties.jsx'
+import EditorColourField, { SUN_COLOUR_PRESETS } from '../components/maps/EditorColourField.jsx'
 import GeSourcePalette from '../components/maps/GeSourcePalette.jsx'
 import {
   PropertySection,
@@ -46,6 +47,11 @@ import {
   templatePieceCatalogueEpochOf,
 } from '../maps/templatePieces.js'
 import { WORLD_GENERATION_HELP_TOPICS } from '../data/adaptation/maps/worldGenerationWorkflow.js'
+import {
+  getBoardSunSettings,
+  setBoardSunSettings,
+  subscribeBoardSunSettings,
+} from '../spike3d/boardSunSettings.js'
 
 // Tools → World Generation Ruleset. Palette = Dev Edit Assets (Template Pieces + every tileset). Wall roles place tiles.
 // Help + flowchart copy/settings: edit worldGenerationWorkflow.js (not Legacy).
@@ -306,6 +312,9 @@ export default function AutoPaintRulesetEditorScreen({
   const [localTooltips, setLocalTooltips] = useState(true)
   const showTooltips = typeof onShowTooltips === 'function' ? showTooltipsProp : localTooltips
   const setShowTooltips = typeof onShowTooltips === 'function' ? onShowTooltips : setLocalTooltips
+  const [sun, setSun] = useState(() => getBoardSunSettings())
+
+  useEffect(() => subscribeBoardSunSettings(setSun), [])
 
   const dirty = !rulesetEqual(draft, saved)
   const canSave = canEditAutoPaintRulesets
@@ -836,6 +845,37 @@ export default function AutoPaintRulesetEditorScreen({
                 ))}
               </EditorSelect>
             </label>
+            <label
+              className="me-scale"
+              title="Orbit the 3D key light (Play)."
+            >
+              <span className="me-scale-label">Sun</span>
+              <input
+                type="range"
+                min="0"
+                max="359"
+                step="1"
+                value={sun.azimuthDeg}
+                aria-label="Sun orbit"
+                onChange={(event) => {
+                  const azimuthDeg = Number(event.target.value)
+                  setSun((prev) => ({ ...prev, azimuthDeg }))
+                  setBoardSunSettings({ azimuthDeg })
+                }}
+              />
+              <span className="me-ambient-value">{sun.azimuthDeg}°</span>
+            </label>
+            <EditorColourField
+              label="Sun colour"
+              title="Sun colour: tints 3D figure lighting in Play."
+              ariaLabel="Sun colour"
+              value={sun.colour}
+              presets={SUN_COLOUR_PRESETS}
+              onChange={(colour) => {
+                setSun((prev) => ({ ...prev, colour }))
+                setBoardSunSettings({ colour })
+              }}
+            />
           </>
         )}
         <GeSourcePalette

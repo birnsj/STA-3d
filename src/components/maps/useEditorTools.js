@@ -27,6 +27,7 @@ import {
   placeGroundItem,
   placeNpc,
   placeTemplatePiece,
+  removeDestructible,
   removeGroundItem,
   removePatrolWaypoint,
   selectionCandidates,
@@ -172,8 +173,9 @@ export default function useEditorTools({
   endStroke = null,
 }) {
   const [tool, setTool] = useState('tile:bulkhead')
-  // Place Tiles multi-brush: checked thumbs cycle while painting (Unreal foliage-style). Selected brush stays checked.
-  const [paintTileIds, setPaintTileIds] = useState(() => new Set(['bulkhead']))
+  // Place Tiles multi-brush: checked thumbs cycle while painting (Unreal foliage-style).
+  // Starts empty — selecting a tile checks it in (see selectTool). An empty set paints the selected tool only.
+  const [paintTileIds, setPaintTileIds] = useState(() => new Set())
   const paintCycleRef = useRef(0)
   const [paintTemplateIds, setPaintTemplateIds] = useState(() => new Set())
   const paintTemplateCycleRef = useRef(0)
@@ -316,8 +318,30 @@ export default function useEditorTools({
     setStatus(`Duplicated ${selectedGroundItem.id} as ${copy.object.id}.`)
   }
 
+  /** Flip tile paint axis, or yaw Template Piece brush / selection +90° (R, Space, middle-click). */
+  const rotateBrushAxis = () => {
+    if (placing && tool?.startsWith('tile:')) {
+      setRotated((value) => !value)
+      return
+    }
+    if (selectedTemplatePiece) {
+      const rotateLayer = layerOfTemplatePiece(selectedTemplatePiece.pieceId)
+      if (!canEditLayer(layers, rotateLayer)) {
+        setStatus(`${LAYER_LABELS[rotateLayer] ?? rotateLayer} layer is locked or hidden.`)
+        return
+      }
+      const next = (((selectedTemplatePiece.rotation ?? 0) + 90) % 360 + 360) % 360
+      edit(updateTemplatePiece(map, selectedTemplatePiece.id, { rotation: next }))
+      setStatus(`Rotated ${selectedTemplatePiece.id} to ${next}°.`)
+      return
+    }
+    if (tool?.startsWith('template:')) {
+      setTemplateRotation((value) => (value + 90) % 360)
+    }
+  }
+
   // Escape puts the brush down (no tool selected, Place Tiles off), unless a popup is open (its own Escape cancels it)
-  // or a text box has focus. R rotates the tile brush.
+  // or a text box has focus. R / Space rotate the tile brush axis (Space also via useCamera → onRotateAxis).
   useEffect(() => {
     if (suspended) return undefined
     const onKey = (event) => {
@@ -333,20 +357,8 @@ export default function useEditorTools({
         return duplicateSelected()
       }
       if ((event.key === 'r' || event.key === 'R') && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        if (placing && tool?.startsWith('tile:')) setRotated((value) => !value)
-        else if (selectedTemplatePiece) {
-          event.preventDefault()
-          const rotateLayer = layerOfTemplatePiece(selectedTemplatePiece.pieceId)
-          if (!canEditLayer(layers, rotateLayer)) {
-            return setStatus(`${LAYER_LABELS[rotateLayer] ?? rotateLayer} layer is locked or hidden.`)
-          }
-          const next = (((selectedTemplatePiece.rotation ?? 0) + 90) % 360 + 360) % 360
-          edit(updateTemplatePiece(map, selectedTemplatePiece.id, { rotation: next }))
-          setStatus(`Rotated ${selectedTemplatePiece.id} to ${next}°.`)
-        } else if (tool?.startsWith('template:')) {
-          event.preventDefault()
-          setTemplateRotation((value) => (value + 90) % 360)
-        }
+        event.preventDefault()
+        rotateBrushAxis()
         return
       }
       if ((event.key === 'Delete' || event.key === 'Backspace') && editingPatrol && selectedNpc && selectedWaypointIndex != null) {
@@ -1094,37 +1106,104 @@ export default function useEditorTools({
     lastTemplateTipRef.current = null
   }
 
-  // Right click: Template Piece / Inventory paint removes the object under the pointer. With Place Tiles on, the brush
-  // picks up the tile under the pointer (rotation included). Otherwise an NPC, player start or enemy spawn turns 45°.
-  const onRightClick = (position, boardPoint = null) => {
-    if (tool?.startsWith('template:')) {
-      const hit = boardPoint ? templatePieceAtBoard(map, boardPoint) : null
-      const existing = hit ?? (position ? templatePieceAt(map, position, { cellPx: itemGridSize }) : null)
-      if (!existing) return
-      const eraseLayer = layerOfTemplatePiece(existing.pieceId)
+  /**
+   * Right-click delete under the pointer (paint / move / template / inventory brushes).
+   * Same hit order as Move pick: Template Piece → inventory item → destructible → markers.
+   * @returns {boolean} true when something was removed or a locked-layer message was shown.
+   */
+  const deleteObjectUnderPointer = (position, boardPoint = null) => {
+    const hitTemplate = boardPoint
+      ? templatePieceAtBoard(map, boardPoint)
+      : position
+        ? templatePieceAt(map, position, { cellPx: itemGridSize })
+        : null
+    if (hitTemplate) {
+      const eraseLayer = layerOfTemplatePiece(hitTemplate.pieceId)
       if (!layerAllowsTool(eraseLayer)) {
-        return setStatus(`${LAYER_LABELS[eraseLayer] ?? eraseLayer} layer is locked or hidden.`)
+        setStatus(`${LAYER_LABELS[eraseLayer] ?? eraseLayer} layer is locked or hidden.`)
+        return true
       }
-      edit(removeTemplatePiece(map, existing.id))
-      if (selectedTemplatePieceId === existing.id) {
+      ensureActiveLayer(eraseLayer)
+      edit(removeTemplatePiece(map, hitTemplate.id))
+      if (selectedTemplatePieceId === hitTemplate.id) {
         setSelectedTemplatePieceId(null)
         setMovingTemplatePiece(false)
       }
-      setStatus(`Removed ${existing.id}.`)
-      return
+      if (moveFrom?.templatePiece === hitTemplate.id) setMoveFrom(null)
+      setStatus(`Removed ${hitTemplate.id}.`)
+      return true
     }
-    if (tool?.startsWith('inventory:')) {
-      if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
-      const hit = boardPoint ? groundItemAtBoard(map, boardPoint) : null
-      const existing = hit ?? (position ? groundItemAt(map, position, { cellPx: itemGridSize }) : null)
-      if (!existing) return
-      edit(removeGroundItem(map, existing.id))
-      if (selectedGroundItemId === existing.id) {
+    const hitItem = boardPoint
+      ? groundItemAtBoard(map, boardPoint)
+      : position
+        ? groundItemAt(map, position, { cellPx: itemGridSize })
+        : null
+    if (hitItem) {
+      if (!layerAllowsTool('furniture')) {
+        setStatus('Furniture / Scenery layer is locked or hidden.')
+        return true
+      }
+      ensureActiveLayer('furniture')
+      edit(removeGroundItem(map, hitItem.id))
+      if (selectedGroundItemId === hitItem.id) {
         setSelectedGroundItemId(null)
         setMovingGroundItem(false)
       }
-      setStatus(`Removed ${existing.id}.`)
+      if (moveFrom?.groundItem === hitItem.id) setMoveFrom(null)
+      setStatus(`Removed ${hitItem.id}.`)
+      return true
+    }
+    if (!position) return false
+    const dest = destructibleAt(map, position)
+    if (dest) {
+      if (!layerAllowsTool('furniture')) {
+        setStatus('Furniture / Scenery layer is locked or hidden.')
+        return true
+      }
+      ensureActiveLayer('furniture')
+      edit(removeDestructible(map, dest.id))
+      if (selectedDestructibleId === dest.id) {
+        setSelectedDestructibleId(null)
+        setMovingDestructible(false)
+      }
+      if (moveFrom?.destructible === dest.id) setMoveFrom(null)
+      setStatus(`Removed ${dest.id}.`)
+      return true
+    }
+    if (hasMarkers(map, position)) {
+      const markerLayers = markerLayersAt(map, position)
+      const blocked = markerLayers.find((layerId) => !layerAllowsTool(layerId))
+      if (blocked) {
+        setStatus(
+          `${blocked === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`,
+        )
+        return true
+      }
+      const markerLayer = markerLayers[0] ?? 'characters'
+      ensureActiveLayer(markerLayer)
+      edit(eraseMarkers(map, position, { characters: true, markers: true }))
+      if (moveFrom?.markers && moveFrom.x === position.x && moveFrom.y === position.y) setMoveFrom(null)
+      if (selectedMarker && selectedMarker.x === position.x && selectedMarker.y === position.y) {
+        setSelectedMarker(null)
+      }
+      setStatus('Removed markers.')
+      return true
+    }
+    return false
+  }
+
+  // Right click: paint / move / template / inventory delete the object under the pointer.
+  // Move while carrying: cancel the carry. Place Tiles with no object under the pointer: sample the tile brush.
+  // Otherwise an NPC / start / spawn turns 45°.
+  const onRightClick = (position, boardPoint = null) => {
+    if (moving && moveFrom) {
+      setMoveFrom(null)
+      setStatus('Move cancelled.')
       return
+    }
+    if (tool?.startsWith('template:') || tool?.startsWith('inventory:') || placing || moving) {
+      if (deleteObjectUnderPointer(position, boardPoint)) return
+      if (tool?.startsWith('template:') || tool?.startsWith('inventory:') || moving) return
     }
     if (!position) return
     if (!placing) {
@@ -1157,7 +1236,7 @@ export default function useEditorTools({
     setMoving(on)
     if (on) {
       setPlacing(false)
-      setStatus('Move: click an object to pick it up, click again to place. Esc cancels.')
+      setStatus('Move: click to pick up, click to place. Right-click deletes. Esc cancels.')
     }
     setMoveFrom(null)
   }
@@ -1187,7 +1266,7 @@ export default function useEditorTools({
   }
 
   // Assets thumbnail pick: clear board selection so Properties shows the catalogue asset.
-  // Selection alone does not check the paint-cycle box — only the checkbox does that.
+  // Clicking a tile makes it the paint brush (replaces the cycle). Check more thumbs to multi-brush.
   // Also flips the active layer so Place Tiles / Move / Delete stay on the matching Assets tab.
   const selectTool = (next) => {
     clearBoardSelection()
@@ -1200,13 +1279,11 @@ export default function useEditorTools({
       setStatus(`Auto-Paint: ${getAutoPaintRuleset(autoPaintRulesetId)?.label ?? autoPaintRulesetId}`)
       return
     }
-    // If this brush is already in the cycle, start the next stroke from it.
     if (next?.startsWith('tile:')) {
       const id = next.slice('tile:'.length)
       ensureActiveLayer(layerOfTile(id))
-      const ordered = orderedPaintTileIds(paintTileIds)
-      const at = ordered.indexOf(id)
-      if (at >= 0) paintCycleRef.current = at
+      setPaintTileIds(new Set([id]))
+      paintCycleRef.current = 0
     } else if (next?.startsWith('template:')) {
       const id = next.slice('template:'.length)
       ensureActiveLayer(layerOfTemplatePiece(id))
@@ -1386,6 +1463,7 @@ export default function useEditorTools({
     onPaint,
     onPaintEnd,
     onRightClick,
+    onRotateAxis: rotateBrushAxis,
     onPlacingToggle,
     onMovingToggle,
   }

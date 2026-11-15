@@ -60,7 +60,7 @@ import { recommendPartyAction } from '../exploration/partyActions.js'
 import { objectFor } from '../world/objects.js'
 import { activeHazards, isStanding } from '../world/environment.js'
 import { hazardChallengeId, isHazardChallengeId } from '../world/EnvironmentalHazard.js'
-import { canMountHorse, horseById, mountSidePoint } from '../exploration/mount.js'
+import { canMountHorse, horseById } from '../exploration/mount.js'
 import { canAct, getMembers } from '../exploration/partyControl.js'
 import { isVisibleToParty } from '../exploration/partyKnowledge.js'
 import { bagFreeSlots, groundItemViews } from '../rules/inventory.js'
@@ -596,7 +596,11 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     onLog: () => setLogOpen((open) => !open),
     onMount: () => {
       if (beamPhase !== 'done' || talking || inCombat) return
-      dispatch({ type: 'toggleMount', memberId: party.leaderId })
+      // Selected team claims free horses (walk-to-mount); anyone without a horse stays on foot.
+      dispatch({
+        type: 'toggleMount',
+        memberIds: party.selectedIds.length ? party.selectedIds : [party.leaderId],
+      })
     },
   })
 
@@ -855,21 +859,23 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   }
   const requestRideHorse = (horseId) => {
     if (beamPhase !== 'done') return
-    const memberId = party.leaderId
     const horse = horseById(state, horseId)
-    if (!horse || !party.members[memberId] || !canAct(party.members[memberId])) return
+    if (!horse || horse.riderId) return
+    const riders = (party.selectedIds.length ? party.selectedIds : party.memberIds).filter(
+      (id) => party.members[id] && canAct(party.members[id]),
+    )
+    if (!riders.length) return
     closeAllMenus()
     cancelPendingTalk()
     setPendingPickup(null)
-    if (canMountHorse(state, memberId, horseId)) {
-      setPendingMount(null)
-      dispatch({ type: 'mountHorse', memberId, horseId })
-      return
-    }
-    // Walk to the climb-up side, then lock on (not into the horse centre).
-    const side = mountSidePoint(party.map, horse)
-    dispatch({ type: 'moveTo', target: { ...side }, fresh: true })
-    setPendingMount({ horseId, memberId, combatId: state.lastCombat?.id ?? null })
+    setPendingMount(null)
+    // Same as M: selected team claims free horses; this saddle goes to the lead first.
+    dispatch({
+      type: 'toggleMount',
+      memberIds: riders,
+      preferHorseId: horseId,
+      preferMemberId: riders.includes(party.leaderId) ? party.leaderId : riders[0],
+    })
   }
   const horseButtons =
     menuHorse &&
