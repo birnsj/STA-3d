@@ -30,6 +30,7 @@ import {
   destructibleMenuButtons,
   groundItemInfo,
   groundItemMenuButtons,
+  horseMenuButtons,
   memberMenuButtons,
   npcInfo,
   npcMenuButtons,
@@ -59,6 +60,7 @@ import { recommendPartyAction } from '../exploration/partyActions.js'
 import { objectFor } from '../world/objects.js'
 import { activeHazards, isStanding } from '../world/environment.js'
 import { hazardChallengeId, isHazardChallengeId } from '../world/EnvironmentalHazard.js'
+import { canMountHorse, horseById } from '../exploration/mount.js'
 import { canAct, getMembers } from '../exploration/partyControl.js'
 import { isVisibleToParty } from '../exploration/partyKnowledge.js'
 import { bagFreeSlots, groundItemViews } from '../rules/inventory.js'
@@ -203,6 +205,8 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
 
   // UI state: walk-then-pick-up for a ground item (same idea as pendingTalk for NPCs).
   const [pendingPickup, setPendingPickup] = useState(null)
+  // UI state: walk-then-Ride for a horse.
+  const [pendingMount, setPendingMount] = useState(null)
   const members = getMembers(party)
   const inCombat = state.mode === MODE.COMBAT
   // Snapshot Pixi + Spike3d so the freeze still shows figures (sprites are hidden while 3D is on).
@@ -339,8 +343,9 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   useLayoutEffect(() => {
     if (outro && !inCombat) onOutro?.()
   }, [outro, inCombat, onOutro])
-  // Pause while fighting — keeps cadence from staying hot through combat, and avoids no-op flushSync ticks.
-  useWorldClock(dispatch, !ending.paused && !settingsOpen && !inCombat)
+  // Pause while fighting or mid handoff — clock must not run under the freeze cover or while the explore
+  // board is remounting (that was producing a burst of catch-up ticks that felt like hyperspeed after combat).
+  useWorldClock(dispatch, !ending.paused && !settingsOpen && !inCombat && boardSurface === 'explore')
   // UI state: the transporter's picker is open (the last fight's id when opened; a fight since closes it).
   const beamIn = useTransporter(dispatch)
   const [transporterFor, setTransporterFor] = useState(null)
@@ -358,11 +363,13 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     menuObjectId,
     menuDestructibleId,
     menuGroundItemId,
+    menuHorseId,
     toggleMemberMenu,
     toggleNpcMenu,
     toggleObjectMenu,
     toggleDestructibleMenu,
     toggleGroundItemMenu,
+    toggleHorseMenu,
     closeMenu,
     closeAllMenus,
   } = useRingMenus()
@@ -521,6 +528,26 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     setPendingPickup(null)
     dispatch({ type: 'pickupItem', instanceId: pendingPickup.instanceId, memberId: pendingPickup.memberId })
   }, [dispatch, party.members, pendingPickup, state.groundItems, state.lastCombat?.id])
+  useEffect(() => {
+    if (!pendingMount) return
+    if (pendingMount.combatId !== (state.lastCombat?.id ?? null)) {
+      setPendingMount(null)
+      return
+    }
+    const horse = horseById(state, pendingMount.horseId)
+    if (!horse || horse.riderId) {
+      setPendingMount(null)
+      return
+    }
+    const member = party.members[pendingMount.memberId]
+    if (!member || !canAct(member)) {
+      setPendingMount(null)
+      return
+    }
+    if (!canMountHorse(state, pendingMount.memberId, pendingMount.horseId)) return
+    setPendingMount(null)
+    dispatch({ type: 'mountHorse', memberId: pendingMount.memberId, horseId: pendingMount.horseId })
+  }, [dispatch, party.members, pendingMount, state, state.lastCombat?.id])
   /* eslint-enable react/set-state-in-effect */
   const setLeader = useCallback((id) => dispatch({ type: 'setLeader', id }), [dispatch])
   const setFormation = useCallback((formationId) => dispatch({ type: 'setFormation', formationId }), [dispatch])
@@ -545,6 +572,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       closeAllMenus()
       cancelPendingTalk()
       setPendingPickup(null)
+      setPendingMount(null)
       setLogOpen(false)
       setInventoryOpen(false)
       if (talking) dispatch({ type: 'conversationLeave' })
@@ -555,6 +583,10 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       setInventoryViewId((id) => id ?? party.selectedIds[0] ?? party.leaderId)
     },
     onLog: () => setLogOpen((open) => !open),
+    onMount: () => {
+      if (beamPhase !== 'done' || talking || inCombat) return
+      dispatch({ type: 'toggleMount', memberId: party.leaderId })
+    },
   })
 
   const move = (target, fresh) => {
@@ -562,6 +594,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       closeAllMenus()
       cancelPendingTalk()
       setPendingPickup(null)
+      setPendingMount(null)
     }
     if (beamPhase !== 'done') return
     if (!noiseTool) {
@@ -595,6 +628,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   const menuDestructible = menuDestructibleId && !inCombat && !panelOpen ? (destructibleViews.find((view) => view.id === menuDestructibleId) ?? null) : null
   const menuGroundItem =
     menuGroundItemId && !inCombat && !panelOpen ? (groundViews.find((view) => view.id === menuGroundItemId) ?? null) : null
+  const menuHorse = menuHorseId && !inCombat && !panelOpen ? horseById(state, menuHorseId) : null
   const ringKey = menuNpc
     ? `npc:${menuNpc.id}`
     : menuObject
@@ -603,7 +637,9 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
         ? `destructible:${menuDestructible.id}`
         : menuGroundItem
           ? `ground:${menuGroundItem.id}`
-          : null
+          : menuHorse
+            ? `horse:${menuHorse.id}`
+            : null
   const hoveredRingButton = ringHover?.key === ringKey ? ringHover.buttonId : null
   const pickedId = ringPick?.key === ringKey ? ringPick.memberId : null
   const hoverRingButton = (buttonId) => setRingHover({ key: ringKey, buttonId })
@@ -802,6 +838,48 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     },
     onButtonHover: hoverRingButton,
   }
+  const requestRideHorse = (horseId) => {
+    if (beamPhase !== 'done') return
+    const memberId = party.leaderId
+    const horse = horseById(state, horseId)
+    if (!horse || !party.members[memberId] || !canAct(party.members[memberId])) return
+    closeAllMenus()
+    cancelPendingTalk()
+    setPendingPickup(null)
+    if (canMountHorse(state, memberId, horseId)) {
+      setPendingMount(null)
+      dispatch({ type: 'mountHorse', memberId, horseId })
+      return
+    }
+    dispatch({ type: 'moveTo', target: { ...horse.position }, fresh: true })
+    setPendingMount({ horseId, memberId, combatId: state.lastCombat?.id ?? null })
+  }
+  const horseButtons =
+    menuHorse &&
+    horseMenuButtons(state, menuHorse.id, {
+      ride: () => requestRideHorse(menuHorse.id),
+      dismount: () => {
+        closeMenu('horse')
+        setPendingMount(null)
+        dispatch({ type: 'dismountHorse', memberId: party.leaderId })
+      },
+      attack: () => {
+        closeMenu('horse')
+        setPendingMount(null)
+        dispatch({ type: 'attackHorse', horseId: menuHorse.id, memberId: party.leaderId })
+      },
+    }).map((button) => ({
+      ...button,
+      onClick: () => {
+        if (button.id !== 'ride') closeMenu('horse')
+        button.onClick?.()
+      },
+    }))
+  const horseMenu = menuHorse && {
+    horseId: menuHorse.id,
+    position: menuHorse.position,
+    buttons: horseButtons,
+  }
   // The report waits for the sweep to reach the edge of the scan, and its fade timer starts when it appears.
   const scanSwept = !scanPulse
   const scanFaded = useFadeAfter(scanSwept ? lastScanKey : null)
@@ -885,8 +963,9 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           onOpenMenu={openMenu}
           onToggleMenu={toggleMemberMenu}
           onOpenNpcMenu={toggleNpcMenu}
+          onOpenHorseMenu={toggleHorseMenu}
           onStaggerDone={(id) => dispatch({ type: 'clearBlastReact', id })}
-          menu={memberMenu || npcMenu || objectMenu || destructibleMenu || groundItemMenu}
+          menu={memberMenu || npcMenu || objectMenu || destructibleMenu || groundItemMenu || horseMenu}
           beamIn={beamPhase}
           scanPulse={scanPulse}
           onBoardReady={onExploreBoardReady}

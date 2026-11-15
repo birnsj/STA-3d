@@ -6,6 +6,10 @@ Open design decisions for the designer. Each entry separates what the book says 
 
 ## Open
 
+### Outdoor horse mount (implemented 2026-11-14)
+
+Book: no rule. Prototype: Horse Spawn markers (`markers.horseSpawns`) in the editor; outdoor maps auto-spawn one if none authored; click ring Ride / Dismount / Attack; **M** still toggles; 1.6× move while riding; mount/dismount/ride seated clips (legs astride); combat auto-dismounts. Attack removes the horse (prototype). Implementer picks open for review: ride multiplier, Attack outcome, mounted combat. Where: `src/exploration/mount.js`, `src/spike3d/HorseModel.js`, `HumanoidAnimator.js`, `docs/prototype-rules.md` (Exploration).
+
 ### Starship save and footer (implemented 2026-10-25)
 
 The ship creator footer matches the character creator: Back, Quit after the first screen, Autofill for the whole ship, Clear for the whole ship, Auto for the current screen once earlier screens are done, Summary when that screen has a choice, and Next. Complete saves the finished ship. The forward button then becomes Start Game and opens Load Episode. Quit returns to the main menu. Import Ship loads a saved ship onto Review. Saved ships are a separate list from saved characters and from the in-progress draft. Where: `docs/prototype-rules.md` (Starship creation), `savedShips.js`.

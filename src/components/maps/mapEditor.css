@@ -426,6 +426,7 @@
 }
 
 .me-swatch.is-player { background: #3fb6e8; }
+.me-swatch.is-horse { background: #b8894a; }
 /* A hazard's swatch: the first frame of its flipbook (environmentArt.js) over its colour. */
 .me-swatch.is-hazard {
   width: 28px;
@@ -570,6 +571,7 @@
 
 .me-minimap-marker.is-player circle { fill: #3fb6e8; }
 .me-minimap-marker.is-enemy circle { fill: #e5483a; }
+.me-minimap-marker.is-horse circle { fill: #b8894a; }
 .me-minimap-marker.is-npc circle { fill: #b07ee8; }
 .me-minimap-marker.is-objective path { fill: #e0a800; stroke: #03060e; stroke-width: 1px; vector-effect: non-scaling-stroke; }
 
@@ -2089,6 +2091,13 @@
   flex: 1;
   min-height: 0;
 }
+.ed-shell.ap-ruleset-editor .ap-settlement-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 2px 0 8px;
+}
+
 .ed-shell.ap-ruleset-editor .wg-map-panel {
   flex-shrink: 0;
 }

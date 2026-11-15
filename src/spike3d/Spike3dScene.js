@@ -5,6 +5,7 @@ import { facingToYaw, makeIsoCamera, syncIsoCamera } from './isoProjection.js'
 import { resolveSpike3dAppearance } from './appearance.js'
 import { clipSeconds, IDLE_FIDGET_GAP, IDLE_FIDGETS } from './clips.js'
 import { ProceduralBody, PROCEDURAL_HEIGHT } from './ProceduralBody.js'
+import { HorseActor } from './HorseActor.js'
 import { HumanoidRagdoll } from './HumanoidRagdoll.js'
 import { createContactShadow } from './contactShadow.js'
 import { addColliderMeshes, addOccluderMeshes, buildMapColliders, occluderPunchesActor } from './mapColliders.js'
@@ -136,12 +137,14 @@ class SpikeActor {
   }
 
   // Matches Pixi figure depth (x+y+0.5) so occluderPunchesActor can compare against block x+y.
+  // Horse uses +0.55; a mounted rider must sort above that or the barrel paints over them.
   paintKey() {
     if (this.ragdollActive && this.ragdoll?.bodies?.hips) {
       const t = this.ragdoll.bodies.hips.translation()
       return t.x + t.z + 0.5
     }
-    return this._paintX + this._paintZ + 0.5
+    const bias = this._mounted ? 0.62 : 0.5
+    return this._paintX + this._paintZ + bias
   }
 
   setVisible(visible) {
@@ -153,10 +156,15 @@ class SpikeActor {
     if (this.ragdoll?.root) this.ragdoll.root.visible = false
   }
 
-  setPose({ position, facing, gait, animation, down, beam, blastReact, onStaggerDone, colour, appearance }) {
+  setPose({ position, facing, gait, animation, down, beam, blastReact, onStaggerDone, colour, appearance, mounted }) {
     this._staggerCallback = onStaggerDone ?? null
     this._down = Boolean(down)
     this._beam = beam ?? null
+    const wasMounted = this._mounted
+    this._mounted = Boolean(mounted)
+    if (wasMounted && !this._mounted && this.shadow) {
+      this.shadow.visible = this.root.visible && !this.ragdollActive
+    }
     this._lastSeen = performance.now()
     if (!down && this._deathLocked) this._deathLocked = false
     if (appearance) {
@@ -180,10 +188,12 @@ class SpikeActor {
       }
       this._tx = position.x
       this._tz = position.y
-      // Feet stay on the selection ring — soft position lag slid every figure off its circle in sync.
-      this.root.position.set(this._tx, 0, this._tz)
-      this._paintX = this._tx
-      this._paintZ = this._tz
+      // Mounted riders are placed on the horse saddle each frame — don't plant feet on the tile.
+      if (!this._mounted) {
+        this.root.position.set(this._tx, 0, this._tz)
+        this._paintX = this._tx
+        this._paintZ = this._tz
+      }
       if (!this._posReady) {
         this._posReady = true
         this._yaw = this._yawTarget
@@ -223,7 +233,7 @@ class SpikeActor {
       else clip = 'idle'
     }
     // Standing idle: random look-around / shift / etc. Walk, combat poses, beam-wait clear the timer.
-    if (clip === 'idle' && !this._down && this._beam !== 'waiting') {
+    if (clip === 'idle' && !this._down && !this._mounted && this._beam !== 'waiting') {
       clip = this._idleOrFidget(performance.now())
     } else {
       this._clearFidget()
@@ -342,15 +352,19 @@ class SpikeActor {
     if (this._posReady && dt > 0) {
       travel = this._pendingTravel
       this._pendingTravel = 0
-      this.root.position.set(this._tx, 0, this._tz)
-      const yawK = 1 - Math.exp(-16 * dt)
-      let dy = this._yawTarget - this._yaw
-      while (dy > Math.PI) dy -= Math.PI * 2
-      while (dy < -Math.PI) dy += Math.PI * 2
-      this._yaw += dy * yawK
-      this.root.rotation.y = this._yaw
-      this._paintX = this.root.position.x
-      this._paintZ = this.root.position.z
+      if (!this._mounted) {
+        this.root.position.set(this._tx, 0, this._tz)
+        const yawK = 1 - Math.exp(-16 * dt)
+        let dy = this._yawTarget - this._yaw
+        while (dy > Math.PI) dy -= Math.PI * 2
+        while (dy < -Math.PI) dy += Math.PI * 2
+        this._yaw += dy * yawK
+        this.root.rotation.y = this._yaw
+        this._paintX = this.root.position.x
+        this._paintZ = this.root.position.z
+      } else if (this.shadow) {
+        this.shadow.visible = false
+      }
     }
     // Cadence from distance travelled so stride length tracks party walk/run speed.
     // Death-locked corpses keep their last applied rest — don't let the animator ease them.
@@ -396,6 +410,7 @@ export class Spike3dScene {
     this.canvas = canvas
     this.map = map
     this.actors = new Map()
+    this.horses = new Map()
     this.physics = null
     this._physicsPromise = null
     this._ready = false
@@ -557,9 +572,20 @@ export class Spike3dScene {
 
   _syncActors() {
     const seen = new Set()
+    const seenHorses = new Set()
     const now = performance.now()
     for (const pose of this._poses) {
       if (!pose?.id) continue
+      if (pose.kind === 'horse') {
+        seenHorses.add(pose.id)
+        let horse = this.horses.get(pose.id)
+        if (!horse) {
+          horse = new HorseActor(pose.id, this)
+          this.horses.set(pose.id, horse)
+        }
+        horse.setPose(pose)
+        continue
+      }
       seen.add(pose.id)
       let actor = this.actors.get(pose.id)
       if (!actor) {
@@ -580,6 +606,12 @@ export class Spike3dScene {
       actor.dispose()
       this.actors.delete(id)
     }
+    for (const [id, horse] of this.horses) {
+      if (seenHorses.has(id)) continue
+      if (now - (horse._lastSeen ?? 0) < LINGER_MS) continue
+      horse.dispose()
+      this.horses.delete(id)
+    }
   }
 
   _anyRagdoll() {
@@ -591,7 +623,14 @@ export class Spike3dScene {
 
   _paint(dt) {
     this._syncActors()
+    for (const horse of this.horses.values()) horse.update(dt)
     for (const actor of this.actors.values()) actor.update(dt)
+    // Seat riders on saddles after both horse and actor have advanced this frame.
+    for (const horse of this.horses.values()) {
+      if (!horse._riderId) continue
+      const rider = this.actors.get(horse._riderId)
+      if (rider) horse.attachRider(rider)
+    }
     // Step Rapier only while at least one body is tumbling.
     if (this.physics && this._anyRagdoll()) this.physics.step(dt)
 
@@ -615,9 +654,8 @@ export class Spike3dScene {
       this.sun.position.set(sx / n + 8, 14, sz / n + 6)
     }
 
-    // Painter order by tile x+z among characters. Per actor, only occluders in front punch the mesh
-    // (matches Pixi depthLayer); faded Pixi walls drop theirs for wall-fade read-through.
-    const list = [...this.actors.values()].sort((a, b) => {
+    // Painter order by tile x+z among characters + horses.
+    const list = [...this.actors.values(), ...this.horses.values()].sort((a, b) => {
       const d = a.paintKey() - b.paintKey()
       return d !== 0 ? d : String(a.id).localeCompare(String(b.id))
     })
@@ -642,6 +680,8 @@ export class Spike3dScene {
     this._disposed = true
     for (const actor of this.actors.values()) actor.dispose()
     this.actors.clear()
+    for (const horse of this.horses.values()) horse.dispose()
+    this.horses.clear()
     this.physics?.dispose()
     this.physics = null
     this._physicsPromise = null

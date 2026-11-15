@@ -231,6 +231,11 @@ function evalActionPose(clip, u) {
   const ease = t * t * (3 - 2 * t)
   const p = basePose()
 
+  if (clip === 'rideIdle') return evalRidePose(t, false)
+  if (clip === 'ride') return evalRidePose(t, true)
+  if (clip === 'mount') return evalMountPose(t)
+  if (clip === 'dismount') return evalDismountPose(t)
+
   if (clip === 'cover') {
     // Kneeling cover loop: planted R knee / L foot, gun by the head.
     // Only integer harmonics of the loop (1×, 2×) so t=0 and t=1 match — fractional rates popped every cycle.
@@ -698,6 +703,107 @@ function evalHazardPanicUpper(t) {
   }
 }
 
+/** Seated astride a horse — hips in the saddle, thighs wrapped around the barrel, hands on reins. */
+function evalRidePose(u, moving) {
+  const w = clamp01(u) * Math.PI * 2
+  const bob = moving ? Math.sin(w) : Math.sin(w * 0.5)
+  const bounce = moving ? 0.035 * Math.abs(Math.sin(w)) : 0.01 * Math.sin(w * 0.5)
+  const open = deg(44)
+  return {
+    ...basePose(),
+    pitch: 0,
+    // Thighs forward over the barrel; knees bent so shins hang toward the stirrups.
+    thigh: [deg(32) + deg(5) * bob, deg(32) - deg(5) * bob],
+    knee: [deg(88) + deg(7) * bob, deg(88) - deg(7) * bob],
+    legSide: [open, open],
+    arm: [deg(-28) + deg(3) * bob, deg(-32) - deg(3) * bob],
+    elbow: [deg(55), deg(58)],
+    shoulder: [deg(-8), deg(-10)],
+    armSide: [deg(12), deg(12)],
+    lean: deg(5),
+    spineLean: deg(8) + deg(1.5) * bob,
+    chestLean: deg(3),
+    // Seat depth is mostly from HorseActor saddle attach; small settle only.
+    hipDrop: 2.4,
+    bounce,
+    torsoYaw: deg(2) * bob,
+    headPitch: deg(4),
+    headYaw: moving ? deg(3) * Math.sin(w * 0.5) : deg(4) * Math.sin(w * 0.25),
+    prop: false,
+    aim: 0,
+  }
+}
+
+/** Climb aboard: stand beside → step up → settle astride. */
+function evalMountPose(u) {
+  const e = clamp01(u)
+  const ease = e * e * (3 - 2 * e)
+  const stand = basePose()
+  const seat = evalRidePose(1, false)
+  const lift = Math.sin(Math.PI * Math.min(1, e * 1.15))
+  return {
+    ...stand,
+    thigh: [
+      lerp(stand.thigh[0], seat.thigh[0], ease) + deg(18) * lift * (1 - ease),
+      lerp(stand.thigh[1], seat.thigh[1], ease),
+    ],
+    knee: [
+      lerp(stand.knee[0], seat.knee[0], ease) + deg(25) * lift * (1 - ease),
+      lerp(stand.knee[1], seat.knee[1], ease),
+    ],
+    legSide: [lerp(0, seat.legSide[0], ease), lerp(0, seat.legSide[1], ease * ease)],
+    arm: [lerp(stand.arm[0], seat.arm[0], ease), lerp(stand.arm[1], seat.arm[1], ease)],
+    elbow: [lerp(stand.elbow[0], seat.elbow[0], ease), lerp(stand.elbow[1], seat.elbow[1], ease)],
+    shoulder: [lerp(stand.shoulder[0], seat.shoulder[0], ease), lerp(stand.shoulder[1], seat.shoulder[1], ease)],
+    armSide: [lerp(0, seat.armSide[0], ease), lerp(0, seat.armSide[1], ease)],
+    spineLean: lerp(0, seat.spineLean, ease),
+    chestLean: lerp(0, seat.chestLean, ease),
+    lean: lerp(0, seat.lean, ease),
+    hipDrop: lerp(0, seat.hipDrop, ease) + 1.8 * lift * (1 - ease),
+    bounce: 0.06 * lift * (1 - ease),
+    torsoYaw: deg(-12) * (1 - ease) + seat.torsoYaw * ease,
+    headPitch: lerp(stand.headPitch, seat.headPitch, ease),
+    headYaw: deg(8) * (1 - ease),
+    prop: false,
+    aim: 0,
+  }
+}
+
+/** Swing off: astride → plant a foot → stand clear. */
+function evalDismountPose(u) {
+  const e = clamp01(u)
+  const ease = e * e * (3 - 2 * e)
+  const seat = evalRidePose(0, false)
+  const stand = basePose()
+  const swing = Math.sin(Math.PI * Math.min(1, e * 1.1))
+  return {
+    ...seat,
+    thigh: [
+      lerp(seat.thigh[0], stand.thigh[0], ease),
+      lerp(seat.thigh[1], stand.thigh[1], ease) + deg(22) * swing * (1 - ease),
+    ],
+    knee: [
+      lerp(seat.knee[0], stand.knee[0], ease),
+      lerp(seat.knee[1], stand.knee[1], ease) + deg(20) * swing * (1 - ease),
+    ],
+    legSide: [lerp(seat.legSide[0], 0, ease), lerp(seat.legSide[1], 0, ease * 0.85)],
+    arm: [lerp(seat.arm[0], stand.arm[0], ease), lerp(seat.arm[1], stand.arm[1], ease)],
+    elbow: [lerp(seat.elbow[0], stand.elbow[0], ease), lerp(seat.elbow[1], stand.elbow[1], ease)],
+    shoulder: [lerp(seat.shoulder[0], stand.shoulder[0], ease), lerp(seat.shoulder[1], stand.shoulder[1], ease)],
+    armSide: [lerp(seat.armSide[0], 0, ease), lerp(seat.armSide[1], 0, ease)],
+    spineLean: lerp(seat.spineLean, 0, ease),
+    chestLean: lerp(seat.chestLean, 0, ease),
+    lean: lerp(seat.lean, 0, ease),
+    hipDrop: lerp(seat.hipDrop, 0, ease) + 1.2 * swing * (1 - ease),
+    bounce: 0.05 * swing * (1 - ease),
+    torsoYaw: seat.torsoYaw * (1 - ease) + deg(14) * swing * (1 - ease),
+    headPitch: lerp(seat.headPitch, stand.headPitch, ease),
+    headYaw: deg(-6) * (1 - ease),
+    prop: false,
+    aim: 0,
+  }
+}
+
 /** Walk/run legs with head-clutch upper body. */
 function evalHazardPanicMove(u, runMix, weight) {
   const gait = evalGaitPose(u, runMix, weight, 0)
@@ -933,6 +1039,10 @@ export class HumanoidAnimator {
       clip === 'stepBack' ||
       clip === 'hazardPanicWalk' ||
       clip === 'hazardPanicRun' ||
+      clip === 'ride' ||
+      clip === 'rideIdle' ||
+      clip === 'mount' ||
+      clip === 'dismount' ||
       IDLE_FIDGETS.includes(clip)
     // Fall/getUp tip (pitch) must not carry into idle/cover — that read as floating or bent double.
     if (upright && (force || leavingFall || coverClip || clip === 'idle')) {

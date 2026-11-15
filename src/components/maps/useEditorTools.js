@@ -105,9 +105,11 @@ function markerLayersAt(map, position) {
   const layers = new Set()
   if (
     (map.npcs ?? []).some((npc) => npc.position.x === position.x && npc.position.y === position.y) ||
-    [...(map.markers?.playerStarts ?? []), ...(map.markers?.enemySpawns ?? [])].some(
-      (marker) => marker.x === position.x && marker.y === position.y,
-    )
+    [
+      ...(map.markers?.playerStarts ?? []),
+      ...(map.markers?.enemySpawns ?? []),
+      ...(map.markers?.horseSpawns ?? []),
+    ].some((marker) => marker.x === position.x && marker.y === position.y)
   ) {
     layers.add('characters')
   }
@@ -242,10 +244,11 @@ export default function useEditorTools({
   const selectedNpc = (map.npcs ?? []).find((npc) => npc.id === selectedNpcId) ?? null
   const markerInspected = useMemo(() => {
     if (!selectedMarker) return null
-    const list = map.markers[selectedMarker.kind]
+    const list = map.markers[selectedMarker.kind] ?? []
     const index = list.findIndex((marker) => marker.x === selectedMarker.x && marker.y === selectedMarker.y)
     if (index < 0) return null
-    return { ...list[index], kind: selectedMarker.kind, label: `${selectedMarker.kind === 'playerStarts' ? 'P' : 'E'}${index + 1}` }
+    const prefix = selectedMarker.kind === 'playerStarts' ? 'P' : selectedMarker.kind === 'enemySpawns' ? 'E' : 'H'
+    return { ...list[index], kind: selectedMarker.kind, label: `${prefix}${index + 1}` }
   }, [map, selectedMarker])
   const objectDefinitions = useMemo(() => challengeDefinitionsFor(map), [map])
   const selectedObject = objectDefinitions.find((definition) => definition.id === selectedObjectId) ?? null
@@ -500,7 +503,7 @@ export default function useEditorTools({
   const applyCandidate = (candidate, position) => {
     setSelectedNpcId(candidate?.kind === 'npc' ? candidate.npc.id : null)
     setSelectedMarker(
-      candidate?.kind === 'playerStarts' || candidate?.kind === 'enemySpawns'
+      candidate?.kind === 'playerStarts' || candidate?.kind === 'enemySpawns' || candidate?.kind === 'horseSpawns'
         ? { kind: candidate.kind, x: position.x, y: position.y }
         : null,
     )
@@ -554,7 +557,7 @@ export default function useEditorTools({
       if (candidate.kind === 'hazard') return candidate.hazard.id === selectedHazardId
       if (candidate.kind === 'groundItem') return candidate.groundItem.id === selectedGroundItemId
       if (candidate.kind === 'templatePiece') return candidate.templatePiece.id === selectedTemplatePieceId
-      if (candidate.kind === 'playerStarts' || candidate.kind === 'enemySpawns') {
+      if (candidate.kind === 'playerStarts' || candidate.kind === 'enemySpawns' || candidate.kind === 'horseSpawns') {
         return selectedMarker?.kind === candidate.kind && selectedMarker.x === position.x && selectedMarker.y === position.y
       }
       return false
@@ -868,7 +871,7 @@ export default function useEditorTools({
         placeholder: 'e.g. Tool Shed',
         removeLabel: current ? 'Remove' : null,
       }).then((name) => name !== null && edit(setAreaLabel(map, position, name)))
-    } else if (tool === 'playerStarts' || tool === 'enemySpawns') {
+    } else if (tool === 'playerStarts' || tool === 'enemySpawns' || tool === 'horseSpawns') {
       if (!layerAllowsTool('characters')) return setStatus('NPCs / Characters layer is locked or hidden.')
       const list = map.markers[tool] ?? []
       const exists = list.some((marker) => marker.x === position.x && marker.y === position.y)

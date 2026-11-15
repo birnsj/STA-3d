@@ -26,6 +26,10 @@ import {
   resolveAutoPaintRuleset,
   weightedIds,
 } from '../maps/autoPaint/rulesets.js'
+import {
+  OUTDOOR_WALL_FACE_OPTIONS,
+  rulesetUsesSettlementLayout,
+} from '../maps/autoPaint/settlementLayout.js'
 import { pieceIdForAutoPaintTile, resolveAutoPaintTileId } from '../maps/autoPaint/templatePalette.js'
 import { normalizeWeightedEntries } from '../maps/autoPaint/weightedChoice.js'
 import { getTemplatePiece } from '../maps/templatePieces.js'
@@ -90,6 +94,14 @@ const DOOR_TILE_FIELD = {
   key: 'underlayTile',
   label: 'Doorway tile',
   tip: 'Art lining openings (often Doorway 32). Several allowed with mix %.',
+  filter: (tile) => !tile.empty,
+}
+
+const SETTLEMENT_GROUND_FIELD = {
+  filter: (tile) => !tile.wall && !tile.solid && !tile.empty,
+}
+
+const SETTLEMENT_CROP_FIELD = {
   filter: (tile) => !tile.empty,
 }
 
@@ -332,6 +344,11 @@ export default function AutoPaintRulesetEditorScreen({
     )
   const patchAdjacency = (adjacency) =>
     setDraft((current) => resolveAutoPaintRuleset({ ...current, adjacency }))
+  const patchSettlement = (partial) =>
+    setDraft((current) => {
+      const base = current.settlement && typeof current.settlement === 'object' ? current.settlement : {}
+      return resolveAutoPaintRuleset({ ...current, settlement: { ...base, ...partial } })
+    })
 
   const revert = () => {
     setDraft(cloneRuleset(saved))
@@ -879,10 +896,161 @@ export default function AutoPaintRulesetEditorScreen({
                 />
               </PropertySection>
 
+              {rulesetUsesSettlementLayout(draft) && (
+                <PropertySection
+                  id="wg-settlement"
+                  title="Settlement"
+                  tip="Outdoor Template 32 layout: ground tiles, building wall faces, interiors, and fenced fields. Save the ruleset, then Generate Map."
+                  defaultOpen
+                >
+                  <p className="ge-block-hint">
+                    Grass comes from Floors → Default floor. Buildings cycle the wall faces below; each face has its own
+                    Outdoor Template 32 kit. Drag tiles from the Palette into a slot; right-click to clear.
+                  </p>
+                  <TileSpritePicker
+                    label="Dirt / yard"
+                    labelTip="Yard fill around buildings (usually ground)."
+                    options={tileOptions(SETTLEMENT_GROUND_FIELD, draft.settlement?.dirt)}
+                    value={draft.settlement?.dirt || 'ground'}
+                    emptyText={emptyHint}
+                    resolveDropId={resolveDropToRole}
+                    acceptId={roleIdAllowed}
+                    titleForTile={roleThumbTitle}
+                    onChange={(id) => patchSettlement({ dirt: id || 'ground' })}
+                  />
+                  <TileSpritePicker
+                    label="Path / edging"
+                    labelTip="Main path and dirt/grass edge strip."
+                    options={tileOptions(SETTLEMENT_GROUND_FIELD, draft.settlement?.path)}
+                    value={draft.settlement?.path || 'path'}
+                    emptyText={emptyHint}
+                    resolveDropId={resolveDropToRole}
+                    acceptId={roleIdAllowed}
+                    titleForTile={roleThumbTitle}
+                    onChange={(id) => patchSettlement({ path: id || 'path' })}
+                  />
+                  <TileSpritePicker
+                    label="Interior wood floor"
+                    labelTip="Floor inside prefab / barn / timber buildings."
+                    options={tileOptions(SETTLEMENT_GROUND_FIELD, draft.settlement?.interiorWood)}
+                    value={draft.settlement?.interiorWood || 'plankFloor'}
+                    emptyText={emptyHint}
+                    resolveDropId={resolveDropToRole}
+                    acceptId={roleIdAllowed}
+                    titleForTile={roleThumbTitle}
+                    onChange={(id) => patchSettlement({ interiorWood: id || 'plankFloor' })}
+                  />
+                  <TileSpritePicker
+                    label="Interior stone floor"
+                    labelTip="Floor inside city / stone / ruin buildings."
+                    options={tileOptions(SETTLEMENT_GROUND_FIELD, draft.settlement?.interiorStone)}
+                    value={draft.settlement?.interiorStone || 'templeFloor'}
+                    emptyText={emptyHint}
+                    resolveDropId={resolveDropToRole}
+                    acceptId={roleIdAllowed}
+                    titleForTile={roleThumbTitle}
+                    onChange={(id) => patchSettlement({ interiorStone: id || 'templeFloor' })}
+                  />
+                  <div className="me-field" title="Which Outdoor Template 32 wall kits buildings cycle through">
+                    <span className="ce-field-label">Building faces</span>
+                    <div className="ap-settlement-faces">
+                      {OUTDOOR_WALL_FACE_OPTIONS.map((face) => {
+                        const selected = (draft.settlement?.buildingFaces ?? []).includes(face.id)
+                        return (
+                          <label key={face.id} className="me-check" title={`${face.label} wall kit`}>
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => {
+                                const current = draft.settlement?.buildingFaces ?? []
+                                const next = selected
+                                  ? current.filter((id) => id !== face.id)
+                                  : [...current, face.id]
+                                if (!next.length) return
+                                patchSettlement({ buildingFaces: next })
+                              }}
+                            />
+                            {face.label}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <label
+                    className="me-check"
+                    title="Place fenced crop fields on open grass"
+                    style={{ marginBottom: 6 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={draft.settlement?.fields !== false}
+                      onChange={(event) => patchSettlement({ fields: event.target.checked })}
+                    />
+                    Fenced crop fields
+                  </label>
+                  {draft.settlement?.fields !== false && (
+                    <>
+                      <label
+                        className="me-field"
+                        title="How many fenced fields to attempt (1–6)"
+                      >
+                        <span className="ce-field-label">Max fields</span>
+                        <input
+                          className="me-name"
+                          type="number"
+                          min={1}
+                          max={6}
+                          step={1}
+                          value={draft.settlement?.maxFields ?? 3}
+                          onChange={(event) =>
+                            patchSettlement({
+                              maxFields: Math.max(1, Math.min(6, Number(event.target.value) || 1)),
+                            })
+                          }
+                        />
+                      </label>
+                      <TileSpritePicker
+                        label="Crop"
+                        labelTip="Low crop rows inside fields."
+                        options={tileOptions(SETTLEMENT_CROP_FIELD, draft.settlement?.crop)}
+                        value={draft.settlement?.crop || 'cropRows'}
+                        emptyText={emptyHint}
+                        resolveDropId={resolveDropToRole}
+                        acceptId={roleIdAllowed}
+                        titleForTile={roleThumbTitle}
+                        onChange={(id) => patchSettlement({ crop: id || 'cropRows' })}
+                      />
+                      <TileSpritePicker
+                        label="Tall crop"
+                        labelTip="Taller crop accent inside fields."
+                        options={tileOptions(SETTLEMENT_CROP_FIELD, draft.settlement?.tallCrop)}
+                        value={draft.settlement?.tallCrop || 'tallCrop'}
+                        emptyText={emptyHint}
+                        resolveDropId={resolveDropToRole}
+                        acceptId={roleIdAllowed}
+                        titleForTile={roleThumbTitle}
+                        onChange={(id) => patchSettlement({ tallCrop: id || 'tallCrop' })}
+                      />
+                      <TileSpritePicker
+                        label="Fence (legacy tile)"
+                        labelTip="Kept for ruleset data; Generate Map packs the Outdoor Fence Template Piece kit around fields."
+                        options={tileOptions(SETTLEMENT_CROP_FIELD, draft.settlement?.fence)}
+                        value={draft.settlement?.fence || 'fence'}
+                        emptyText={emptyHint}
+                        resolveDropId={resolveDropToRole}
+                        acceptId={roleIdAllowed}
+                        titleForTile={roleThumbTitle}
+                        onChange={(id) => patchSettlement({ fence: id || 'fence' })}
+                      />
+                    </>
+                  )}
+                </PropertySection>
+              )}
+
               <PropertySection
                 id="wg-floors"
                 title="1. Floors"
-                tip="Required. These pieces define walkable floor cells that wall generation grows around."
+                tip="Required. Outdoor: grass / default ground. These pieces define walkable floor cells that wall generation grows around."
                 defaultOpen
               >
                 <p className="ge-block-hint">
@@ -922,8 +1090,12 @@ export default function AutoPaintRulesetEditorScreen({
               <PropertySection
                 id="wg-walls"
                 title="2. Walls / Structure"
-                tip="Straight + Corner are required. Optional Long / Hull / Door frame; empty optional roles fall back to Straight / Corner."
-                defaultOpen
+                tip={
+                  rulesetUsesSettlementLayout(draft)
+                    ? 'Outdoor settlement packs walls from Building faces in Settlement (not these slots). Straight/Corner remain for Auto-Paint rebuild fallback.'
+                    : 'Straight + Corner are required. Optional Long / Hull / Door frame; empty optional roles fall back to Straight / Corner.'
+                }
+                defaultOpen={!rulesetUsesSettlementLayout(draft)}
               >
                 <p className="ge-block-hint">
                   Drop Template Pieces or tiles into each role (multiple allowed). Mix % is relative among pieces in

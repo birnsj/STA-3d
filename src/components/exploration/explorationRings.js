@@ -7,7 +7,9 @@ import { dispositionName, isDown, STATE, stateName } from '../../exploration/awa
 import { challengeFor } from '../../exploration/challengeObjects.js'
 import { previewObjectShot } from '../../exploration/explorationEnvironment.js'
 import { canScan, canScanNpc, scanRadius } from '../../exploration/partyScan.js'
+import { canDismountHorse, canMountHorse, horseById, isMounted } from '../../exploration/mount.js'
 import { challengeScanner, destructibleScanner, destructibleShooter, groundItemScanner, npcButtonPerformer, ringPartyView } from '../../exploration/ringParty.js'
+import { canAct } from '../../exploration/partyControl.js'
 import { getEquippedItems } from '../../rules/equipment.js'
 import { bagFreeSlots, resolveItem } from '../../rules/inventory.js'
 import { groundItemFor } from '../../world/GroundItem.js'
@@ -354,6 +356,66 @@ export function groundItemMenuButtons(state, instanceId, actions, pickedId = nul
       enabled: true,
       title: `Walk to the ${name}.`,
       onClick: actions.goTo,
+    },
+  ]
+}
+
+// A horse's radial menu (left-click): Ride, Dismount, Attack. Ride walks over when out of range (like Talk).
+// Attack is a prototype remove (not STA combat). actions: { ride, dismount, attack }.
+export function horseMenuButtons(state, horseId, actions) {
+  const horse = horseById(state, horseId)
+  if (!horse) return []
+  const memberId = state.party.leaderId
+  const member = state.party.members[memberId]
+  const up = Boolean(member && canAct(member))
+  const riddenByLead = horse.riderId === memberId
+  const free = !horse.riderId
+  const inRange = canMountHorse(state, memberId, horseId)
+  const canRide = up && free && !isMounted(state, memberId)
+  const canGetOff = up && canDismountHorse(state, memberId, horseId)
+  const rideTitle = !up
+    ? 'Ride: the lead cannot act.'
+    : !free
+      ? riddenByLead
+        ? 'Ride: already mounted.'
+        : 'Ride: someone else is on this horse.'
+      : isMounted(state, memberId)
+        ? 'Ride: dismount first.'
+        : inRange
+          ? 'Ride: climb onto the horse.'
+          : 'Walk over and climb onto the horse.'
+  const dismountTitle = !up
+    ? 'Dismount: the lead cannot act.'
+    : canGetOff
+      ? 'Dismount: climb off beside the horse.'
+      : 'Dismount: the lead is not riding this horse.'
+  const attackTitle = !up
+    ? 'Attack: the lead cannot act.'
+    : 'Attack: shoot or scare the horse off (prototype — removes it).'
+  return [
+    {
+      id: 'ride',
+      label: 'Ride',
+      icon: 'interact',
+      enabled: canRide,
+      title: rideTitle,
+      onClick: actions.ride,
+    },
+    {
+      id: 'dismount',
+      label: 'Dismount',
+      icon: 'switch',
+      enabled: canGetOff,
+      title: dismountTitle,
+      onClick: actions.dismount,
+    },
+    {
+      id: 'attack',
+      label: 'Attack',
+      icon: 'attack',
+      enabled: up,
+      title: attackTitle,
+      onClick: actions.attack,
     },
   ]
 }

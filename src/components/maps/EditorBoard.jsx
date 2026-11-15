@@ -335,7 +335,15 @@ export default function EditorBoard({
   const isSelected = (kind, position) => selectedMarker?.kind === kind && selectedMarker.x === position.x && selectedMarker.y === position.y
   const doomed = (position) => erasing && hover?.x === position.x && hover?.y === position.y
   const erasesSomething =
-    erasing && hover && [...map.markers.playerStarts, ...map.markers.enemySpawns, ...map.areas.map((area) => area.position), ...(map.npcs ?? []).map((npc) => npc.position)].some(doomed)
+    erasing &&
+    hover &&
+    [
+      ...map.markers.playerStarts,
+      ...map.markers.enemySpawns,
+      ...(map.markers.horseSpawns ?? []),
+      ...map.areas.map((area) => area.position),
+      ...(map.npcs ?? []).map((npc) => npc.position),
+    ].some(doomed)
 
   // What the scene draws over the map: the room labels, then the markers.
   const labels = layerShown('markers')
@@ -373,6 +381,17 @@ export default function EditorBoard({
           label: `E${index + 1}`,
           facing: spawnFacingAt(spawn),
           selected: isSelected('enemySpawns', spawn),
+          doomed: doomed(spawn),
+        }))
+      : []),
+    ...(layerShown('characters')
+      ? (map.markers.horseSpawns ?? []).map((spawn, index) => ({
+          id: `h${spawn.x},${spawn.y}`,
+          position: spawn,
+          kind: 'horse',
+          label: `H${index + 1}`,
+          facing: spawnFacingAt(spawn),
+          selected: isSelected('horseSpawns', spawn),
           doomed: doomed(spawn),
         }))
       : []),

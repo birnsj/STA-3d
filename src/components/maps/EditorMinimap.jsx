@@ -48,6 +48,9 @@ export default function EditorMinimap({ map }) {
         {map.markers.playerStarts.map((position, index) => (
           <Marker key={`p${position.x},${position.y}`} position={position} kind="player" label={`P${index + 1}`} />
         ))}
+        {(map.markers.horseSpawns ?? []).map((position, index) => (
+          <Marker key={`h${position.x},${position.y}`} position={position} kind="horse" label={`H${index + 1}`} />
+        ))}
       </svg>
     </section>
   )

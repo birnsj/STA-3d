@@ -35,6 +35,7 @@ export {
   OUTDOOR_FENCE_KIT,
   OUTDOOR_FENCE_PIECE,
   OUTDOOR_SETTLEMENT_FACES,
+  OUTDOOR_WALL_FACE_OPTIONS,
   OUTDOOR_WALL_FACE_PIECES,
   rulesetUsesSettlementLayout,
 } from './settlementLayout.js'

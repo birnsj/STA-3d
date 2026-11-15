@@ -274,8 +274,8 @@ function tick(state, rawSeconds) {
   if (!seconds || !current.some((member) => member.order || member.moving || member.pace)) return state
   const followTargets = getFollowTargets(state)
   const steered = current.map((member) => {
-    // Defeated / beaming / arriving: never steer — a leftover order must not slide a body across the floor.
-    if (!member.order || !canAct(member) || member.blastReact) {
+    // Defeated / beaming / arriving / climb-on-off: never steer — a leftover order must not slide a body across the floor.
+    if (!member.order || !canAct(member) || member.blastReact || member.rideAnim) {
       return { member, velocity: { x: 0, y: 0 }, direction: null }
     }
     return controllerFor(member).exploreTick(member, { party: state, seconds, followTarget: followTargets[member.id], others: current })
@@ -285,8 +285,8 @@ function tick(state, rawSeconds) {
   let changed = false
   let members = {}
   steered.forEach(({ member, velocity, direction, run }, i) => {
-    // Blast fall / getUp, or Defeated / beaming: stay planted — no walk, separation shove, or leftover pace slide.
-    if (member.blastReact || !canAct(member)) {
+    // Blast fall / getUp, climb-on/off, or Defeated / beaming: stay planted — no walk or leftover pace slide.
+    if (member.blastReact || member.rideAnim || !canAct(member)) {
       const planted = plantMember(member)
       if (planted !== member) changed = true
       members[member.id] = planted

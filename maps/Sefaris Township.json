@@ -1,0 +1,3136 @@
+{
+  "schemaVersion": 2,
+  "name": "Sefaris Township",
+  "episodeName": "Voices in the Nebula",
+  "card": "/art/episodes/Sefaris%20Township.png?v=1794710615822",
+  "mapType": "colony",
+  "biome": "temperate",
+  "weather": "storm",
+  "ambient": 100,
+  "ambientColour": "#02040a",
+  "rows": [
+    "gTggggggggggTgTggTgggggggTgggggggg",
+    "rggggggTgrrgTggTgrrrgTggggTTTggTTg",
+    "rgÀÀÀÀggggggggggggrrggggTTggggggTg",
+    "ggÁÁÁÁggggggggTgg=================",
+    "TgÀÀÀÀggggggggggr=,,,,,,,,,,,,,,,,",
+    "ggggggg===========,ŻŻŻŻŻŻŻŻŻŻŻŻŻ,,",
+    "T=,,,,,,,,,,,,,,,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "g=,ŻŻŻŻŻŻŻŻŻŻŻŻŻ,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "T=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "g=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "T=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "g=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "g=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "g=,ŻŻŻŻŻŻŻŻŻŻŻŻŻ,=,ŻÞÞÞÞÞÞŻÞÞÞÞŻ,,",
+    "g=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=,ŻŻŻŻŻŻŻÞÞŻŻŻŻ,,",
+    "g=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=,,,,,,,,=g,,,,,,",
+    "g=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=========,=======",
+    "g=,ŻÞÞÞÞŻÞÞÞÞÞÞŻ,=gggggggg=ggggggg",
+    "g=,ŻŻŻŻŻŻÞÞŻŻŻŻŻ,=gggggggg=Tgggggg",
+    "g=,,,,,,,=g,,,,,,=ggggggTg=gTgggTg",
+    "=,,,,,,,,,=,,,,,,,================",
+    "========,,,,,=,,,,,,,,,===========",
+    "gTgggggg=,,,=g,,,,,,,,=ggggggggggg",
+    "gggTgggg=,ŻŻØØŻŻŻŻŻŻŻ,=ggggggggTgg",
+    "gTgggggg=,ŻØØØØŻØØØØŻ,=gggggrrgTrg",
+    "gggggggT=,ŻØØØØŻØØØØŻ,=ggTgggggggg",
+    "gggggggg=,ŻØØØØŻØØØØŻ,=gggggggrggg",
+    "ggggÀÀÀg=,ŻØØØØŻØØØØŻ,=ggÀÀÀÀggTgg",
+    "gTggÁÁÁg=,ŻØØØØŻØØØØŻ,=ggÁÁÁÁgTTgg",
+    "rrggÀÀÀg=,ŻØØØØŻØØØØŻ,=ggÀÀÀÀggggT",
+    "grrgÁÁÁg=,ŻØØØØŻØØØØŻ,=ggÁÁÁÁggggg",
+    "gggggggg=,ŻØØØØŻØØØØŻ,=ggggggggrrg",
+    "ggggTggT=,ŻŻŻŻŻŻŻŻŻŻŻ,=ggggggTgggg",
+    "gggggggg=,,,,,,,,,,,,,=ggggggTgggg"
+  ],
+  "rotated": [],
+  "floorUnder": {
+    "19,5": "ground",
+    "20,5": "ground",
+    "21,5": "ground",
+    "22,5": "ground",
+    "23,5": "ground",
+    "24,5": "ground",
+    "25,5": "ground",
+    "26,5": "ground",
+    "27,5": "ground",
+    "28,5": "ground",
+    "29,5": "ground",
+    "30,5": "ground",
+    "31,5": "ground",
+    "19,6": "ground",
+    "31,6": "ground",
+    "19,7": "ground",
+    "31,7": "ground",
+    "19,8": "ground",
+    "31,8": "ground",
+    "19,9": "ground",
+    "31,9": "ground",
+    "19,10": "ground",
+    "31,10": "ground",
+    "19,11": "ground",
+    "31,11": "ground",
+    "19,12": "ground",
+    "31,12": "ground",
+    "19,13": "ground",
+    "31,13": "ground",
+    "19,14": "ground",
+    "20,14": "ground",
+    "21,14": "ground",
+    "22,14": "ground",
+    "23,14": "ground",
+    "24,14": "ground",
+    "25,14": "ground",
+    "28,14": "ground",
+    "29,14": "ground",
+    "30,14": "ground",
+    "31,14": "ground",
+    "26,6": "ground",
+    "26,7": "ground",
+    "26,8": "ground",
+    "26,9": "ground",
+    "26,10": "ground",
+    "26,11": "ground",
+    "26,12": "ground",
+    "26,13": "ground",
+    "10,23": "ground",
+    "11,23": "ground",
+    "14,23": "ground",
+    "15,23": "ground",
+    "16,23": "ground",
+    "17,23": "ground",
+    "18,23": "ground",
+    "19,23": "ground",
+    "20,23": "ground",
+    "10,24": "ground",
+    "20,24": "ground",
+    "10,25": "ground",
+    "20,25": "ground",
+    "10,26": "ground",
+    "20,26": "ground",
+    "10,27": "ground",
+    "20,27": "ground",
+    "10,28": "ground",
+    "20,28": "ground",
+    "10,29": "ground",
+    "20,29": "ground",
+    "10,30": "ground",
+    "20,30": "ground",
+    "10,31": "ground",
+    "20,31": "ground",
+    "10,32": "ground",
+    "11,32": "ground",
+    "12,32": "ground",
+    "13,32": "ground",
+    "14,32": "ground",
+    "15,32": "ground",
+    "16,32": "ground",
+    "17,32": "ground",
+    "18,32": "ground",
+    "19,32": "ground",
+    "20,32": "ground",
+    "15,24": "ground",
+    "15,25": "ground",
+    "15,26": "ground",
+    "15,27": "ground",
+    "15,28": "ground",
+    "15,29": "ground",
+    "15,30": "ground",
+    "15,31": "ground",
+    "3,7": "ground",
+    "4,7": "ground",
+    "5,7": "ground",
+    "6,7": "ground",
+    "7,7": "ground",
+    "8,7": "ground",
+    "9,7": "ground",
+    "10,7": "ground",
+    "11,7": "ground",
+    "12,7": "ground",
+    "13,7": "ground",
+    "14,7": "ground",
+    "15,7": "ground",
+    "3,8": "ground",
+    "15,8": "ground",
+    "3,9": "ground",
+    "15,9": "ground",
+    "3,10": "ground",
+    "15,10": "ground",
+    "3,11": "ground",
+    "15,11": "ground",
+    "3,12": "ground",
+    "15,12": "ground",
+    "3,13": "ground",
+    "15,13": "ground",
+    "3,14": "ground",
+    "15,14": "ground",
+    "3,15": "ground",
+    "15,15": "ground",
+    "3,16": "ground",
+    "15,16": "ground",
+    "3,17": "ground",
+    "15,17": "ground",
+    "3,18": "ground",
+    "4,18": "ground",
+    "5,18": "ground",
+    "6,18": "ground",
+    "7,18": "ground",
+    "8,18": "ground",
+    "11,18": "ground",
+    "12,18": "ground",
+    "13,18": "ground",
+    "14,18": "ground",
+    "15,18": "ground",
+    "8,8": "ground",
+    "8,9": "ground",
+    "8,10": "ground",
+    "8,11": "ground",
+    "8,12": "ground",
+    "8,13": "ground",
+    "8,14": "ground",
+    "8,15": "ground",
+    "8,16": "ground",
+    "8,17": "ground",
+    "4,13": "ground",
+    "5,13": "ground",
+    "6,13": "ground",
+    "7,13": "ground",
+    "9,13": "ground",
+    "10,13": "ground",
+    "11,13": "ground",
+    "12,13": "ground",
+    "13,13": "ground",
+    "14,13": "ground"
+  },
+  "areas": [
+    {
+      "name": "Building 1 · Room 1",
+      "position": [
+        20,
+        6
+      ]
+    },
+    {
+      "name": "Building 1 · Room 2",
+      "position": [
+        27,
+        6
+      ]
+    },
+    {
+      "name": "Building 2 · Room 1",
+      "position": [
+        11,
+        24
+      ]
+    },
+    {
+      "name": "Building 2 · Room 2",
+      "position": [
+        16,
+        24
+      ]
+    },
+    {
+      "name": "Building 3 · Room 1",
+      "position": [
+        4,
+        8
+      ]
+    },
+    {
+      "name": "Building 3 · Room 2",
+      "position": [
+        9,
+        8
+      ]
+    },
+    {
+      "name": "Building 3 · Room 3",
+      "position": [
+        4,
+        14
+      ]
+    },
+    {
+      "name": "Building 3 · Room 4",
+      "position": [
+        9,
+        14
+      ]
+    },
+    {
+      "name": "Field 1",
+      "position": [
+        3,
+        3
+      ]
+    },
+    {
+      "name": "Field 2",
+      "position": [
+        26,
+        28
+      ]
+    },
+    {
+      "name": "Field 3",
+      "position": [
+        5,
+        28
+      ]
+    }
+  ],
+  "markers": {
+    "playerStarts": [
+      [
+        33,
+        2
+      ],
+      [
+        33,
+        1
+      ],
+      [
+        33,
+        3
+      ],
+      [
+        33,
+        4
+      ]
+    ],
+    "enemySpawns": [
+      [
+        0,
+        30
+      ],
+      [
+        0,
+        32
+      ],
+      [
+        0,
+        22
+      ],
+      [
+        0,
+        33
+      ]
+    ],
+    "horseSpawns": [
+      [
+        30,
+        2,
+        180
+      ]
+    ]
+  },
+  "templatePiecePlacements": [
+    {
+      "id": "tplOutdoorPrefabWall32Corner-1",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        26.5,
+        15
+      ],
+      "rotation": 180,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipDoorway32-1",
+      "pieceId": "tplStarshipDoorway32",
+      "position": [
+        27,
+        15
+      ],
+      "order": 1,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipDoorway32-2",
+      "pieceId": "tplStarshipDoorway32",
+      "position": [
+        27.5,
+        15
+      ],
+      "order": 2,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-2",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        28,
+        15
+      ],
+      "rotation": 90,
+      "order": 3,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-3",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        20,
+        6
+      ],
+      "rotation": 90,
+      "order": 4,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-4",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        27,
+        6
+      ],
+      "order": 5,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-5",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        32,
+        6
+      ],
+      "rotation": 180,
+      "order": 6,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-6",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        20,
+        15
+      ],
+      "order": 7,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-7",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        32,
+        15
+      ],
+      "rotation": 270,
+      "order": 8,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-1",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        26.5,
+        6
+      ],
+      "rotation": 180,
+      "order": 9,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-2",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        31.5,
+        6
+      ],
+      "rotation": 180,
+      "order": 10,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-3",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        20,
+        14.5
+      ],
+      "rotation": 270,
+      "order": 11,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-4",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        31.5,
+        15
+      ],
+      "order": 12,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-5",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        32,
+        14.5
+      ],
+      "rotation": 90,
+      "order": 13,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-1",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        22,
+        6
+      ],
+      "rotation": 180,
+      "order": 14,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-2",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        24,
+        6
+      ],
+      "rotation": 180,
+      "order": 15,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-6",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        25,
+        6
+      ],
+      "rotation": 180,
+      "order": 16,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-8",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        25.5,
+        6
+      ],
+      "order": 17,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-3",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        29,
+        6
+      ],
+      "rotation": 180,
+      "order": 18,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-7",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        30,
+        6
+      ],
+      "rotation": 180,
+      "order": 19,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-9",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        30.5,
+        6
+      ],
+      "order": 20,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-4",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        20,
+        8
+      ],
+      "rotation": 270,
+      "order": 21,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-5",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        20,
+        10
+      ],
+      "rotation": 270,
+      "order": 22,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-6",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        20,
+        12
+      ],
+      "rotation": 270,
+      "order": 23,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-8",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        20,
+        13
+      ],
+      "rotation": 270,
+      "order": 24,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-10",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        20,
+        13.5
+      ],
+      "rotation": 180,
+      "order": 25,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-7",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        27,
+        8
+      ],
+      "rotation": 270,
+      "order": 26,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-8",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        27,
+        10
+      ],
+      "rotation": 270,
+      "order": 27,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-9",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        27,
+        12
+      ],
+      "rotation": 270,
+      "order": 28,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-10",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        27,
+        14
+      ],
+      "rotation": 270,
+      "order": 29,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-11",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        32,
+        8
+      ],
+      "rotation": 270,
+      "order": 30,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-12",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        32,
+        10
+      ],
+      "rotation": 270,
+      "order": 31,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-13",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        32,
+        12
+      ],
+      "rotation": 270,
+      "order": 32,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-9",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        32,
+        13
+      ],
+      "rotation": 270,
+      "order": 33,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Corner-11",
+      "pieceId": "tplOutdoorPrefabWall32Corner",
+      "position": [
+        32,
+        13.5
+      ],
+      "rotation": 180,
+      "order": 34,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-14",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        22,
+        15
+      ],
+      "rotation": 180,
+      "order": 35,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-15",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        24,
+        15
+      ],
+      "rotation": 180,
+      "order": 36,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32Long-16",
+      "pieceId": "tplOutdoorPrefabWall32Long",
+      "position": [
+        26,
+        15
+      ],
+      "rotation": 180,
+      "order": 37,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-10",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        29,
+        15
+      ],
+      "rotation": 180,
+      "order": 38,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-11",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        30,
+        15
+      ],
+      "rotation": 180,
+      "order": 39,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorPrefabWall32-12",
+      "pieceId": "tplOutdoorPrefabWall32",
+      "position": [
+        30.5,
+        15
+      ],
+      "rotation": 180,
+      "order": 40,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-1",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        12.5,
+        24
+      ],
+      "rotation": 270,
+      "order": 41,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipDoorway32-3",
+      "pieceId": "tplStarshipDoorway32",
+      "position": [
+        13,
+        24
+      ],
+      "rotation": 180,
+      "order": 42,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipDoorway32-4",
+      "pieceId": "tplStarshipDoorway32",
+      "position": [
+        13.5,
+        24
+      ],
+      "rotation": 180,
+      "order": 43,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-2",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        14,
+        24
+      ],
+      "order": 44,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-3",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        11,
+        24
+      ],
+      "rotation": 90,
+      "order": 45,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-4",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        16,
+        24
+      ],
+      "order": 46,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-5",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        21,
+        24
+      ],
+      "rotation": 180,
+      "order": 47,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-6",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        11,
+        33
+      ],
+      "order": 48,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-7",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        16,
+        33
+      ],
+      "rotation": 180,
+      "order": 49,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-8",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        21,
+        33
+      ],
+      "rotation": 270,
+      "order": 50,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-1",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        15.5,
+        24
+      ],
+      "rotation": 180,
+      "order": 51,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-2",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        20.5,
+        24
+      ],
+      "rotation": 180,
+      "order": 52,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-3",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        11,
+        32.5
+      ],
+      "rotation": 270,
+      "order": 53,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-4",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        15.5,
+        33
+      ],
+      "order": 54,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-5",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        16,
+        32.5
+      ],
+      "rotation": 270,
+      "order": 55,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-6",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        20.5,
+        33
+      ],
+      "order": 56,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-7",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        21,
+        32.5
+      ],
+      "rotation": 90,
+      "order": 57,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-8",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        12,
+        24
+      ],
+      "rotation": 180,
+      "order": 58,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-9",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        14.5,
+        24
+      ],
+      "rotation": 180,
+      "order": 59,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-1",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        18,
+        24
+      ],
+      "rotation": 180,
+      "order": 60,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-10",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        19,
+        24
+      ],
+      "rotation": 180,
+      "order": 61,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-9",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        19.5,
+        24
+      ],
+      "order": 62,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-2",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        11,
+        26
+      ],
+      "rotation": 270,
+      "order": 63,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-3",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        11,
+        28
+      ],
+      "rotation": 270,
+      "order": 64,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-4",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        11,
+        30
+      ],
+      "rotation": 270,
+      "order": 65,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-11",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        11,
+        31
+      ],
+      "rotation": 270,
+      "order": 66,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-10",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        11,
+        31.5
+      ],
+      "rotation": 180,
+      "order": 67,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-5",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        16,
+        26
+      ],
+      "rotation": 270,
+      "order": 68,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-6",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        16,
+        28
+      ],
+      "rotation": 270,
+      "order": 69,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-7",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        16,
+        30
+      ],
+      "rotation": 270,
+      "order": 70,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-12",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        16,
+        31
+      ],
+      "rotation": 270,
+      "order": 71,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-11",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        16,
+        31.5
+      ],
+      "rotation": 180,
+      "order": 72,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-8",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        21,
+        26
+      ],
+      "rotation": 270,
+      "order": 73,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-9",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        21,
+        28
+      ],
+      "rotation": 270,
+      "order": 74,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-10",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        21,
+        30
+      ],
+      "rotation": 270,
+      "order": 75,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-13",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        21,
+        31
+      ],
+      "rotation": 270,
+      "order": 76,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-12",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        21,
+        31.5
+      ],
+      "rotation": 180,
+      "order": 77,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-11",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        13,
+        33
+      ],
+      "rotation": 180,
+      "order": 78,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-14",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        14,
+        33
+      ],
+      "rotation": 180,
+      "order": 79,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-13",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        14.5,
+        33
+      ],
+      "order": 80,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Long-12",
+      "pieceId": "tplOutdoorBarnWall32Long",
+      "position": [
+        18,
+        33
+      ],
+      "rotation": 180,
+      "order": 81,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32-15",
+      "pieceId": "tplOutdoorBarnWall32",
+      "position": [
+        19,
+        33
+      ],
+      "rotation": 180,
+      "order": 82,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorBarnWall32Corner-14",
+      "pieceId": "tplOutdoorBarnWall32Corner",
+      "position": [
+        19.5,
+        33
+      ],
+      "order": 83,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-1",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        9.5,
+        19
+      ],
+      "rotation": 270,
+      "order": 84,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipDoorway32-5",
+      "pieceId": "tplStarshipDoorway32",
+      "position": [
+        10,
+        19
+      ],
+      "rotation": 180,
+      "order": 85,
+      "autoPaint": true
+    },
+    {
+      "id": "tplStarshipDoorway32-6",
+      "pieceId": "tplStarshipDoorway32",
+      "position": [
+        10.5,
+        19
+      ],
+      "rotation": 180,
+      "order": 86,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-2",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        11,
+        19
+      ],
+      "order": 87,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-3",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        4,
+        8
+      ],
+      "rotation": 90,
+      "order": 88,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-4",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        9,
+        8
+      ],
+      "order": 89,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-5",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        16,
+        8
+      ],
+      "rotation": 180,
+      "order": 90,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-6",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        4,
+        14
+      ],
+      "rotation": 270,
+      "order": 91,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-7",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        9,
+        14
+      ],
+      "order": 92,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-8",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        16,
+        14
+      ],
+      "rotation": 90,
+      "order": 93,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-9",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        4,
+        19
+      ],
+      "order": 94,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-10",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        9,
+        19
+      ],
+      "rotation": 270,
+      "order": 95,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-11",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        16,
+        19
+      ],
+      "rotation": 270,
+      "order": 96,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-1",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        8.5,
+        8
+      ],
+      "rotation": 180,
+      "order": 97,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-2",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        15.5,
+        8
+      ],
+      "rotation": 180,
+      "order": 98,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-3",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        4,
+        13.5
+      ],
+      "rotation": 270,
+      "order": 99,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-4",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        8.5,
+        14
+      ],
+      "rotation": 180,
+      "order": 100,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-5",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        9,
+        13.5
+      ],
+      "rotation": 270,
+      "order": 101,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-6",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        15.5,
+        14
+      ],
+      "rotation": 180,
+      "order": 102,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-7",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        16,
+        13.5
+      ],
+      "rotation": 90,
+      "order": 103,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-8",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        4,
+        18.5
+      ],
+      "rotation": 270,
+      "order": 104,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-9",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        8.5,
+        19
+      ],
+      "order": 105,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-10",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        9,
+        18.5
+      ],
+      "rotation": 90,
+      "order": 106,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-11",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        15.5,
+        19
+      ],
+      "order": 107,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-12",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        16,
+        18.5
+      ],
+      "rotation": 90,
+      "order": 108,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-1",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        6,
+        8
+      ],
+      "rotation": 180,
+      "order": 109,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-13",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        7,
+        8
+      ],
+      "rotation": 180,
+      "order": 110,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-12",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        7.5,
+        8
+      ],
+      "order": 111,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-2",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        11,
+        8
+      ],
+      "rotation": 180,
+      "order": 112,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-3",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        13,
+        8
+      ],
+      "rotation": 180,
+      "order": 113,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-14",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        14,
+        8
+      ],
+      "rotation": 180,
+      "order": 114,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-13",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        14.5,
+        8
+      ],
+      "order": 115,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-4",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        4,
+        10
+      ],
+      "rotation": 270,
+      "order": 116,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-5",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        4,
+        12
+      ],
+      "rotation": 270,
+      "order": 117,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-14",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        4,
+        12.5
+      ],
+      "rotation": 180,
+      "order": 118,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-6",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        9,
+        10
+      ],
+      "rotation": 270,
+      "order": 119,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-7",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        9,
+        12
+      ],
+      "rotation": 270,
+      "order": 120,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-15",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        9,
+        12.5
+      ],
+      "rotation": 180,
+      "order": 121,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-8",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        16,
+        10
+      ],
+      "rotation": 270,
+      "order": 122,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-9",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        16,
+        12
+      ],
+      "rotation": 270,
+      "order": 123,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-16",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        16,
+        12.5
+      ],
+      "rotation": 180,
+      "order": 124,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-10",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        6,
+        14
+      ],
+      "rotation": 180,
+      "order": 125,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-15",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        7,
+        14
+      ],
+      "rotation": 180,
+      "order": 126,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-17",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        7.5,
+        14
+      ],
+      "order": 127,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-11",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        11,
+        14
+      ],
+      "rotation": 180,
+      "order": 128,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-12",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        13,
+        14
+      ],
+      "rotation": 180,
+      "order": 129,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-16",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        14,
+        14
+      ],
+      "rotation": 180,
+      "order": 130,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-18",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        14.5,
+        14
+      ],
+      "order": 131,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-13",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        4,
+        16
+      ],
+      "rotation": 270,
+      "order": 132,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-17",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        4,
+        17
+      ],
+      "rotation": 270,
+      "order": 133,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-19",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        4,
+        17.5
+      ],
+      "rotation": 180,
+      "order": 134,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-14",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        9,
+        16
+      ],
+      "rotation": 270,
+      "order": 135,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-18",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        9,
+        17
+      ],
+      "rotation": 270,
+      "order": 136,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-20",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        9,
+        17.5
+      ],
+      "rotation": 180,
+      "order": 137,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-15",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        16,
+        16
+      ],
+      "rotation": 270,
+      "order": 138,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-19",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        16,
+        17
+      ],
+      "rotation": 270,
+      "order": 139,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-21",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        16,
+        17.5
+      ],
+      "rotation": 180,
+      "order": 140,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Long-16",
+      "pieceId": "tplOutdoorCityWall32Long",
+      "position": [
+        6,
+        19
+      ],
+      "rotation": 180,
+      "order": 141,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-20",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        7,
+        19
+      ],
+      "rotation": 180,
+      "order": 142,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32Corner-22",
+      "pieceId": "tplOutdoorCityWall32Corner",
+      "position": [
+        7.5,
+        19
+      ],
+      "order": 143,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-21",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        12,
+        19
+      ],
+      "rotation": 180,
+      "order": 144,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-22",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        13,
+        19
+      ],
+      "rotation": 180,
+      "order": 145,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-23",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        14,
+        19
+      ],
+      "rotation": 180,
+      "order": 146,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorCityWall32-24",
+      "pieceId": "tplOutdoorCityWall32",
+      "position": [
+        14.5,
+        19
+      ],
+      "rotation": 180,
+      "order": 147,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-1",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        1,
+        1
+      ],
+      "rotation": 270,
+      "order": 148,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-2",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        7,
+        1
+      ],
+      "order": 149,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-3",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        1,
+        6
+      ],
+      "rotation": 180,
+      "order": 150,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-4",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        7,
+        6
+      ],
+      "rotation": 90,
+      "order": 151,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-1",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        3,
+        1
+      ],
+      "rotation": 180,
+      "order": 152,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-2",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        4,
+        1
+      ],
+      "rotation": 180,
+      "order": 153,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-3",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        5,
+        1
+      ],
+      "rotation": 180,
+      "order": 154,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-4",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        6,
+        1
+      ],
+      "rotation": 180,
+      "order": 155,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-5",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        3,
+        6
+      ],
+      "order": 156,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-6",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        4,
+        6
+      ],
+      "order": 157,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-7",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        5,
+        6
+      ],
+      "order": 158,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-8",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        6,
+        6
+      ],
+      "order": 159,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-9",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        1,
+        3
+      ],
+      "rotation": 270,
+      "order": 160,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-10",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        1,
+        4
+      ],
+      "rotation": 270,
+      "order": 161,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-11",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        1,
+        5
+      ],
+      "rotation": 270,
+      "order": 162,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFenceGate64-1",
+      "pieceId": "tplOutdoorFenceGate64",
+      "position": [
+        7,
+        4
+      ],
+      "rotation": 90,
+      "order": 163,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-12",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        7,
+        3
+      ],
+      "rotation": 90,
+      "order": 164,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-13",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        7,
+        5
+      ],
+      "rotation": 90,
+      "order": 165,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-5",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        1.5,
+        1
+      ],
+      "rotation": 180,
+      "order": 166,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-6",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        6.5,
+        1
+      ],
+      "rotation": 180,
+      "order": 167,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-7",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        1.5,
+        6
+      ],
+      "order": 168,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-8",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        6.5,
+        6
+      ],
+      "order": 169,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-9",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        1,
+        1.5
+      ],
+      "rotation": 270,
+      "order": 170,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-10",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        1,
+        5.5
+      ],
+      "rotation": 270,
+      "order": 171,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-11",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        7,
+        1.5
+      ],
+      "rotation": 90,
+      "order": 172,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-12",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        7,
+        5.5
+      ],
+      "rotation": 90,
+      "order": 173,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-13",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        24,
+        26
+      ],
+      "rotation": 270,
+      "order": 174,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-14",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        30,
+        26
+      ],
+      "order": 175,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-15",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        24,
+        32
+      ],
+      "rotation": 180,
+      "order": 176,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-16",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        30,
+        32
+      ],
+      "rotation": 90,
+      "order": 177,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFenceGate64-2",
+      "pieceId": "tplOutdoorFenceGate64",
+      "position": [
+        28,
+        26
+      ],
+      "rotation": 180,
+      "order": 178,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-14",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        26,
+        26
+      ],
+      "rotation": 180,
+      "order": 179,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-15",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        27,
+        26
+      ],
+      "rotation": 180,
+      "order": 180,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-16",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        29,
+        26
+      ],
+      "rotation": 180,
+      "order": 181,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-17",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        26,
+        32
+      ],
+      "order": 182,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-18",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        27,
+        32
+      ],
+      "order": 183,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-19",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        28,
+        32
+      ],
+      "order": 184,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-20",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        29,
+        32
+      ],
+      "order": 185,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-21",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        24,
+        28
+      ],
+      "rotation": 270,
+      "order": 186,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-22",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        24,
+        29
+      ],
+      "rotation": 270,
+      "order": 187,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-23",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        24,
+        30
+      ],
+      "rotation": 270,
+      "order": 188,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-24",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        24,
+        31
+      ],
+      "rotation": 270,
+      "order": 189,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-25",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        30,
+        28
+      ],
+      "rotation": 90,
+      "order": 190,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-26",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        30,
+        29
+      ],
+      "rotation": 90,
+      "order": 191,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-27",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        30,
+        30
+      ],
+      "rotation": 90,
+      "order": 192,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-28",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        30,
+        31
+      ],
+      "rotation": 90,
+      "order": 193,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-17",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        24.5,
+        26
+      ],
+      "rotation": 180,
+      "order": 194,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-18",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        29.5,
+        26
+      ],
+      "rotation": 180,
+      "order": 195,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-19",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        24.5,
+        32
+      ],
+      "order": 196,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-20",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        29.5,
+        32
+      ],
+      "order": 197,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-21",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        24,
+        26.5
+      ],
+      "rotation": 270,
+      "order": 198,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-22",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        24,
+        31.5
+      ],
+      "rotation": 270,
+      "order": 199,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-23",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        30,
+        26.5
+      ],
+      "rotation": 90,
+      "order": 200,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-24",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        30,
+        31.5
+      ],
+      "rotation": 90,
+      "order": 201,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-25",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        3,
+        26
+      ],
+      "rotation": 270,
+      "order": 202,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-26",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        8,
+        26
+      ],
+      "order": 203,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-27",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        3,
+        32
+      ],
+      "rotation": 180,
+      "order": 204,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-28",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        8,
+        32
+      ],
+      "rotation": 90,
+      "order": 205,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-29",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        5,
+        26
+      ],
+      "rotation": 180,
+      "order": 206,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-30",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        6,
+        26
+      ],
+      "rotation": 180,
+      "order": 207,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-31",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        7,
+        26
+      ],
+      "rotation": 180,
+      "order": 208,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-32",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        5,
+        32
+      ],
+      "order": 209,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-33",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        6,
+        32
+      ],
+      "order": 210,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-34",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        7,
+        32
+      ],
+      "order": 211,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFenceGate64-3",
+      "pieceId": "tplOutdoorFenceGate64",
+      "position": [
+        3,
+        30
+      ],
+      "rotation": 270,
+      "order": 212,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-35",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        3,
+        28
+      ],
+      "rotation": 270,
+      "order": 213,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-36",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        3,
+        29
+      ],
+      "rotation": 270,
+      "order": 214,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-37",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        3,
+        31
+      ],
+      "rotation": 270,
+      "order": 215,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-38",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        8,
+        28
+      ],
+      "rotation": 90,
+      "order": 216,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-39",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        8,
+        29
+      ],
+      "rotation": 90,
+      "order": 217,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-40",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        8,
+        30
+      ],
+      "rotation": 90,
+      "order": 218,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64-41",
+      "pieceId": "tplOutdoorFence64",
+      "position": [
+        8,
+        31
+      ],
+      "rotation": 90,
+      "order": 219,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-29",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        3.5,
+        26
+      ],
+      "rotation": 180,
+      "order": 220,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-30",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        7.5,
+        26
+      ],
+      "rotation": 180,
+      "order": 221,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-31",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        3.5,
+        32
+      ],
+      "order": 222,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-32",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        7.5,
+        32
+      ],
+      "order": 223,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-33",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        3,
+        26.5
+      ],
+      "rotation": 270,
+      "order": 224,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-34",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        3,
+        31.5
+      ],
+      "rotation": 270,
+      "order": 225,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-35",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        8,
+        26.5
+      ],
+      "rotation": 90,
+      "order": 226,
+      "autoPaint": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner-36",
+      "pieceId": "tplOutdoorFence64Corner",
+      "position": [
+        8,
+        31.5
+      ],
+      "rotation": 90,
+      "order": 227,
+      "autoPaint": true
+    }
+  ],
+  "autoPaint": {
+    "rulesetId": "outdoor-template-32",
+    "defaultEnvironment": "outdoorSettlement",
+    "regions": [
+      {
+        "id": "region-1",
+        "floorKeys": [
+          "0,0",
+          "2,0",
+          "3,0",
+          "4,0",
+          "5,0",
+          "6,0",
+          "7,0",
+          "8,0",
+          "9,0",
+          "10,0",
+          "11,0",
+          "13,0",
+          "15,0",
+          "16,0",
+          "18,0",
+          "19,0",
+          "20,0",
+          "21,0",
+          "22,0",
+          "23,0",
+          "24,0",
+          "26,0",
+          "27,0",
+          "28,0",
+          "29,0",
+          "30,0",
+          "31,0",
+          "32,0",
+          "33,0",
+          "1,1",
+          "2,1",
+          "3,1",
+          "4,1",
+          "5,1",
+          "6,1",
+          "8,1",
+          "11,1",
+          "13,1",
+          "14,1",
+          "16,1",
+          "20,1",
+          "22,1",
+          "23,1",
+          "24,1",
+          "25,1",
+          "29,1",
+          "30,1",
+          "33,1",
+          "1,2",
+          "6,2",
+          "7,2",
+          "8,2",
+          "9,2",
+          "10,2",
+          "11,2",
+          "12,2",
+          "13,2",
+          "14,2",
+          "15,2",
+          "16,2",
+          "17,2",
+          "20,2",
+          "21,2",
+          "22,2",
+          "23,2",
+          "26,2",
+          "27,2",
+          "28,2",
+          "29,2",
+          "30,2",
+          "31,2",
+          "33,2",
+          "0,3",
+          "1,3",
+          "6,3",
+          "7,3",
+          "8,3",
+          "9,3",
+          "10,3",
+          "11,3",
+          "12,3",
+          "13,3",
+          "15,3",
+          "16,3",
+          "1,4",
+          "6,4",
+          "7,4",
+          "8,4",
+          "9,4",
+          "10,4",
+          "11,4",
+          "12,4",
+          "13,4",
+          "14,4",
+          "15,4",
+          "0,5",
+          "1,5",
+          "2,5",
+          "3,5",
+          "4,5",
+          "5,5",
+          "6,5",
+          "0,7",
+          "0,9",
+          "0,11",
+          "0,12",
+          "0,13",
+          "0,14",
+          "0,15",
+          "27,15",
+          "0,16",
+          "0,17",
+          "18,17",
+          "19,17",
+          "20,17",
+          "21,17",
+          "22,17",
+          "23,17",
+          "24,17",
+          "25,17",
+          "27,17",
+          "28,17",
+          "29,17",
+          "30,17",
+          "31,17",
+          "32,17",
+          "33,17",
+          "0,18",
+          "18,18",
+          "19,18",
+          "20,18",
+          "21,18",
+          "22,18",
+          "23,18",
+          "24,18",
+          "25,18",
+          "28,18",
+          "29,18",
+          "30,18",
+          "31,18",
+          "32,18",
+          "33,18",
+          "0,19",
+          "10,19",
+          "18,19",
+          "19,19",
+          "20,19",
+          "21,19",
+          "22,19",
+          "23,19",
+          "25,19",
+          "27,19",
+          "29,19",
+          "30,19",
+          "31,19",
+          "33,19",
+          "0,22",
+          "2,22",
+          "3,22",
+          "4,22",
+          "5,22",
+          "6,22",
+          "7,22",
+          "13,22",
+          "23,22",
+          "24,22",
+          "25,22",
+          "26,22",
+          "27,22",
+          "28,22",
+          "29,22",
+          "30,22",
+          "31,22",
+          "32,22",
+          "33,22",
+          "0,23",
+          "1,23",
+          "2,23",
+          "4,23",
+          "5,23",
+          "6,23",
+          "7,23",
+          "23,23",
+          "24,23",
+          "25,23",
+          "26,23",
+          "27,23",
+          "28,23",
+          "29,23",
+          "30,23",
+          "32,23",
+          "33,23",
+          "0,24",
+          "2,24",
+          "3,24",
+          "4,24",
+          "5,24",
+          "6,24",
+          "7,24",
+          "23,24",
+          "24,24",
+          "25,24",
+          "26,24",
+          "27,24",
+          "30,24",
+          "33,24",
+          "0,25",
+          "1,25",
+          "2,25",
+          "3,25",
+          "4,25",
+          "5,25",
+          "6,25",
+          "23,25",
+          "24,25",
+          "26,25",
+          "27,25",
+          "28,25",
+          "29,25",
+          "30,25",
+          "31,25",
+          "32,25",
+          "33,25",
+          "0,26",
+          "1,26",
+          "2,26",
+          "3,26",
+          "4,26",
+          "5,26",
+          "6,26",
+          "7,26",
+          "23,26",
+          "24,26",
+          "25,26",
+          "26,26",
+          "27,26",
+          "28,26",
+          "29,26",
+          "31,26",
+          "32,26",
+          "33,26",
+          "0,27",
+          "1,27",
+          "2,27",
+          "3,27",
+          "7,27",
+          "23,27",
+          "24,27",
+          "29,27",
+          "30,27",
+          "32,27",
+          "33,27",
+          "0,28",
+          "2,28",
+          "3,28",
+          "7,28",
+          "23,28",
+          "24,28",
+          "29,28",
+          "32,28",
+          "33,28",
+          "2,29",
+          "3,29",
+          "7,29",
+          "23,29",
+          "24,29",
+          "29,29",
+          "30,29",
+          "31,29",
+          "32,29",
+          "0,30",
+          "3,30",
+          "7,30",
+          "23,30",
+          "24,30",
+          "29,30",
+          "30,30",
+          "31,30",
+          "32,30",
+          "33,30",
+          "0,31",
+          "1,31",
+          "2,31",
+          "3,31",
+          "4,31",
+          "5,31",
+          "6,31",
+          "7,31",
+          "23,31",
+          "24,31",
+          "25,31",
+          "26,31",
+          "27,31",
+          "28,31",
+          "29,31",
+          "30,31",
+          "33,31",
+          "0,32",
+          "1,32",
+          "2,32",
+          "3,32",
+          "5,32",
+          "6,32",
+          "23,32",
+          "24,32",
+          "25,32",
+          "26,32",
+          "27,32",
+          "28,32",
+          "30,32",
+          "31,32",
+          "32,32",
+          "33,32",
+          "0,33",
+          "1,33",
+          "2,33",
+          "3,33",
+          "4,33",
+          "5,33",
+          "6,33",
+          "7,33",
+          "23,33",
+          "24,33",
+          "25,33",
+          "26,33",
+          "27,33",
+          "28,33",
+          "30,33",
+          "31,33",
+          "32,33",
+          "33,33"
+        ],
+        "generatedWallKeys": []
+      }
+    ]
+  }
+}

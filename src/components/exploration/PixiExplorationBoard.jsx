@@ -1,6 +1,7 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { controllerFor } from '../../actors/controllers.js'
 import { getNpcs, isHostile } from '../../exploration/awareness.js'
+import { getHorses } from '../../exploration/mount.js'
 import { getMembers, isSelected } from '../../exploration/partyControl.js'
 import { getEntityKnowledge, isVisibleToParty, KNOWLEDGE } from '../../exploration/partyKnowledge.js'
 import { fadeWholeBigObjects } from '../../maps/bigObjects.js'
@@ -108,6 +109,7 @@ const boardCursor = (target) => {
   if (!target || target.down) return ''
   if (target.kind === 'npc') return target.hostile ? 'attack' : 'talk'
   if (target.kind === 'destructible') return 'attack'
+  if (target.kind === 'horse') return 'use'
   if (target.kind === 'groundItem') return 'use'
   return target.kind === 'object' ? 'use' : 'pointer'
 }
@@ -150,6 +152,7 @@ export default function PixiExplorationBoard(props) {
     onOpenMenu,
     onToggleMenu = null,
     onOpenNpcMenu,
+    onOpenHorseMenu = null,
     onStaggerDone = null,
     menu = null,
     beamIn = 'done',
@@ -332,7 +335,7 @@ export default function PixiExplorationBoard(props) {
       bodyColour: accent,
       label: lead
         ? {
-            text: 'LEAD',
+            text: member.mounted ? 'RIDE' : 'LEAD',
             y: spike3d ? SPIKE3D_TAG_Y : NPC_TAG_Y,
             size: 9,
             weight: '700',
@@ -347,6 +350,7 @@ export default function PixiExplorationBoard(props) {
       faded: false,
       hideSprite: spike3d,
       position: member.position,
+      mounted: Boolean(member.mounted),
       // stepBack is procedural (Spike3d); sprites fall back to walk via gait.
       pose: animation.pose?.animation === 'stepBack' && !spike3d ? null : animation.pose ?? null,
     })
@@ -580,40 +584,68 @@ export default function PixiExplorationBoard(props) {
   // Three.js spike reads these every frame (no React re-render required for camera follow).
   // Keep beamed figures in the list (SpikeActor hides on beam === 'waiting') so 3D actors are not
   // disposed and recreated — that was blinking party members out on mission/combat start.
-  spikePosesRef.current = figures
-    .filter((figure) => figure.position)
-    .map((figure) => {
-      const portraitId = figure.portraitId || figure.spriteSet || null
-      const moving = figure.gait === 'walk' || figure.gait === 'run' || figure.gait === 'sneakWalk'
-      const anim =
-        figure.pose?.animation ||
-        (figure.panic
-          ? moving
-            ? figure.gait === 'run'
-              ? 'hazardPanicRun'
-              : 'hazardPanicWalk'
-            : 'hazardPanic'
-          : null) ||
-        (figure.down ? null : null)
-      return {
-        id: figure.id,
-        position: figure.position,
-        facing: figure.facing,
-        gait: figure.gait,
-        animation: anim,
-        down: figure.down,
-        beam: figure.beam ?? null,
-        blastReact: figure.blastReact,
-        onStaggerDone: figure.onStaggerDone,
-        colour: figure.colour ?? figure.bodyColour,
-        enemy: Boolean(figure.enemy),
-        appearance: resolveSpike3dAppearance({
-          portraitId,
-          uniform: figure.colour,
-          enemy: Boolean(figure.enemy),
-        }),
-      }
+  const horseList = getHorses(exploreState)
+  horseList.forEach((horse) => {
+    const centre = project(horse.position)
+    const depth = atDepth(horse.position, 0.55)
+    const tagY = spike3d ? SPIKE3D_TAG_Y : NPC_TAG_Y
+    targets.push({
+      kind: 'horse',
+      id: horse.id,
+      depth,
+      shapes: figureShapes(centre, { scale: FIGURE_SCALE * 1.75, label: 'Horse', labelY: tagY }),
     })
+  })
+  const horsePoses = horseList.map((horse) => {
+    const rider = horse.riderId ? state.members?.[horse.riderId] : null
+    const moving = Boolean(rider?.moving || rider?.running)
+    return {
+      id: `horse:${horse.id}`,
+      kind: 'horse',
+      position: horse.position,
+      facing: { x: Math.cos(horse.heading), y: Math.sin(horse.heading) },
+      gait: moving ? (rider?.running ? 'trot' : 'walk') : 'idle',
+      riderId: horse.riderId ? `u${horse.riderId}` : null,
+    }
+  })
+  spikePosesRef.current = [
+    ...figures
+      .filter((figure) => figure.position)
+      .map((figure) => {
+        const portraitId = figure.portraitId || figure.spriteSet || null
+        const moving = figure.gait === 'walk' || figure.gait === 'run' || figure.gait === 'sneakWalk'
+        const anim =
+          figure.pose?.animation ||
+          (figure.panic
+            ? moving
+              ? figure.gait === 'run'
+                ? 'hazardPanicRun'
+                : 'hazardPanicWalk'
+              : 'hazardPanic'
+            : null) ||
+          (figure.down ? null : null)
+        return {
+          id: figure.id,
+          position: figure.position,
+          facing: figure.facing,
+          gait: figure.gait,
+          animation: anim,
+          down: figure.down,
+          beam: figure.beam ?? null,
+          blastReact: figure.blastReact,
+          onStaggerDone: figure.onStaggerDone,
+          colour: figure.colour ?? figure.bodyColour,
+          enemy: Boolean(figure.enemy),
+          mounted: Boolean(figure.mounted),
+          appearance: resolveSpike3dAppearance({
+            portraitId,
+            uniform: figure.colour,
+            enemy: Boolean(figure.enemy),
+          }),
+        }
+      }),
+    ...horsePoses,
+  ]
   const targetsRef = useRef(targets)
   const lootRef = useRef(groundLoot)
   const membersRef = useRef(state)
@@ -850,6 +882,11 @@ export default function PixiExplorationBoard(props) {
       onOpenNpcMenu(target.id)
       return true
     }
+    if (target.kind === 'horse') {
+      if (mouse && event.button !== 0) return false
+      onOpenHorseMenu?.(target.id)
+      return true
+    }
     if (event.button !== 0) return false
     if (target.kind === 'destructible') onDestructible(target.id)
     else if (target.kind === 'groundItem') onGroundItem(target.id)
@@ -979,7 +1016,9 @@ export default function PixiExplorationBoard(props) {
       ? world.npcs[menu.npcId]?.position
       : menu?.objectId
         ? challenges.find((view) => view.id === menu.objectId)?.position
-        : null
+        : menu?.horseId
+          ? getHorses(exploreState).find((horse) => horse.id === menu.horseId)?.position
+          : null
 
   if (failed) return <WebglUnavailable />
   return (

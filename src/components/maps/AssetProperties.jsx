@@ -888,18 +888,20 @@ export default function AssetProperties({
       <PropertySection
         id="marker"
         title="Marker"
-        tip="Player starts, enemy spawns, NPCs, area labels, or erase markers on the board."
+        tip="Player starts, enemy spawns, horse spawns, NPCs, area labels, or erase markers on the board."
       >
         <p className="ed-asset-name">
           {asset.id === 'playerStarts'
             ? 'Player Start'
             : asset.id === 'enemySpawns'
               ? 'Enemy Spawn'
-              : asset.id === 'npcs'
-                ? 'NPC'
-                : asset.id === 'area'
-                  ? 'Area Label'
-                  : 'Erase Marker'}
+              : asset.id === 'horseSpawns'
+                ? 'Horse Spawn'
+                : asset.id === 'npcs'
+                  ? 'NPC'
+                  : asset.id === 'area'
+                    ? 'Area Label'
+                    : 'Erase Marker'}
         </p>
         <p className="me-text">{MARKER_HELP[asset.id]}</p>
       </PropertySection>

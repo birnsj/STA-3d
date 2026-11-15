@@ -24,6 +24,20 @@ for (const sheet of Object.values(spriteData.sheets ?? {})) {
 if (!CLIP_META.stepBack) CLIP_META.stepBack = { seconds: 0.8, play: 'loop' }
 if (!CLIP_META.hazardPanicWalk) CLIP_META.hazardPanicWalk = { seconds: 0.8, play: 'loop' }
 if (!CLIP_META.hazardPanicRun) CLIP_META.hazardPanicRun = { seconds: 0.6, play: 'loop' }
+// Prototype mount — seated astride (HorseActor saddle).
+if (!CLIP_META.rideIdle) CLIP_META.rideIdle = { seconds: 2.4, play: 'loop' }
+if (!CLIP_META.ride) CLIP_META.ride = { seconds: 0.7, play: 'loop' }
+if (!CLIP_META.mount) CLIP_META.mount = { seconds: 1.15, play: 'hold' }
+if (!CLIP_META.dismount) CLIP_META.dismount = { seconds: 1.0, play: 'hold' }
+// Procedural horse trot (walk/idle already exist on humanoid sheets; horse uses HORSE_VIEWER_CLIPS lengths).
+if (!CLIP_META.trot) CLIP_META.trot = { seconds: 0.45, play: 'loop' }
+
+/** Horse animation set clips (procedural only). */
+export const HORSE_VIEWER_CLIPS = Object.freeze([
+  { name: 'idle', seconds: 10, play: 'loop' },
+  { name: 'walk', seconds: 0.7, play: 'loop' },
+  { name: 'trot', seconds: 0.45, play: 'loop' },
+])
 
 /** Old ranged-fire clip id → catalogue name. */
 export const CLIP_ALIASES = Object.freeze({
@@ -48,11 +62,19 @@ export const IDLE_FIDGETS = spriteData.idleFidgets?.animations ?? [
 /** Seconds between idle fidgets [min, max] — same catalogue as sprite FigureView. */
 export const IDLE_FIDGET_GAP = spriteData.idleFidgets?.gapSeconds ?? [5, 14]
 
-export function clipSeconds(name) {
+export function clipSeconds(name, setId = null) {
+  if (setId === 'horse') {
+    const horse = HORSE_VIEWER_CLIPS.find((clip) => clip.name === name)
+    if (horse) return horse.seconds
+  }
   return CLIP_META[resolveClipName(name)]?.seconds ?? 1
 }
 
-export function clipPlayMode(name) {
+export function clipPlayMode(name, setId = null) {
+  if (setId === 'horse') {
+    const horse = HORSE_VIEWER_CLIPS.find((clip) => clip.name === name)
+    if (horse) return horse.play
+  }
   return CLIP_META[resolveClipName(name)]?.play ?? 'loop'
 }
 
@@ -125,6 +147,9 @@ function sheetAllowed(sheetId, allowedIds) {
  */
 export function animationViewerGroups(setId = defaultAnimationSetId()) {
   const set = (animationSetsData.sets ?? []).find((entry) => entry.id === setId)
+  if (setId === 'horse' || set?.id === 'horse') {
+    return [{ id: 'horse', label: 'Horse', clips: [...HORSE_VIEWER_CLIPS] }]
+  }
   const allowedList = set?.sheetIds
   const allowed = allowedList ? new Set(allowedList) : null
 
@@ -156,12 +181,23 @@ export function animationViewerGroups(setId = defaultAnimationSetId()) {
     pushSheet(id)
   }
   if (sheetAllowed('3dOnly', allowed)) {
-    const only3d = VIEWER_3D_ONLY.filter((clip) => !seen.has(clip.name))
+    const only3d = [
+      ...VIEWER_3D_ONLY,
+      { name: 'rideIdle', seconds: 2.4, play: 'loop' },
+      { name: 'ride', seconds: 0.7, play: 'loop' },
+      { name: 'mount', seconds: 1.15, play: 'hold' },
+      { name: 'dismount', seconds: 1.0, play: 'hold' },
+    ].filter((clip) => !seen.has(clip.name))
     if (only3d.length) {
       groups.push({ id: '3dOnly', label: VIEWER_SHEET_LABELS['3dOnly'], clips: only3d })
     }
   }
   return groups
+}
+
+/** Preview body for an animation set (`humanoid` | `horse`). */
+export function previewBodyKindForSet(setId) {
+  return setId === 'horse' ? 'horse' : 'humanoid'
 }
 
 export const deg = (d) => d * DEG
@@ -184,6 +220,8 @@ export function basePose() {
     shoulder: [deg(1), deg(2)],
     // Extra abduction (radians) — arms out to the sides, not forward.
     armSide: [0, 0],
+    // Thigh abduction (radians) — legs out to the sides (ride straddle).
+    legSide: [0, 0],
     breathe: 0,
     bounce: 0,
     hipDrop: 0,

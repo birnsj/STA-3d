@@ -121,6 +121,14 @@ export const OUTDOOR_WALL_FACE_PIECES = Object.freeze({
   },
 })
 
+/** Face ids + labels for World Generation Ruleset Settlement settings. */
+export const OUTDOOR_WALL_FACE_OPTIONS = Object.freeze(
+  Object.keys(OUTDOOR_WALL_FACE_PIECES).map((id) => ({
+    id,
+    label: id.charAt(0).toUpperCase() + id.slice(1),
+  })),
+)
+
 /** Outdoor fence kit — 64×32 run + 32×32 corner + 64-wide gate (packs like building walls). */
 export const OUTDOOR_FENCE_PIECE = 'tplOutdoorFence64'
 export const OUTDOOR_FENCE_CORNER = 'tplOutdoorFence64Corner'
@@ -595,11 +603,11 @@ function pickMarkers(playerCells, enemyCells, random) {
     enemyCells.filter((cell) => !taken.has(key(cell))),
     random,
   ).slice(0, MARKERS_PER_SIDE)
-  return { playerStarts, enemySpawns }
+  return { playerStarts, enemySpawns, horseSpawns: [] }
 }
 
 function markersAtEnds(cells, distance, random) {
-  if (!cells.length) return { playerStarts: [], enemySpawns: [] }
+  if (!cells.length) return { playerStarts: [], enemySpawns: [], horseSpawns: [] }
   const sorted = [...cells].sort((a, b) => distance(a) - distance(b))
   const pool = Math.max(1, Math.min(MARKERS_PER_SIDE * 3, Math.floor(sorted.length / 2) || sorted.length))
   return pickMarkers(sorted.slice(0, pool), sorted.slice(Math.max(0, sorted.length - pool)), random)

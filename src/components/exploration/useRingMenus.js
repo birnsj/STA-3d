@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react'
 
-// Which radial menu is open on the exploration board: a party member's, an NPC's, a challenge object's, a destructible's
-// or a ground item's. Only one is ever open (opening one closes the others), so this holds a single { kind, id } and not
-// one id per kind. Whether the open one is still showable (visible, in reach, not in combat) is for the screen to decide.
+// Which radial menu is open on the exploration board: a party member's, an NPC's, a challenge object's, a destructible's,
+// a ground item's or a horse's. Only one is ever open (opening one closes the others), so this holds a single { kind, id }
+// and not one id per kind. Whether the open one is still showable (visible, in reach, not in combat) is for the screen.
 //
 // Returns the open id for each kind (null when another kind, or none, is open) and:
 //   showXMenu(id)          open it, closing any other
@@ -24,6 +24,7 @@ export default function useRingMenus() {
   const toggleObjectMenu = useCallback((id) => toggle('object', id), [toggle])
   const toggleDestructibleMenu = useCallback((id) => toggle('destructible', id), [toggle])
   const toggleGroundItemMenu = useCallback((id) => toggle('groundItem', id), [toggle])
+  const toggleHorseMenu = useCallback((id) => toggle('horse', id), [toggle])
 
   const idFor = (kind) => (menu?.kind === kind ? menu.id : null)
 
@@ -33,6 +34,7 @@ export default function useRingMenus() {
     menuObjectId: idFor('object'),
     menuDestructibleId: idFor('destructible'),
     menuGroundItemId: idFor('groundItem'),
+    menuHorseId: idFor('horse'),
     showMemberMenu,
     toggleMemberMenu,
     showNpcMenu,
@@ -40,6 +42,7 @@ export default function useRingMenus() {
     toggleObjectMenu,
     toggleDestructibleMenu,
     toggleGroundItemMenu,
+    toggleHorseMenu,
     closeMenu,
     closeAllMenus,
   }

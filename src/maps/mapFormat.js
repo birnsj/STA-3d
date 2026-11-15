@@ -47,6 +47,9 @@
 // Fractional x/y are allowed for the 32×32 drop grid. name overrides the hover label; pickable/visible default true and
 // are left out on disk when true. on: { tile: [x, y] } or { placement: id } when elevated on a support surface; omitted
 // on the floor. Entries missing id get one on parse. Runtime drops never write back into the map file.
+// markers.horseSpawns: [x, y] or [x, y, facing] — Horse Spawn markers (Markers palette). Play uses them for the
+// procedural mount (exploration/mount.js); when empty, outdoor maps still auto-spawn one beside the lead. Facing is
+// degrees (0 = +x), same as player starts. Legacy top-level `horses: [{ id, position, facing? }]` is migrated on load.
 // templatePiecePlacements: [{ id, pieceId (templatePieces.json), position: [x, y], rotation?, scale?, order, autoPaint? }] —
 // modular Starship-look overlays (not tiles). Sit on the deck underlay; pathing/sight use underlay tiles. Pieces snap to
 // the editor guide grid. rotation degrees in 90° steps (omit when 0); scale (omit when 1, UI locks to 1); order (lower
@@ -292,7 +295,7 @@ function assertMapFileStructure(file) {
     })
   })
   ;(file.rotated ?? []).forEach((position, index) => assertTuple(position, `rotated[${index}]`, [2], { integers: true }))
-  ;['playerStarts', 'enemySpawns'].forEach((kind) => {
+  ;['playerStarts', 'enemySpawns', 'horseSpawns'].forEach((kind) => {
     ;(file.markers?.[kind] ?? []).forEach((position, index) => assertTuple(position, `markers.${kind}[${index}]`, [2, 3]))
   })
   ;(file.areas ?? []).forEach((area, index) => assertTuple(area?.position, `areas[${index}].position`))
@@ -341,9 +344,28 @@ function assertMapFileStructure(file) {
       invalidMap(`templatePiecePlacements[${index}].pieceId`, 'expected a non-empty piece id')
     }
   })
-  ;['npcs', 'objectives', 'objects', 'destructibles', 'hazards', 'groundItemPlacements', 'templatePiecePlacements'].forEach((path) =>
+  ;(file.horses ?? []).forEach((horse, index) => {
+    if (horse?.position != null) assertTuple(horse.position, `horses[${index}].position`, [2, 3])
+    if (horse?.facing != null && !Number.isFinite(horse.facing)) invalidMap(`horses[${index}].facing`, 'expected a finite number')
+  })
+  ;['npcs', 'objectives', 'objects', 'destructibles', 'hazards', 'groundItemPlacements', 'templatePiecePlacements', 'horses'].forEach((path) =>
     assertUniqueAuthoredIds(file[path], path),
   )
+}
+
+/** Legacy file.horses → marker spawns (same facing rules as player starts). */
+function horseSpawnsFromFile(file, inside) {
+  const fromMarkers = (file.markers?.horseSpawns ?? []).map(toSpawn).filter(inside)
+  if (fromMarkers.length) return fromMarkers
+  return (file.horses ?? [])
+    .map((raw) => {
+      if (!raw || !Array.isArray(raw.position)) return null
+      const spawn = toSpawn(raw.position)
+      if (!inside(spawn)) return null
+      if (Number.isFinite(raw.facing)) return { ...spawn, facing: Number(raw.facing) }
+      return spawn
+    })
+    .filter(Boolean)
 }
 
 export const isRotated = (map, { x, y }) => Boolean(map.rotated?.[y]?.[x])
@@ -383,7 +405,7 @@ function blankFields(name, width, height, tiles) {
     floorUnder: {},
     stackOver: {},
     areas: [],
-    markers: { playerStarts: [], enemySpawns: [] },
+    markers: { playerStarts: [], enemySpawns: [], horseSpawns: [] },
     npcs: [],
     objectives: [],
     objects: null,
@@ -939,6 +961,7 @@ export function parseMapFile(file, id) {
     markers: {
       playerStarts: (file.markers?.playerStarts ?? []).map(toSpawn).filter(inside),
       enemySpawns: (file.markers?.enemySpawns ?? []).map(toSpawn).filter(inside),
+      horseSpawns: horseSpawnsFromFile(file, inside),
     },
     npcs: (file.npcs ?? []).filter((raw) => raw?.id != null).map((raw) => parseNpc(raw, inside)).filter((npc) => inside(npc.position)),
     objectives: (file.objectives ?? []).filter((raw) => raw?.id != null).map((raw) => parseObjective(raw, inside)),
@@ -1005,6 +1028,7 @@ export function serializeMap(map) {
     markers: {
       playerStarts: map.markers.playerStarts.map(fromSpawn),
       enemySpawns: map.markers.enemySpawns.map(fromSpawn),
+      ...(map.markers.horseSpawns?.length ? { horseSpawns: map.markers.horseSpawns.map(fromSpawn) } : {}),
     },
     ...(map.npcs?.length ? { npcs: map.npcs.map(serializeNpc) } : {}),
     ...(map.objectives?.length ? { objectives: map.objectives.map(serializeObjective) } : {}),
@@ -1048,7 +1072,11 @@ export function resizeMap(map, width, height, { fill } = {}) {
     floorUnder,
     stackOver,
     areas: map.areas.filter((area) => inside(area.position)),
-    markers: { playerStarts: map.markers.playerStarts.filter(inside), enemySpawns: map.markers.enemySpawns.filter(inside) },
+    markers: {
+      playerStarts: map.markers.playerStarts.filter(inside),
+      enemySpawns: map.markers.enemySpawns.filter(inside),
+      horseSpawns: (map.markers.horseSpawns ?? []).filter(inside),
+    },
     npcs: (map.npcs ?? [])
       .filter((npc) => inside(npc.position))
       .map((npc) => {

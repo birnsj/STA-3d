@@ -38,6 +38,7 @@ const ALL_TAB = 'all'
 const MARKER_TOOLS = [
   { id: 'playerStarts', label: 'Player Start', swatch: 'player' },
   { id: 'enemySpawns', label: 'Enemy Spawn', swatch: 'enemy' },
+  { id: 'horseSpawns', label: 'Horse Spawn', swatch: 'horse' },
   { id: 'npcs', label: 'NPC', swatch: 'npc' },
   { id: 'area', label: 'Area Label', swatch: 'area' },
   { id: 'erase', label: 'Erase Marker', swatch: 'erase' },

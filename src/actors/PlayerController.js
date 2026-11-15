@@ -9,10 +9,13 @@ import { escapeHazardStep, safeReachable } from '../combat/hazardAvoidance.js'
 import { getReachableTiles } from '../combat/movementSystem.js'
 import { tileDistance } from '../combat/rangeSystem.js'
 import data from '../data/adaptation/exploration/partyControl.json'
+import { RIDE_SPEED_MULT } from '../exploration/mountConstants.js'
 import { distance, isClearLine, planRoute } from '../exploration/navigation.js'
 import { sneakCatchUpSpeed, sneakSpeed } from '../exploration/sneak.js'
 import { worldToGrid } from '../exploration/tacticalGrid.js'
 import { CharacterController, wrapAngle } from './CharacterController.js'
+
+const rideMult = (member) => (member?.mounted ? RIDE_SPEED_MULT : 1)
 
 const MOVE = data.movement
 const TURN_RATE = (MOVE.turnRateDegrees * Math.PI) / 180
@@ -108,6 +111,10 @@ export class PlayerController extends CharacterController {
       moving: false,
       running: false,
       pushed: false,
+      pace: null,
+      // Combat never rides; clear in case a pre-fight mount flag survived dismountAll.
+      mounted: false,
+      rideAnim: null,
       order: null,
       path: [],
       replanIn: 0,
@@ -120,6 +127,14 @@ export class PlayerController extends CharacterController {
   // Exploration board: step-back while being shoved clear of another body (partyControl resolveOverlaps / separation).
   animationState(actor) {
     const base = super.animationState(actor)
+    const rideClip = actor.rideAnim?.clip
+    if (rideClip === 'mount' || rideClip === 'dismount') {
+      return { ...base, walking: false, running: false, pose: { animation: rideClip, playKey: rideClip } }
+    }
+    if (actor.mounted) {
+      const clip = base.walking || base.running ? 'ride' : 'rideIdle'
+      return { ...base, pose: { animation: clip, playKey: clip } }
+    }
     if (actor.pushed) {
       return { ...base, walking: true, pose: { animation: 'stepBack', playKey: 'stepBack' } }
     }
@@ -155,7 +170,8 @@ export class PlayerController extends CharacterController {
       if (done) return { member: { ...member, order: null, path: [], stall: { seconds: 0, best: Infinity } }, velocity: { x: 0, y: 0 }, direction: null }
       // A sneaking character never runs (sneak.json).
       const run = member.order.run && !member.sneaking
-      const speed = member.sneaking ? sneakSpeed(member.character) : run ? MOVE.runSpeed : MOVE.walkSpeed
+      const speed =
+        (member.sneaking ? sneakSpeed(member.character) : run ? MOVE.runSpeed : MOVE.walkSpeed) * rideMult(member)
       const velocity = seek(member.position, path[0], speed, seconds)
       return { member: { ...member, path, replanIn, stall }, velocity, direction: velocity, run }
     }
@@ -189,6 +205,7 @@ export class PlayerController extends CharacterController {
     let speed
     if (member.sneaking) speed = behind ? sneakCatchUpSpeed(member.character) : sneakSpeed(member.character)
     else speed = behind ? (run ? MOVE.runCatchUpSpeed : MOVE.catchUpSpeed) : run ? MOVE.runSpeed : MOVE.walkSpeed
+    speed *= rideMult(member)
     if (toTarget < MOVE.arriveDistance) speed *= Math.max(0.25, toTarget / MOVE.arriveDistance)
     const velocity = seek(member.position, path[0], speed, seconds)
     return { member: { ...member, path, replanIn, parkedFor: null, blocked: blockedFor }, velocity, direction: velocity, run }

@@ -123,6 +123,7 @@ export function layerOfSelection(kind) {
     case 'npc':
     case 'playerStarts':
     case 'enemySpawns':
+    case 'horseSpawns':
       return 'characters'
     case 'area':
     case 'objective':

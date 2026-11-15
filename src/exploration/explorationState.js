@@ -13,6 +13,17 @@ import { clampSimulationDelta, createNpc, createWorld, emitNoise, getNpcs, isHos
 import { tickWorld } from './awarenessTick.js'
 import { applyScenarioTiles, attemptChallenge, challengeFor, createScenario, INTERACT_RANGE, withMap } from './challengeObjects.js'
 import { combatAction, endCombat, MODE, requestCombat, startCombat } from './combatLink.js'
+import {
+  createMountState,
+  dismountAll,
+  dismountHorse,
+  horseById,
+  mountHorse,
+  removeHorse,
+  syncMountAfterParty,
+  tickRideAnims,
+  toggleMount,
+} from './mount.js'
 import { canAct, createPartyState, getMembers, partyReducer } from './partyControl.js'
 import { createPartyKnowledge, updatePartyKnowledge } from './partyKnowledge.js'
 import { scanArea, scanChallenge, scanDestructible, scanGroundItem, scanNpc } from './partyScan.js'
@@ -141,6 +152,8 @@ export function createExplorationState(map, characters, seed = 0, { enemiesActiv
   )
   return {
     ...seeded,
+    // Prototype outdoor mount (mount.js): null on indoor maps.
+    mount: createMountState(worldMap, seeded.party),
     hazardClock: 0,
     // The last challenge attempt, for the interaction panel (attemptChallenge).
     lastTask: null,
@@ -270,11 +283,43 @@ function reduceExploration(state, action) {
       const party = partyReducer(state.party, tick)
       // The clock still runs (challenge-object locks expire on it); only the NPCs stand still.
       if (state.enemiesActive === false) {
-        return endConversationOutOfRange(tickHazards(perceive({ ...state, party, world: { ...state.world, time: state.world.time + seconds } }), seconds))
+        return endConversationOutOfRange(
+          tickRideAnims(
+            tickHazards(
+              syncMountAfterParty(perceive({ ...state, party, world: { ...state.world, time: state.world.time + seconds } })),
+              seconds,
+            ),
+          ),
+        )
       }
-      const next = requestCombat(tickHazards(perceive({ ...state, party, world: tickWorld(state.world, party, seconds) }), seconds))
+      const next = requestCombat(
+        tickRideAnims(
+          tickHazards(syncMountAfterParty(perceive({ ...state, party, world: tickWorld(state.world, party, seconds) })), seconds),
+        ),
+      )
       // A fight breaking out ends any conversation.
       return next.mode === MODE.COMBAT && next.conversation ? { ...next, conversation: null } : endConversationOutOfRange(next)
+    }
+    // { memberId }: climb on / off the nearby horse (mount.js).
+    case 'toggleMount':
+      return state.mode === MODE.COMBAT ? state : toggleMount(state, action.memberId ?? state.party.leaderId)
+    // { memberId, horseId }: climb onto a specific horse when in range.
+    case 'mountHorse':
+      return state.mode === MODE.COMBAT ? state : mountHorse(state, action.memberId ?? state.party.leaderId, action.horseId)
+    // { memberId }: climb off.
+    case 'dismountHorse':
+      return state.mode === MODE.COMBAT ? state : dismountHorse(state, action.memberId ?? state.party.leaderId)
+    // { horseId, memberId }: prototype Attack — remove the horse, noise + log (mount.js removeHorse).
+    case 'attackHorse': {
+      if (state.mode === MODE.COMBAT) return state
+      const horse = horseById(state, action.horseId)
+      if (!horse) return state
+      const memberId = action.memberId ?? state.party.leaderId
+      const member = state.party.members[memberId]
+      if (!member || !canAct(member)) return state
+      const next = removeHorse(state, action.horseId)
+      const noisy = { ...next, world: emitNoise(next.world, { position: horse.position, radius: 10, intensity: 1.2, source: memberId }) }
+      return addLogEntry(noisy, { kind: 'combat', text: `${member.character.name} attacked the horse.` })
     }
     // action: a combat action (or aiStep) from the combat screen.
     case 'combat':

@@ -6,6 +6,12 @@ import * as THREE from 'three'
  */
 
 function listJoints(model) {
+  // Procedural horse (HorseModel): body / neck / head / tail / legs.
+  if (model?.saddle && model?.barrel) {
+    const joints = [model.body, model.neck, model.head, model.tailRoot ?? model.tail, model.tailMid, model.tailTip]
+    for (const leg of model.legs ?? []) joints.push(leg.upper, leg.lower, leg.hoof)
+    return joints.filter(Boolean)
+  }
   const joints = [model.hips, model.spine, model.torso, model.headRoot]
   for (const leg of model.legs ?? []) {
     joints.push(leg.thigh, leg.shin, leg.foot)
@@ -17,6 +23,20 @@ function listJoints(model) {
 }
 
 function listPairs(model) {
+  if (model?.saddle && model?.barrel) {
+    const dock = model.tailRoot ?? model.tail
+    const pairs = [
+      [model.body, model.neck],
+      [model.neck, model.head],
+      [model.body, dock],
+      [dock, model.tailMid],
+      [model.tailMid, model.tailTip],
+    ]
+    for (const leg of model.legs ?? []) {
+      pairs.push([model.body, leg.upper], [leg.upper, leg.lower], [leg.lower, leg.hoof])
+    }
+    return pairs.filter(([a, b]) => a && b)
+  }
   const pairs = [
     [model.hips, model.spine],
     [model.spine, model.torso],

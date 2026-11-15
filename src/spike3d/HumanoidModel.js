@@ -596,16 +596,19 @@ export class HumanoidModel {
     this.headRoot.rotation.y = headYaw
     this.headRoot.rotation.x = headPitch
 
+    const legSide = pose.legSide ?? [0, 0]
     for (let i = 0; i < 2; i += 1) {
       const leg = this.legs[i]
+      const out = Math.max(0, legSide[i] ?? 0)
       leg.thigh.rotation.x = thigh[i]
-      leg.thigh.rotation.z = leg.side * 0.02
-      leg.thigh.rotation.y = 0
+      // +legSide opens the thigh away from the body (straddle a horse barrel).
+      leg.thigh.rotation.z = leg.side * (0.02 + out)
+      leg.thigh.rotation.y = leg.side * out * 0.15
       const kneeBend = Math.max(0, knee[i])
       leg.shin.rotation.x = kneeBend
-      leg.shin.rotation.z = 0
+      leg.shin.rotation.z = -leg.side * out * 0.25
       leg.foot.rotation.x = -Math.min(0.5, kneeBend * 0.32) + Math.max(0, -thigh[i]) * 0.12
-      leg.foot.rotation.z = 0
+      leg.foot.rotation.z = -leg.side * out * 0.2
     }
 
     const shoulder = pose.shoulder ?? [0, 0]

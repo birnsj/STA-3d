@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { createContactShadow } from './contactShadow.js'
 import { makeIsoCamera, syncIsoCamera, syncIsoCameraFill } from './isoProjection.js'
+import { HorseBody, HORSE_HEIGHT } from './HorseBody.js'
 import { ProceduralBody, PROCEDURAL_HEIGHT } from './ProceduralBody.js'
 import { resolveSpike3dAppearance } from './appearance.js'
 import { createSkeletonOverlay } from './skeletonOverlay.js'
@@ -22,8 +23,8 @@ import {
   lightPositionFromSettings,
 } from './viewerLightSettings.js'
 
-const HEIGHT = PROCEDURAL_HEIGHT
-const PIVOT_Y = HEIGHT * 0.5
+const HUMANOID_HEIGHT = PROCEDURAL_HEIGHT
+const HUMANOID_PIVOT_Y = HUMANOID_HEIGHT * 0.5
 // Radians per pixel of left-drag (horizontal → yaw, vertical → pitch).
 const YAW_PER_PX = 0.01
 const PITCH_PER_PX = 0.008
@@ -89,6 +90,8 @@ export default function AnimationPreview({
   playing = true,
   progress = 0,
   appearance = null,
+  /** `humanoid` (default) or `horse` — remount via React key when this changes. */
+  bodyKind = 'humanoid',
   lockedIso = false,
   loopOnce = false,
   showSkeleton = false,
@@ -151,6 +154,10 @@ export default function AnimationPreview({
     lightMarker.name = 'av_key_light_marker'
     scene.add(lightMarker)
 
+    const isHorse = bodyKind === 'horse'
+    const HEIGHT = isHorse ? HORSE_HEIGHT : HUMANOID_HEIGHT
+    const PIVOT_Y = HEIGHT * 0.5
+
     const applyLightSettings = (next) => {
       const settings = cloneViewerLightSettings(next ?? DEFAULT_VIEWER_LIGHT_SETTINGS)
       lightSettingsRef.current = settings
@@ -180,12 +187,17 @@ export default function AnimationPreview({
     pivot.add(figure)
 
     const resolved = resolveSpike3dAppearance(appearance ?? {})
-    const body = new ProceduralBody({ height: HEIGHT, uniform: resolved.uniform, appearance: resolved })
-    body.setViewerHoldOnce(true)
-    body.setViewerLoopOnce(loopOnce)
+    const body = isHorse
+      ? new HorseBody({ height: HEIGHT })
+      : new ProceduralBody({ height: HEIGHT, uniform: resolved.uniform, appearance: resolved })
+    body.setViewerHoldOnce?.(true)
+    body.setViewerLoopOnce?.(loopOnce)
     figure.add(body.root)
 
-    const shadow = createContactShadow({ width: HEIGHT * 0.55, depth: HEIGHT * 0.32 })
+    const shadow = createContactShadow({
+      width: isHorse ? HEIGHT * 1.15 : HEIGHT * 0.55,
+      depth: isHorse ? HEIGHT * 0.65 : HEIGHT * 0.32,
+    })
     figure.add(shadow)
 
     const skeleton = createSkeletonOverlay(body.model, { jointRadius: HEIGHT * 0.018 })
@@ -395,6 +407,7 @@ export default function AnimationPreview({
         body.seek(t)
       },
       setAppearance(next) {
+        if (isHorse) return
         // Viewer may pass a fully resolved appearance (incl. hair override); otherwise resolve from ids.
         const resolvedNext =
           next?.species && next?.gender && next?.hairStyle
@@ -438,12 +451,13 @@ export default function AnimationPreview({
       setAttachmentSettings(next) {
         const settings = cloneAttachmentSettings(next ?? DEFAULT_ATTACHMENT_SETTINGS)
         attachmentSettingsRef.current = settings
-        body.setAttachmentSettings(settings)
+        body.setAttachmentSettings?.(settings)
       },
       setLightSettings(next) {
         applyLightSettings(next)
       },
       async triggerRagdoll() {
+        if (isHorse) return
         if (ragdollActive && ragdoll && !ragdoll.settled) return
         if (ragdollActive) clearRagdoll()
         const world = await ensurePhysics()
@@ -541,9 +555,9 @@ export default function AnimationPreview({
       renderer.dispose()
       onRagdollActiveRef.current?.(false)
     }
-    // Mount once; props sync through the effect below.
+    // Remount when body kind changes (humanoid ↔ horse); other props sync through effects below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [bodyKind])
 
   useEffect(() => {
     apiRef.current?.setClip(clip)

@@ -3,11 +3,12 @@ import { Field } from './NpcInspector.jsx'
 import { PropertySection } from './PropertySections.jsx'
 import EditorSelect from './EditorSelect.jsx'
 
-// The map editor's inspector for the selected player start or enemy spawn: its facing, or Default (toward the middle of
-// the map, as unturned starts and spawns have always faced). marker: { kind: 'playerStarts' | 'enemySpawns', label,
-// x, y, facing }. defaultFacing: the way Default faces here, in degrees.
+// The map editor's inspector for the selected player start, enemy spawn or horse spawn: its facing, or Default (toward
+// the middle of the map, as unturned starts and spawns have always faced). marker: { kind: 'playerStarts' |
+// 'enemySpawns' | 'horseSpawns', label, x, y, facing }. defaultFacing: the way Default faces here, in degrees.
 export default function MarkerInspector({ marker, defaultFacing, onFacing, onDelete }) {
-  const kindName = marker.kind === 'playerStarts' ? 'Player Start' : 'Enemy Spawn'
+  const kindName =
+    marker.kind === 'playerStarts' ? 'Player Start' : marker.kind === 'enemySpawns' ? 'Enemy Spawn' : 'Horse Spawn'
   const defaultLabel = FACINGS.find((entry) => entry.degrees === snapFacing(defaultFacing))?.label
   return (
     <div className="me-inspector">

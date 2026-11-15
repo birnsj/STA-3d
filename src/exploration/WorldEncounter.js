@@ -38,6 +38,7 @@ import { objectsOf } from '../world/objects.js'
 import { challengeFor } from './challengeObjects.js'
 import { alertGroup, emitNoise, getCombatReady, getNpcs, hasIdentified, isHostile, joinsCombat, perceive, STATE } from './awareness.js'
 import { defeatedFlag } from './missionObjectives.js'
+import { dismountAll } from './mount.js'
 import { cancelBeamOut, getMembers, withAbleSelection } from './partyControl.js'
 import { getEntityKnowledge, KNOWLEDGE, updatePartyKnowledge } from './partyKnowledge.js'
 import { gridToWorld, nearestFreeCell, snapToGrid, worldToGrid } from './tacticalGrid.js'
@@ -414,6 +415,8 @@ export class WorldEncounter extends CombatEncounter {
   // already running (so a second COMBAT_READY can never start a second fight) or nobody in the party can fight.
   start(state, { triggerNpcId, triggerTargetId = null, source = 'COMBAT_READY', position = null }) {
     if (state.mode === MODE.COMBAT || state.combat) return state
+    // Prototype: no mounted combat — climb off before the fight board takes over.
+    state = dismountAll(state)
     let { party } = state
     const trigger = state.world.npcs[triggerNpcId]
     let members = getMembers(party)

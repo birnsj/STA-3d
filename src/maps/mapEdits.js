@@ -63,6 +63,7 @@ export function dependentsAt(map, position, objectDefinitions = []) {
   if (npcAt(map, position)) found.push({ kind: 'npc', label: 'NPC' })
   if (map.markers.playerStarts.some((marker) => same(marker, position))) found.push({ kind: 'playerStarts', label: 'player start' })
   if (map.markers.enemySpawns.some((marker) => same(marker, position))) found.push({ kind: 'enemySpawns', label: 'enemy spawn' })
+  if ((map.markers.horseSpawns ?? []).some((marker) => same(marker, position))) found.push({ kind: 'horseSpawns', label: 'horse spawn' })
   if (destructibleAt(map, position)) found.push({ kind: 'destructible', label: 'destructible' })
   if (hazardRegionAt(map, position)) found.push({ kind: 'hazard', label: 'hazard' })
   if (objectDefinitions.some((definition) => definition.position[0] === position.x && definition.position[1] === position.y)) {
@@ -331,10 +332,11 @@ export function swapTilesWithObjects(map, a, b, objectDefinitions) {
   return { map: { ...swapped, objectPlacements: { ...(map.objectPlacements ?? {}), ...Object.fromEntries(carried) } }, carried }
 }
 
-// What stands on a tile that the editor can open an inspector for: { npc, markerKind ('playerStarts' | 'enemySpawns' | null),
+// What stands on a tile that the editor can open an inspector for: { npc, markerKind ('playerStarts' | 'enemySpawns' | 'horseSpawns' | null),
 // object }. An NPC standing on a start or spawn gives both.
 export function selectionAt(map, objectDefinitions, position) {
-  const markerKind = ['playerStarts', 'enemySpawns'].find((kind) => map.markers[kind].some((marker) => same(marker, position))) ?? null
+  const markerKind =
+    ['playerStarts', 'enemySpawns', 'horseSpawns'].find((kind) => (map.markers[kind] ?? []).some((marker) => same(marker, position))) ?? null
   const object = objectDefinitions.find((definition) => definition.position[0] === position.x && definition.position[1] === position.y) ?? null
   return { npc: npcAt(map, position), markerKind, object }
 }
@@ -381,8 +383,14 @@ export function selectionCandidates(map, objectDefinitions, position, { cellPx =
 
 // Whether anything the Move tool carries instead of the tile stands here: a player start, enemy spawn, NPC, area label
 // or objective marker.
+const characterMarkerLists = (map) => [
+  ...(map.markers.playerStarts ?? []),
+  ...(map.markers.enemySpawns ?? []),
+  ...(map.markers.horseSpawns ?? []),
+]
+
 const standsAt = (map, position) =>
-  [...map.markers.playerStarts, ...map.markers.enemySpawns, ...(map.npcs ?? []).map((npc) => npc.position)].some((other) => same(other, position))
+  [...characterMarkerLists(map), ...(map.npcs ?? []).map((npc) => npc.position)].some((other) => same(other, position))
 export const hasMarkers = (map, position) =>
   standsAt(map, position) || Boolean(areaAt(map, position)) || (map.objectives ?? []).some((objective) => objective.position && same(objective.position, position))
 
@@ -391,8 +399,8 @@ export const hasMarkers = (map, position) =>
 export function moveMarkers(map, from, to) {
   if (same(from, to)) return { map }
   const standing = standsAt(map, from)
-  if (standing && getTile(map.tiles[to.y][to.x]).solid) return { error: 'Player starts, enemy spawns and NPCs stand on floor tiles.' }
-  if (standing && standsAt(map, to)) return { error: 'That tile already has a player start, enemy spawn or NPC.' }
+  if (standing && getTile(map.tiles[to.y][to.x]).solid) return { error: 'Player starts, enemy spawns, horse spawns and NPCs stand on floor tiles.' }
+  if (standing && standsAt(map, to)) return { error: 'That tile already has a player start, enemy spawn, horse spawn or NPC.' }
   if (areaAt(map, from) && areaAt(map, to)) return { error: 'That tile already has an area label.' }
   const shift = (position) => (same(position, from) ? to : position)
   // A start or spawn keeps its facing when it moves.
@@ -400,7 +408,11 @@ export function moveMarkers(map, from, to) {
   return {
     map: {
       ...map,
-      markers: { playerStarts: map.markers.playerStarts.map(shiftSpawn), enemySpawns: map.markers.enemySpawns.map(shiftSpawn) },
+      markers: {
+        playerStarts: map.markers.playerStarts.map(shiftSpawn),
+        enemySpawns: map.markers.enemySpawns.map(shiftSpawn),
+        horseSpawns: (map.markers.horseSpawns ?? []).map(shiftSpawn),
+      },
       npcs: (map.npcs ?? []).map((npc) => ({ ...npc, position: shift(npc.position) })),
       areas: map.areas.map((area) => ({ ...area, position: shift(area.position) })),
       objectives: (map.objectives ?? []).map((objective) => (objective.position ? { ...objective, position: shift(objective.position) } : objective)),
@@ -414,7 +426,7 @@ export function moveMarkers(map, from, to) {
 export function turnFacing(map, position) {
   const npc = npcAt(map, position)
   if (npc) return setFacing(map, position, nextFacing(npc.facing ?? 0))
-  const marker = [...map.markers.playerStarts, ...map.markers.enemySpawns].find((other) => same(other, position))
+  const marker = characterMarkerLists(map).find((other) => same(other, position))
   return marker ? setFacing(map, position, nextFacing(spawnFacing(map, marker))) : map
 }
 
@@ -429,16 +441,27 @@ export function setFacing(map, position, facing) {
       if (facing !== null) return { ...marker, facing }
       return { x: marker.x, y: marker.y }
     })
-  return { ...withNpc, markers: { playerStarts: align(withNpc.markers.playerStarts), enemySpawns: align(withNpc.markers.enemySpawns) } }
+  return {
+    ...withNpc,
+    markers: {
+      playerStarts: align(withNpc.markers.playerStarts),
+      enemySpawns: align(withNpc.markers.enemySpawns),
+      horseSpawns: align(withNpc.markers.horseSpawns ?? []),
+    },
+  }
 }
 
-// kind: 'playerStarts' | 'enemySpawns'. Clicking a marker removes it; a tile holds one marker of either kind.
+// kind: 'playerStarts' | 'enemySpawns' | 'horseSpawns'. Clicking a marker removes it; a tile holds one character marker.
 export function toggleMarker(map, kind, position) {
   if (getTile(map.tiles[position.y][position.x]).solid) return map
-  const current = map.markers[kind]
+  const current = map.markers[kind] ?? []
   if (current.some((other) => same(other, position))) return { ...map, markers: { ...map.markers, [kind]: without(current, position) } }
-  const markers = { playerStarts: without(map.markers.playerStarts, position), enemySpawns: without(map.markers.enemySpawns, position) }
-  return { ...map, markers: { ...markers, [kind]: [...markers[kind], position] } }
+  const markers = {
+    playerStarts: without(map.markers.playerStarts, position),
+    enemySpawns: without(map.markers.enemySpawns, position),
+    horseSpawns: without(map.markers.horseSpawns ?? [], position),
+  }
+  return { ...map, markers: { ...markers, [kind]: [...(markers[kind] ?? []), position] } }
 }
 
 export function eraseMarkers(map, position, { characters = true, markers = true } = {}) {
@@ -446,7 +469,11 @@ export function eraseMarkers(map, position, { characters = true, markers = true 
     ...map,
     areas: markers ? map.areas.filter((area) => !same(area.position, position)) : map.areas,
     markers: characters
-      ? { playerStarts: without(map.markers.playerStarts, position), enemySpawns: without(map.markers.enemySpawns, position) }
+      ? {
+          playerStarts: without(map.markers.playerStarts, position),
+          enemySpawns: without(map.markers.enemySpawns, position),
+          horseSpawns: without(map.markers.horseSpawns ?? [], position),
+        }
       : map.markers,
     npcs: characters ? (map.npcs ?? []).filter((npc) => !same(npc.position, position)) : (map.npcs ?? []),
   }

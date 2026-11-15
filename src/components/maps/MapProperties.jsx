@@ -357,6 +357,7 @@ export default function MapProperties({
         <p className="me-text">
           Player starts: {map.markers.playerStarts.length} / {MAX_AWAY_TEAM}
         </p>
+        <p className="me-text">Horse spawns: {(map.markers.horseSpawns ?? []).length}</p>
       </PropertySection>
 
       <PropertySection

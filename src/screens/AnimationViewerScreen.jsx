@@ -10,6 +10,7 @@ import {
   clipPlayMode,
   clipSeconds,
   listAnimationSets,
+  previewBodyKindForSet,
 } from '../spike3d/clips.js'
 import AnimationPreview from '../spike3d/AnimationPreview.jsx'
 import {
@@ -61,6 +62,8 @@ const CLIP_TABS = [
   { id: 'fall', label: 'Fall', groupIds: ['fall', 'getup'] },
   { id: 'extra', label: 'Extra', groupIds: ['fidgets', 'base', '3dOnly'] },
 ]
+
+const HORSE_CLIP_TABS = [{ id: 'move', label: 'Move', groupIds: ['horse'] }]
 
 const ANIMATION_MENUS = [
   {
@@ -157,6 +160,9 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
   // Starts on the set the starting species (human) uses, as picking a species does below.
   const [animSetId, setAnimSetId] = useState(() => animationSetIdForSpecies('human'))
   const groups = useMemo(() => animationViewerGroups(animSetId), [animSetId])
+  const bodyKind = previewBodyKindForSet(animSetId)
+  const isHorseSet = bodyKind === 'horse'
+  const clipTabs = isHorseSet ? HORSE_CLIP_TABS : CLIP_TABS
   const allClips = useMemo(() => groups.flatMap((g) => g.clips.map((c) => c.name)), [groups])
   const [selected, setSelected] = useState(() => keptOrDefaultClip('idle', allClips))
   const [open, setOpen] = useState(() => new Set(groups.map((g) => g.id)))
@@ -214,6 +220,8 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
     setSelected((current) => keptOrDefaultClip(current, allClips))
     setProgress(0)
     setPlaying(allClips.length > 0)
+    setClipTab('move')
+    if (previewBodyKindForSet(animSetId) === 'horse') setShowSkeleton(false)
   }
 
   const appearance = useMemo(() => {
@@ -227,7 +235,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
     return { ...base, hairStyle }
   }, [species, gender, division, hairStyle])
 
-  const tabDef = CLIP_TABS.find((t) => t.id === clipTab) ?? CLIP_TABS[0]
+  const tabDef = clipTabs.find((t) => t.id === clipTab) ?? clipTabs[0]
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase()
     return groups
@@ -242,8 +250,8 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
   const anyGroupOpen = filteredGroups.some((group) => open.has(group.id))
   const showCollapse = anyGroupOpen || Boolean(query.trim())
 
-  const seconds = clipSeconds(selected)
-  const playMode = clipPlayMode(selected)
+  const seconds = clipSeconds(selected, animSetId)
+  const playMode = clipPlayMode(selected, animSetId)
   const timeLabel = `${(progress * seconds).toFixed(2)}s / ${seconds.toFixed(2)}s`
 
   const toggleGroup = (id) => {
@@ -504,7 +512,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
               className="me-select av-anim-set-select"
               value={animSetId}
               aria-label="Animation set"
-              title="Body-type catalogue: humanoids share one set; monsters use another"
+              title="Body-type catalogue: Humanoid, Monster, or Horse"
               onChange={(event) => setAnimSetId(event.target.value)}
             >
               {animationSets.map((set) => (
@@ -515,7 +523,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
             </select>
           </div>
           <div className="ed-asset-tabs" role="tablist" aria-label="Clip set">
-            {CLIP_TABS.map((tab) => (
+            {clipTabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
@@ -573,10 +581,12 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
             </div>
             <div className="av-preview-wrap">
               <AnimationPreview
+                key={bodyKind}
+                bodyKind={bodyKind}
                 clip={selected}
                 playing={playing}
                 progress={progress}
-                appearance={appearance}
+                appearance={isHorseSet ? null : appearance}
                 lockedIso={lockedIso}
                 loopOnce={loopOnce}
                 showSkeleton={showSkeleton}
@@ -627,8 +637,14 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                     type="button"
                     className={`me-button${ragdollActive ? ' is-on' : ''}`}
                     onClick={toggleRagdoll}
-                    disabled={ragdollBusy || !selected}
-                    title={ragdollActive ? 'Restore idle pose' : 'Collapse into Rapier ragdoll'}
+                    disabled={isHorseSet || ragdollBusy || !selected}
+                    title={
+                      isHorseSet
+                        ? 'Ragdoll is humanoid-only'
+                        : ragdollActive
+                          ? 'Restore idle pose'
+                          : 'Collapse into Rapier ragdoll'
+                    }
                   >
                     {ragdollBusy ? 'Ragdoll…' : ragdollActive ? 'Reset' : 'Ragdoll'}
                   </button>
@@ -636,39 +652,43 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
               </div>
               <div className="av-dock-slot av-dock-model">
                 <p className="ed-dock-title">Model</p>
-                <div className="av-dock-model-fields">
-                  <select className="me-select" value={species} aria-label="Species" onChange={(e) => setSpecies(e.target.value)}>
-                    {SPECIES.map((id) => (
-                      <option key={id} value={id}>
-                        {id}
-                      </option>
-                    ))}
-                  </select>
-                  <select className="me-select" value={gender} aria-label="Gender" onChange={(e) => setGender(e.target.value)}>
-                    <option value="male">male</option>
-                    <option value="female">female</option>
-                  </select>
-                  <select className="me-select" value={hairStyle} aria-label="Hair" onChange={(e) => setHairStyle(e.target.value)}>
-                    {HAIR_STYLES.map((id) => (
-                      <option key={id} value={id}>
-                        {id}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="me-select"
-                    value={division}
-                    aria-label="Uniform"
-                    disabled={species === 'klingon'}
-                    onChange={(e) => setDivision(e.target.value)}
-                  >
-                    {UNIFORM_DIVISION_IDS.map((id) => (
-                      <option key={id} value={id}>
-                        {id}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {isHorseSet ? (
+                  <p className="me-text">Procedural horse · idle / walk / trot</p>
+                ) : (
+                  <div className="av-dock-model-fields">
+                    <select className="me-select" value={species} aria-label="Species" onChange={(e) => setSpecies(e.target.value)}>
+                      {SPECIES.map((id) => (
+                        <option key={id} value={id}>
+                          {id}
+                        </option>
+                      ))}
+                    </select>
+                    <select className="me-select" value={gender} aria-label="Gender" onChange={(e) => setGender(e.target.value)}>
+                      <option value="male">male</option>
+                      <option value="female">female</option>
+                    </select>
+                    <select className="me-select" value={hairStyle} aria-label="Hair" onChange={(e) => setHairStyle(e.target.value)}>
+                      {HAIR_STYLES.map((id) => (
+                        <option key={id} value={id}>
+                          {id}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      className="me-select"
+                      value={division}
+                      aria-label="Uniform"
+                      disabled={species === 'klingon'}
+                      onChange={(e) => setDivision(e.target.value)}
+                    >
+                      {UNIFORM_DIVISION_IDS.map((id) => (
+                        <option key={id} value={id}>
+                          {id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="av-dock-slot av-dock-scrub">
                 <p className="ed-dock-title">Scrub</p>
@@ -685,7 +705,13 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
               </div>
               <div className="av-dock-slot av-dock-action">
                 <p className="ed-dock-title">Ragdoll</p>
-                <button type="button" className="me-button is-primary" onClick={toggleRagdoll} disabled={ragdollBusy}>
+                <button
+                  type="button"
+                  className="me-button is-primary"
+                  onClick={toggleRagdoll}
+                  disabled={isHorseSet || ragdollBusy}
+                  title={isHorseSet ? 'Ragdoll is humanoid-only' : undefined}
+                >
                   {ragdollBusy ? 'Ragdoll…' : ragdollActive ? 'Reset pose' : 'Apply & flop'}
                 </button>
               </div>

@@ -13,7 +13,15 @@ import { makeLabel, placeLabel, textureOf } from './pixiDraw.js'
 // NPCs, challenge objects and objectives as small labelled diamonds, with a facing arrow where they face a way.
 // Presentation only.
 
-const MARKER_FILLS = { player: 0x3fb6e8, enemy: 0xe5483a, npc: 0xb07ee8, objective: 0xe0a800, object: 0x1fa59a, patrol: 0xe8c44a }
+const MARKER_FILLS = {
+  player: 0x3fb6e8,
+  enemy: 0xe5483a,
+  horse: 0xb8894a,
+  npc: 0xb07ee8,
+  objective: 0xe0a800,
+  object: 0x1fa59a,
+  patrol: 0xe8c44a,
+}
 // Guide grid over the floor (world pixels; 64 = one tile). Drawn under markers so figures stay readable.
 const GRID_STROKE = { color: 0xb7dde4, width: 1, alpha: 0.45 }
 const GRID_SNAP_FILL = { color: 0xff2a3a, alpha: 0.95 }

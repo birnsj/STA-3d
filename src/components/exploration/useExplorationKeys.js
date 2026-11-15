@@ -5,8 +5,9 @@ const isPlainPress = (event) => !event.repeat && !event.ctrlKey && !event.metaKe
 
 // Exploration's keyboard: number keys 1-n pick party members (Shift adds / removes), like clicking their portraits;
 // Escape closes panels and leaves a conversation; C opens or closes the character sheet; I the inventory; B also the
-// inventory; L the Captain's Log. Sneak is on the party ring only (C used to toggle it). Ignored while typing in a field.
-// keys: { memberIds, onPick(id, additive), onEscape, onSheet, onInventory, onLog }; the latest handlers are always used.
+// inventory; L the Captain's Log; M mounts / dismounts the outdoor horse. Sneak is on the party ring only.
+// Ignored while typing in a field.
+// keys: { memberIds, onPick(id, additive), onEscape, onSheet, onInventory, onLog, onMount }; the latest handlers are always used.
 export default function useExplorationKeys(keys) {
   const latest = useRef(keys)
   useEffect(() => {
@@ -15,7 +16,7 @@ export default function useExplorationKeys(keys) {
   useEffect(() => {
     const onKey = (event) => {
       if (isTyping(event)) return
-      const { memberIds, onPick, onEscape, onSheet, onInventory, onLog } = latest.current
+      const { memberIds, onPick, onEscape, onSheet, onInventory, onLog, onMount } = latest.current
       const index = Number(event.code.replace('Digit', '')) - 1
       if (event.code.startsWith('Digit') && index >= 0 && index < memberIds.length) onPick(memberIds[index], event.shiftKey)
       if (event.code === 'Escape') onEscape()
@@ -23,6 +24,7 @@ export default function useExplorationKeys(keys) {
       if (event.code === 'KeyI' && isPlainPress(event)) onInventory?.()
       if (event.code === 'KeyB' && isPlainPress(event)) onInventory?.()
       if (event.code === 'KeyL' && isPlainPress(event)) onLog()
+      if (event.code === 'KeyM' && isPlainPress(event)) onMount?.()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
