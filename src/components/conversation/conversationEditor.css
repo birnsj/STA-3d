@@ -1067,7 +1067,7 @@ button.ge-pack-marker-face:hover {
   flex-shrink: 0;
 }
 
-/* All five authoring layer tabs (Ground…Markers); wrap when the rail is narrow. */
+/* Ground…Markers + Environment + Items; wrap when the rail is narrow. */
 .ed-shell .ge-layer-tabs .ed-tab {
   padding: 0 5px;
   font-size: 9px;

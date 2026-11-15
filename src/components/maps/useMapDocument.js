@@ -48,9 +48,11 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
   const [recentMaps, setRecentMaps] = useState(() => listRecentMaps())
   const [showLoad, setShowLoad] = useState(false)
   const [drawingCard, setDrawingCard] = useState(false)
-  // Generate Map's Room size and Building size sliders, in percent of each generator's own sizes. Not saved with the map.
+  // Generate Map scale / density sliders (percent). Not saved with the map.
   const [roomScale, setRoomScale] = useState(100)
   const [buildingScale, setBuildingScale] = useState(100)
+  const [roomsInBuilding, setRoomsInBuilding] = useState(100)
+  const [doorsInBuilding, setDoorsInBuilding] = useState(100)
   // When checked, Generate Map also scatters hazard regions on the new layout (editor option; not saved with the map).
   const [generateHazards, setGenerateHazards] = useState(false)
   // The map as last opened, saved or generated (null when the open map exists nowhere else), so switching only the
@@ -136,8 +138,8 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     const next = settleWeather(changed)
     if (rebuildable) return onGenerate(next)
     edit(next)
-    if (next.mapType !== map.mapType) setStatus(`Location set to ${generatorFor(next.mapType).label}. Legacy Map Generator builds a new one of this type.`)
-    else if (next.biome !== map.biome) setStatus(`Biome set to ${biomeFor(next.biome).label}. Legacy Map Generator builds a new map in it.`)
+    if (next.mapType !== map.mapType) setStatus(`Map type set to ${generatorFor(next.mapType).label}.`)
+    else if (next.biome !== map.biome) setStatus(`Biome set to ${biomeFor(next.biome).label}.`)
   }
   const onBiome = (biome) => changeSetup({ ...map, biome })
   const onSize = (sizeId) => {
@@ -172,7 +174,12 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
       }
       if (!isMapDocumentOperationCurrent(guardRef.current, operation)) return
     }
-    let next = generateNamedMap(source, taken.map((entry) => entry.id), Math.random, { rooms: roomScale / 100, buildings: buildingScale / 100 })
+    let next = generateNamedMap(source, taken.map((entry) => entry.id), Math.random, {
+      rooms: roomScale / 100,
+      buildings: buildingScale / 100,
+      roomsInBuilding: roomsInBuilding / 100,
+      doorsInBuilding: doorsInBuilding / 100,
+    })
     if (generateHazards) next = withGeneratedHazards(next, Math.random)
     next = { ...next, weather: randomWeather(next) }
     // A freshly drawn picture, kept with the map until Save; if drawing fails the map keeps the catalogue card Generate picked.
@@ -201,6 +208,8 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     const result = generateAutoPaintMap(map, rulesetId, seededRandom(seed), {
       rooms: roomScale / 100,
       buildings: buildingScale / 100,
+      roomsInBuilding: roomsInBuilding / 100,
+      doorsInBuilding: doorsInBuilding / 100,
     })
     if (result.error) {
       setStatus(result.error)
@@ -359,6 +368,10 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     setRoomScale,
     buildingScale,
     setBuildingScale,
+    roomsInBuilding,
+    setRoomsInBuilding,
+    doorsInBuilding,
+    setDoorsInBuilding,
     generateHazards,
     setGenerateHazards,
     confirmDiscard,

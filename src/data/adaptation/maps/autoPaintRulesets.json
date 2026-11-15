@@ -1,5 +1,5 @@
 {
-  "notes": "Auto-Paint construction rulesets (new generator). Independent of Generate Map / Generator Editor. Template 32 wall roles are Template Piece ids; bulkhead-style rulesets use true wall tiles.",
+  "notes": "Auto-Paint construction rulesets (new generator). Independent of Generate Map / Generator Editor. Template 32 = starship deck grid; Outdoor Template 32 = settlement layout (path, multi-building, dirt yards edged with path).",
   "rulesets": [
     {
       "schemaVersion": 1,
@@ -39,6 +39,76 @@
         "corner": [
           {
             "id": "tplStarshipWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "outdoor-template-32",
+      "label": "Outdoor Template 32",
+      "environment": "outdoorSettlement",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": ["prefab", "barn", "city", "timber"],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": true,
+        "fence": "fence",
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 3
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "grass",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
             "weight": 1
           }
         ],

@@ -2,8 +2,8 @@ import missionLogData from '../../data/adaptation/exploration/missionLog.json'
 import { MAX_AWAY_TEAM } from '../../exploration/awayTeam.js'
 import { authoredDefinitionsFor } from '../../exploration/challengeObjects.js'
 import { DEFAULT_AMBIENT_COLOUR, FULL_LIGHT, getTile, isRotated, mapFileId } from '../../maps/mapFormat.js'
-import { listAutoPaintRulesets } from '../../maps/autoPaint/index.js'
-import { BIOME_WORLDS, BIOMES, LOCATION_GROUPS, MAP_GENERATORS, MAP_SIZES, randomMapName, sizeFor, sizeIdOf, usesBiome } from '../../maps/mapGenerators.js'
+import { getAutoPaintRuleset, listAutoPaintRulesets, mapTypeForEnvironment } from '../../maps/autoPaint/index.js'
+import { BIOME_WORLDS, BIOMES, MAP_SIZES, randomMapName, sizeFor, sizeIdOf, usesBiome } from '../../maps/mapGenerators.js'
 import { isIndoors, weatherFor, weatherOptions } from '../../maps/mapWeather.js'
 import { randomEpisodeName } from '../../rules/locationNames.js'
 import EditorControlsHelp from './EditorControlsHelp.jsx'
@@ -15,11 +15,11 @@ import EditorSelect from './EditorSelect.jsx'
 // Map-level properties for the right Properties panel when nothing is selected (or Map tab is forced).
 // Map-level fields shown in the editor's right Properties panel.
 
-function ScaleSlider({ label, title, min, value, onChange }) {
+function ScaleSlider({ label, title, min, max = '200', value, onChange }) {
   return (
     <label className="me-scale" title={title}>
       <span className="me-scale-label">{label}</span>
-      <input type="range" min={min} max="200" step="10" value={value} aria-label={label} onChange={(event) => onChange(Number(event.target.value))} />
+      <input type="range" min={min} max={max} step="10" value={value} aria-label={label} onChange={(event) => onChange(Number(event.target.value))} />
       <span className="me-ambient-value">{value}%</span>
     </label>
   )
@@ -55,6 +55,10 @@ export default function MapProperties({
   onRoomScale,
   buildingScale,
   onBuildingScale,
+  roomsInBuilding = 100,
+  onRoomsInBuilding,
+  doorsInBuilding = 100,
+  onDoorsInBuilding,
   /** When true (World Generation Ruleset Map panel), ruleset is chosen in the left editor. */
   worldGeneration = false,
 }) {
@@ -66,34 +70,45 @@ export default function MapProperties({
   const rulesets = listAutoPaintRulesets()
   const activeRulesetId = rulesetId || rulesets[0]?.id || ''
 
+  const onRulesetChange = (id) => {
+    if (!id) return
+    onRulesetId?.(id)
+    const nextType = mapTypeForEnvironment(getAutoPaintRuleset(id)?.environment)
+    if (nextType !== map.mapType) onMapType?.(nextType)
+  }
+
   return (
     <div className="ed-map-props">
       <PropertySection
         id="map"
         title="Map"
-        tip="Location, biome, weather, size, and ambient light for this map. World Generation Generate Map uses size, type, biome, light, and weather from here."
+        tip="Ruleset, biome, weather, size, and ambient light. Generate Map uses the ruleset plus size, light, and weather from here."
       >
-        <label className="me-field">
-          Location
-          <EditorSelect className="me-select me-wide" value={map.mapType} aria-label="Location" onChange={(event) => onMapType(event.target.value)}>
-            {LOCATION_GROUPS.map((group) => (
-              <optgroup key={group.id} label={group.label}>
-                {MAP_GENERATORS.filter((generator) => generator.group === group.id).map((generator) => (
-                  <option key={generator.id} value={generator.id}>
-                    {generator.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </EditorSelect>
-        </label>
+        {!worldGeneration && rulesets.length > 0 && (
+          <label className="me-field">
+            Ruleset
+            <EditorSelect
+              className="me-select me-wide"
+              value={activeRulesetId}
+              aria-label="World Generation ruleset"
+              title="Which World Generation Ruleset Generate Map and Auto-Paint use"
+              onChange={(event) => onRulesetChange(event.target.value)}
+            >
+              {rulesets.map((ruleset) => (
+                <option key={ruleset.id} value={ruleset.id}>
+                  {ruleset.label || ruleset.id}
+                </option>
+              ))}
+            </EditorSelect>
+          </label>
+        )}
         <label className="me-field">
           Biome
           <EditorSelect
             className="me-select me-wide"
             value={map.biome}
             disabled={biomeless}
-            title={biomeless ? 'Ships, stations and indoor locations have no biome' : 'Biome'}
+            title={biomeless ? 'Starship / station / indoor rulesets have no biome' : 'Biome'}
             onChange={(event) => onBiome(event.target.value)}
           >
             {BIOME_WORLDS.map((world) => (
@@ -216,40 +231,38 @@ export default function MapProperties({
       <PropertySection
         id="generate"
         title="Generate"
-        tip="World Generation builds a new layout from the active ruleset (room size, map type, biome, light, weather). Nothing is saved until you press Save. Legacy Map Generator is under Tools."
+        tip="World Generation builds a new layout from the Map ruleset above (room size, light, weather). Nothing is saved until you press Save. Edit ruleset contents via Tools → World Generation Ruleset. Legacy Map Generator is under Tools."
         defaultOpen
       >
-        {!worldGeneration && rulesets.length > 0 && (
-          <label className="me-field">
-            Ruleset
-            <EditorSelect
-              className="me-select me-wide"
-              value={activeRulesetId}
-              aria-label="World Generation ruleset"
-              title="Which World Generation Ruleset Generate Map uses"
-              onChange={(event) => onRulesetId?.(event.target.value)}
-            >
-              {rulesets.map((ruleset) => (
-                <option key={ruleset.id} value={ruleset.id}>
-                  {ruleset.label || ruleset.id}
-                </option>
-              ))}
-            </EditorSelect>
-          </label>
-        )}
         <ScaleSlider
           label="Room size"
-          title="How large rooms are when World Generation Generate Map builds the deck grid."
+          title="Deck: how large rooms are in the grid. Outdoor settlement: how large rooms are inside buildings."
           min="70"
           value={roomScale}
           onChange={onRoomScale}
         />
         <ScaleSlider
           label="Building size"
-          title="Reserved for outdoor / city layouts. Deck Generate Map does not place buildings."
+          title="Outdoor settlement: how large building footprints are. Deck Generate Map does not place buildings."
           min="100"
           value={buildingScale}
           onChange={onBuildingScale}
+        />
+        <ScaleSlider
+          label="Rooms"
+          title="Outdoor settlement: fraction of rooms inside each building. 0% = open floor, 100% = as many as Room size allows. Press Generate Map after changing."
+          min="0"
+          max="100"
+          value={roomsInBuilding}
+          onChange={onRoomsInBuilding}
+        />
+        <ScaleSlider
+          label="Doors"
+          title="Outdoor settlement: fraction of interior doorways. 0% = entrance only, 100% = a door on every interior wall. Needs Rooms above 0%. Press Generate Map after changing."
+          min="0"
+          max="100"
+          value={doorsInBuilding}
+          onChange={onDoorsInBuilding}
         />
         <button
           type="button"

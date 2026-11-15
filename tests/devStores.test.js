@@ -345,6 +345,14 @@ describe('template piece store layer', () => {
     assert.equal(pieces[1].layer, 'furniture')
   })
 
+  it('inserts solid when missing and updates when present', () => {
+    fs.writeFileSync(file(), original)
+    assert.deepEqual(applyTemplatePieceChange(file(), { id: 'tplFloor', solid: true }), { id: 'tplFloor', solid: true })
+    assert.equal(JSON.parse(text('templatePieces.json')).pieces[0].solid, true)
+    assert.deepEqual(applyTemplatePieceChange(file(), { id: 'tplFloor', solid: false }), { id: 'tplFloor', solid: false })
+    assert.equal(JSON.parse(text('templatePieces.json')).pieces[0].solid, false)
+  })
+
   it('refuses an unknown piece or invalid layer', () => {
     fs.writeFileSync(file(), original)
     assert.throws(() => setTemplatePieceLayer(file(), { id: 'nope', layer: 'ground' }), /No template piece with id/)

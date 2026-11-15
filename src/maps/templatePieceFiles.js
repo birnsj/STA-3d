@@ -1,4 +1,4 @@
-// Dev map editor: saves Template Piece cover / fade / layer / emissive / emitColour into templatePieces.json via /__templates.
+// Dev map editor: saves Template Piece cover / fade / solid / layer / emissive / emitColour into templatePieces.json via /__templates.
 // Delete removes the piece + orphan art.
 import { requestJson } from '../files/jsonHttp.js'
 import {

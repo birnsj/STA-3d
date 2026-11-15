@@ -180,6 +180,7 @@ const OBJ = {
   rock: () => O.boulder(g('ground'), { colour: hex('#7a7268'), seed: 3 }),
   tree: (t) => O.tree(g('ground'), { trunk: hex('#5a3e26'), leaves: leaves('#24501f', '#5a9a48'), seed: 2, ...t }),
   fence: () => O.fence(g('ground')),
+  fenceCorner: () => O.fenceCorner(g('ground')),
   bush: () => O.bush(g('grass'), { leaves: leaves('#24501f', '#5aa04e'), h: 16, seed: 3, berries: hex('#c03a3a') }),
   log: () => O.log(g('grass'), {}),
   reeds: () => O.cluster(g('mud'), { stems: reeds(), mat: O.matte(hex('#7a8a3a'), { vary: 0.35 }), tipMat: O.matte(hex('#6a4a2a')), top: 24 }),

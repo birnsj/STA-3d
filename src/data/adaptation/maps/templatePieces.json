@@ -10,7 +10,8 @@
     "cover / fade match counterpart Starship tiles; animation.emissive / emitColour match wall overlay Properties (saved via /__templates).",
     "Dimension Kit (tplDim*): solid-but-lit AA size/footprint tests. Separate from Starship templates and Calibration tiles. Art via scripts/makeDimensionKit.mjs.",
     "Outdoor Template 32 (tplOutdoor*): overlay copies of curated outdoor tiles (roads, fields, trees, props) that reuse the tile PNGs — no new art. Pieces with solid: true block movement like their tile (templatePieces.isTemplateWallCollider); walls are the baked 32-thick kit from scripts/makeOutdoorTemplatePieces.mjs. Tag outdoor; group Outdoor Template 32.",
-    "Outdoor Template 32 walls (tplOutdoor*Wall32*): 32 thick (64 / 128 run); corner post 32×32. Faces match outdoor builtWall tiles (prefab / barn / city / timber / stone / ruin). Art via scripts/makeOutdoorTemplatePieces.mjs. Floors/props remain tile-art overlays."
+    "Outdoor Template 32 walls (tplOutdoor*Wall32*): 32 thick (64 / 128 run); corner post 32×32. Faces match outdoor builtWall tiles (prefab / barn / city / timber / stone / ruin). Art via scripts/makeOutdoorTemplatePieces.mjs. Floors/props remain tile-art overlays.",
+    "Outdoor fence (tplOutdoorFence64 / Corner / Gate64): chunky timber post-and-rail 64×32 + corner post + 64 gate. Art via scripts/makeOutdoorFencePieces.mjs."
   ],
   "pieces": [
     {
@@ -13389,6 +13390,52 @@
       "fade": false
     },
     {
+      "id": "tplOutdoorPlankFloor",
+      "label": "Plank Floor",
+      "layer": "ground",
+      "href": "/art/sprites/environment/cantina/plankFloor.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor",
+        "wood"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplOutdoorFlagstone",
+      "label": "Flagstone Floor",
+      "layer": "ground",
+      "href": "/art/sprites/environment/alienTemple/templeFloor.png",
+      "size": {
+        "width": 64,
+        "height": 96
+      },
+      "anchorX": 32,
+      "tags": [
+        "outdoor",
+        "floor",
+        "stone"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 3,
+      "cover": false,
+      "fade": false
+    },
+    {
       "id": "tplOutdoorGround",
       "label": "Ground",
       "layer": "ground",
@@ -14922,6 +14969,163 @@
       "cover": true,
       "fade": true,
       "face": "ruin"
+    },
+    {
+      "id": "tplOutdoorFence64",
+      "label": "Fence 64",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/templates/tplOutdoorFence64.png",
+      "size": {
+        "width": 40,
+        "height": 40
+      },
+      "anchorX": 36,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFence64_r90.png",
+          "size": {
+            "width": 40,
+            "height": 40
+          },
+          "anchorX": 4
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFence64_r180.png",
+          "size": {
+            "width": 40,
+            "height": 40
+          },
+          "anchorX": 36
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFence64_r270.png",
+          "size": {
+            "width": 40,
+            "height": 40
+          },
+          "anchorX": 4
+        }
+      },
+      "tags": [
+        "outdoor",
+        "fence",
+        "thick32",
+        "straight",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 20,
+      "cover": true,
+      "fade": false,
+      "solid": true
+    },
+    {
+      "id": "tplOutdoorFence64Corner",
+      "label": "Fence Corner",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/templates/tplOutdoorFence64Corner.png",
+      "size": {
+        "width": 10,
+        "height": 25
+      },
+      "anchorX": 5,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFence64Corner_r90.png",
+          "size": {
+            "width": 10,
+            "height": 25
+          },
+          "anchorX": 5
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFence64Corner_r180.png",
+          "size": {
+            "width": 10,
+            "height": 25
+          },
+          "anchorX": 5
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFence64Corner_r270.png",
+          "size": {
+            "width": 10,
+            "height": 25
+          },
+          "anchorX": 5
+        }
+      },
+      "tags": [
+        "outdoor",
+        "fence",
+        "thick32",
+        "corner",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 20,
+      "cover": true,
+      "fade": false,
+      "solid": true
+    },
+    {
+      "id": "tplOutdoorFenceGate64",
+      "label": "Fence Gate 64",
+      "layer": "furniture",
+      "href": "/art/sprites/environment/templates/tplOutdoorFenceGate64.png",
+      "size": {
+        "width": 40,
+        "height": 40
+      },
+      "anchorX": 36,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFenceGate64_r90.png",
+          "size": {
+            "width": 40,
+            "height": 40
+          },
+          "anchorX": 4
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFenceGate64_r180.png",
+          "size": {
+            "width": 40,
+            "height": 40
+          },
+          "anchorX": 36
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplOutdoorFenceGate64_r270.png",
+          "size": {
+            "width": 40,
+            "height": 40
+          },
+          "anchorX": 4
+        }
+      },
+      "tags": [
+        "outdoor",
+        "fence",
+        "thick32",
+        "doorway",
+        "gate",
+        "furniture"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 20,
+      "cover": true,
+      "fade": false,
+      "solid": true
     }
   ]
 }

@@ -500,15 +500,31 @@
 .me-ambient input { width: 90px; accent-color: #f2a33a; }
 .me-ambient-value { min-width: 3.2em; font-variant-numeric: tabular-nums; }
 
-/* Generate Map's Room size / Building size sliders, in the top bar like Light. */
+/* Generate Map scale sliders — label | track | % fit the narrow properties rail. */
 .me-scale {
-  display: flex;
-  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 5.6em minmax(0, 1fr) 2.6em;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.me-scale-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.me-scale input { width: 90px; accent-color: #f2a33a; }
+.me-scale input {
+  width: 100%;
+  min-width: 0;
+  accent-color: #f2a33a;
+}
+.me-scale .me-ambient-value {
+  text-align: right;
+  min-width: 0;
+}
 
 .me-board-area {
   position: relative;
@@ -2375,8 +2391,7 @@
   margin-bottom: 3px;
 }
 
-.ed-shell .me-ambient,
-.ed-shell .me-scale {
+.ed-shell .me-ambient {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2385,9 +2400,41 @@
   color: var(--ed-muted);
 }
 
+.ed-shell .me-scale {
+  display: grid;
+  grid-template-columns: 5.6em minmax(0, 1fr) 2.6em;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: var(--ed-muted);
+}
+
+.ed-shell .me-scale-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ed-shell .me-scale input {
+  width: 100%;
+  min-width: 0;
+}
+
 .ed-shell .me-ambient-value {
   color: var(--ed-text);
   font-size: 10px;
+  min-width: 3.2em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ed-shell .me-scale .me-ambient-value {
+  min-width: 0;
+  text-align: right;
 }
 
 .me-text.is-muted {

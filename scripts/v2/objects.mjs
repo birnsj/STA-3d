@@ -238,6 +238,19 @@ export function fence(ground) {
   }
 }
 
+/**
+ * Fence corner post (same idea as Template 32 wall corners): one post the straight
+ * fence runs meet at. Same wood as fence.
+ */
+export function fenceCorner(ground) {
+  const wood = metal(hex('#a8a89e'), { spec: 0.35 })
+  return {
+    ground,
+    top: 16,
+    parts: [part((p) => box(p, [C, C, 6.5], [1.4, 1.4, 6.5], 0.3), wood)],
+  }
+}
+
 export function planter(ground) {
   return {
     ground,

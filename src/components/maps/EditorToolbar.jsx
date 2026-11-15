@@ -95,6 +95,92 @@ function IconStory() {
   )
 }
 
+/** Paint — brush tip. */
+function IconPaint() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M12.8 1.6 14.4 3.2 7.1 10.5 5.1 10.9l.4-2L12.8 1.6Zm-8.6 8.2c.6 0 1.4.3 2 .9.6.6.9 1.4.9 2 0 1.2-1.1 2.3-2.9 2.3C2.6 15 1.5 13.4 1.5 11.8c0-.4.3-.7.7-.7.9 0 1.3.4 2 .4Z"
+      />
+    </Icon>
+  )
+}
+
+/** Move — four-way arrows. */
+function IconMove() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M8 1.2 10.2 3.8H8.7v3.5H12.2V5.8L14.8 8 12.2 10.2V8.7H8.7v3.5h1.5L8 14.8 5.8 12.2H7.3V8.7H3.8v1.5L1.2 8 3.8 5.8v1.5H7.3V3.8H5.8L8 1.2Z"
+      />
+    </Icon>
+  )
+}
+
+/** Animate — play + motion arcs. */
+function IconAnimate() {
+  return (
+    <Icon>
+      <path fill="currentColor" d="M6 3.2v9.6L13.2 8 6 3.2Z" />
+      <path
+        fill="currentColor"
+        d="M3.2 4.2c-.7 1.1-1.1 2.4-1.1 3.8s.4 2.7 1.1 3.8l1.1-.7C3.8 10.2 3.5 9.1 3.5 8s.3-2.2.8-3.1l-1.1-.7Zm9.7-.7 1.1.7c.5.9.8 2 .8 3.1s-.3 2.2-.8 3.1l1.1.7c.7-1.1 1.1-2.4 1.1-3.8s-.4-2.7-1.1-3.8l-1.1.7Z"
+        opacity="0.85"
+      />
+    </Icon>
+  )
+}
+
+/** Grid — 3×3 cells. */
+function IconGrid() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M2 2h3.6v3.6H2V2Zm4.2 0H9.8v3.6H6.2V2Zm4.2 0H14v3.6h-3.6V2ZM2 6.2h3.6V9.8H2V6.2Zm4.2 0H9.8V9.8H6.2V6.2Zm4.2 0H14V9.8h-3.6V6.2ZM2 10.4h3.6V14H2v-3.6Zm4.2 0H9.8V14H6.2v-3.6Zm4.2 0H14V14h-3.6v-3.6Z"
+      />
+    </Icon>
+  )
+}
+
+/** Layers — stacked cards. */
+function IconLayers() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M8 1.5 14.5 5 8 8.5 1.5 5 8 1.5Zm0 8.2 5.8-3.1.7.4L8 11.3 1.5 7l.7-.4L8 9.7Zm0 3.2 5.8-3.1.7.4L8 14.5 1.5 10.2l.7-.4L8 12.9Z"
+      />
+    </Icon>
+  )
+}
+
+/** Levels — elevation steps. */
+function IconLevels() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M2 12.5h4.2V14H2v-1.5Zm0-3.5h7.2V10.5H2V9Zm0-3.5h10.2V7H2V5.5ZM2 2h12v1.5H2V2Z"
+      />
+    </Icon>
+  )
+}
+
+/** Overview — minimap frame. */
+function IconOverview() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M2 2h12v12H2V2Zm1.4 1.4v9.2h9.2V3.4H3.4Zm1.6 5.2 2.2-2.6 1.8 1.6 2.4-3 1.2 1v5.2H5V8.6Z"
+      />
+    </Icon>
+  )
+}
+
 const TOOL_BUTTONS = [
   { id: 'objectives', label: 'Objective Editor', Icon: IconObjectives, prop: 'onObjectives' },
   { id: 'objects', label: 'Object Editor', Icon: IconObjects, prop: 'onObjects' },
@@ -172,6 +258,10 @@ export default function EditorToolbar({
   onPlacementPreview,
   propFade = false,
   onPropFade,
+  showCollision = false,
+  onShowCollision,
+  showWalkmap = false,
+  onShowWalkmap,
   onPlay,
   placing,
   onPlacing,
@@ -216,41 +306,45 @@ export default function EditorToolbar({
         <div className="ed-seg" role="group" aria-label="Brush">
           <button
             type="button"
-            className={`me-button${placing ? ' is-on' : ''}`}
+            className={`me-button ed-icon-btn${placing ? ' is-on' : ''}`}
             aria-pressed={placing}
+            aria-label="Paint"
             title="Paint the tile chosen in the Palette"
             onClick={() => onPlacing(!placing)}
           >
-            Paint
+            <IconPaint />
           </button>
           <button
             type="button"
-            className={`me-button${moving ? ' is-on' : ''}`}
+            className={`me-button ed-icon-btn${moving ? ' is-on' : ''}`}
             aria-pressed={moving}
+            aria-label="Move"
             title="Swap tiles or move markers"
             onClick={() => onMoving(!moving)}
           >
-            Move
+            <IconMove />
           </button>
         </div>
         <div className="ed-seg" role="group" aria-label="View">
           <button
             type="button"
-            className={`me-button${animateTiles ? ' is-on' : ''}`}
+            className={`me-button ed-icon-btn${animateTiles ? ' is-on' : ''}`}
             aria-pressed={animateTiles}
+            aria-label="Animate"
             title="Play animated tiles (LCARS, conduits, machinery, …)"
             onClick={() => onAnimateTiles?.(!animateTiles)}
           >
-            Animate
+            <IconAnimate />
           </button>
           <button
             type="button"
-            className={`me-button${showGrid ? ' is-on' : ''}`}
+            className={`me-button ed-icon-btn${showGrid ? ' is-on' : ''}`}
             aria-pressed={showGrid}
+            aria-label="Grid"
             title="Show the guide grid overlay"
             onClick={() => onShowGrid?.(!showGrid)}
           >
-            Grid
+            <IconGrid />
           </button>
           <EditorSelect
             className="me-select ed-grid-select"
@@ -276,30 +370,33 @@ export default function EditorToolbar({
           </button>
           <button
             type="button"
-            className={`me-button${overviewOpen ? ' is-on' : ''}`}
+            className={`me-button ed-icon-btn${overviewOpen ? ' is-on' : ''}`}
             aria-pressed={overviewOpen}
+            aria-label="Overview"
             title="Overview window"
             onClick={() => onOverview?.()}
           >
-            Overview
+            <IconOverview />
           </button>
           <button
             type="button"
-            className={`me-button${layersOpen ? ' is-on' : ''}`}
+            className={`me-button ed-icon-btn${layersOpen ? ' is-on' : ''}`}
             aria-pressed={layersOpen}
+            aria-label="Layers"
             title="Layers window"
             onClick={() => onLayers?.()}
           >
-            Layers
+            <IconLayers />
           </button>
           <button
             type="button"
-            className={`me-button${levelsOpen ? ' is-on' : ''}`}
+            className={`me-button ed-icon-btn${levelsOpen ? ' is-on' : ''}`}
             aria-pressed={levelsOpen}
+            aria-label="Levels"
             title="Levels window"
             onClick={() => onLevels?.()}
           >
-            Levels
+            <IconLevels />
           </button>
         </div>
         <SizeFields width={map.width} height={map.height} onResize={onResize} />
@@ -310,6 +407,12 @@ export default function EditorToolbar({
           </label>
           <label className="me-check" title="Props and Template Pieces turn see-through under the pointer or when a placement ghost sits behind them.">
             <input type="checkbox" checked={propFade} onChange={(event) => onPropFade(event.target.checked)} /> Fade
+          </label>
+          <label className="me-check" title="Show wall/prop collision volumes (same boxes as Play → Z).">
+            <input type="checkbox" checked={showCollision} onChange={(event) => onShowCollision?.(event.target.checked)} /> Collision
+          </label>
+          <label className="me-check" title="Show walkable tile centres (green) vs blocked (red) — same as exploration pathfinding.">
+            <input type="checkbox" checked={showWalkmap} onChange={(event) => onShowWalkmap?.(event.target.checked)} /> Walkmap
           </label>
           <label className="me-check" title="Off: enemies never notice the away team or start a fight.">
             <input type="checkbox" checked={enemiesActive} onChange={(event) => onEnemiesActive(event.target.checked)} /> Enemies

@@ -1,6 +1,16 @@
 import { Container } from 'pixi.js'
 import { GroundLootView } from '../../exploration/pixi/boardItems.js'
-import { AreaLabelView, EditorBoundsView, EditorGridView, EditorMarkerView, EditorOutlineView, EditorSurfaceView, TilePreviewView } from './editorMarkers.js'
+import {
+  AreaLabelView,
+  EditorBoundsView,
+  EditorCollisionView,
+  EditorGridView,
+  EditorMarkerView,
+  EditorOutlineView,
+  EditorSurfaceView,
+  EditorWalkmapView,
+  TilePreviewView,
+} from './editorMarkers.js'
 import { HazardLayer } from './hazardLayer.js'
 import { reconcile, startPixiStage } from './pixiStage.js'
 
@@ -10,8 +20,8 @@ import { reconcile, startPixiStage } from './pixiStage.js'
 const NONE = new Set()
 
 // Starts the scene in host. read() returns the latest { layout, ghost, lighting, animate, environment, labels, markers,
-// groundLoot, outlines, preview, grid, surfaces, svg } (the svg whose viewBox is the camera). Resolves to { destroy }, or null if
-// destroyed (isCancelled) before it started; rejects if WebGL can't start.
+// groundLoot, outlines, preview, grid, bounds, collision, walkmap, surfaces, svg } (svg = camera). Resolves to
+// { destroy }, or null if destroyed (isCancelled) before it started; rejects if WebGL can't start.
 export async function startMapScene(host, read, isCancelled) {
   const stage = await startPixiStage(host, isCancelled)
   if (!stage) return null
@@ -33,6 +43,8 @@ export async function startMapScene(host, read, isCancelled) {
   stage.layers.fxLayer.addChild(surfaceLayer, outlineLayer, labelLayer, markerLayer, previewLayer)
   const grid = new EditorGridView(gridLayer)
   const bounds = new EditorBoundsView(gridLayer)
+  const walkmap = new EditorWalkmapView(gridLayer)
+  const collision = new EditorCollisionView(outlineLayer)
   const surfaces = new EditorSurfaceView(surfaceLayer)
   const preview = new TilePreviewView(previewLayer)
   const hazards = new HazardLayer(stage.layers)
@@ -51,6 +63,8 @@ export async function startMapScene(host, read, isCancelled) {
     hazards.update(furnitureOn ? board.environment : { hazards: {} }, now, view, playing)
     grid.update(board.grid, view)
     bounds.update(board.bounds)
+    walkmap.update(board.walkmap)
+    collision.update(board.collision)
     surfaces.update(board.surfaces)
     reconcile(outlines, board.outlines ?? [], outlineLayer, () => new EditorOutlineView(), (outline, item) => outline.update(item))
     reconcile(labels, board.labels, labelLayer, () => new AreaLabelView(), (label, item) => label.update(item, now, playing))
@@ -62,6 +76,8 @@ export async function startMapScene(host, read, isCancelled) {
     destroy: () => {
       grid.destroy()
       bounds.destroy()
+      walkmap.destroy()
+      collision.destroy()
       surfaces.destroy()
       preview.destroy()
       hazards.destroy()

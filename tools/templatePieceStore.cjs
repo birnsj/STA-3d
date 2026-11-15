@@ -3,9 +3,9 @@ const { writeFileAtomic } = require('./atomicWrite.cjs')
 const { collectArtHrefs, deleteOrphanArtFiles } = require('./artHrefUtils.cjs')
 const { trackAuthoringChange } = require('./gitTrack.cjs')
 
-// Dev map editor: cover / fade / layer / emissive / emitColour on templatePieces.json (/__templates), or permanent delete.
+// Dev map editor: cover / fade / solid / layer / emissive / emitColour on templatePieces.json (/__templates), or permanent delete.
 
-const FLAGS = ['cover', 'fade']
+const FLAGS = ['cover', 'fade', 'solid']
 const LAYER_IDS = ['ground', 'walls', 'furniture', 'characters', 'markers']
 const LAYER_ID_SET = new Set(LAYER_IDS)
 const EMISSIVE_MIN = 0
@@ -54,23 +54,29 @@ function findPiece(data, id) {
 
 function setTemplatePieceFlag(file, change) {
   const flag = FLAGS.find((name) => name in change)
-  if (!flag) throw new Error(`Only ${FLAGS.join(' or ')} can be changed`)
+  if (!flag) throw new Error(`Only ${FLAGS.join(', ')} can be changed`)
   const value = change[flag]
   const { id } = change
   if (typeof value !== 'boolean') throw new Error(`${flag} must be true or false`)
   const { text, data } = load(file)
-  const piece = findPiece(data, id)
-  if (typeof piece[flag] !== 'boolean') throw new Error(`Template piece ${id} has no ${flag} value to change`)
+  findPiece(data, id)
 
-  const idAt = text.indexOf(`"id": ${JSON.stringify(id)}`, text.indexOf('"pieces"'))
-  const pattern = new RegExp(`"${flag}":\\s*(true|false)`, 'g')
-  pattern.lastIndex = idAt
-  const match = pattern.exec(text)
-  if (idAt < 0 || !match) throw new Error(`Could not find ${flag} for template piece ${id}`)
-  // Bound the search to this piece object so a later piece's flag is not rewritten.
-  const pieceEnd = text.indexOf('\n    },', match.index)
-  if (pieceEnd >= 0 && match.index > pieceEnd) throw new Error(`Could not locate ${flag} inside ${id}`)
-  const updated = `${text.slice(0, match.index)}"${flag}": ${value}${text.slice(match.index + match[0].length)}`
+  const idAt = pieceIdOffset(text, id)
+  const end = pieceObjectEnd(text, idAt)
+  const slice = text.slice(idAt, end)
+  const existing = new RegExp(`"${flag}":\\s*(true|false)`).exec(slice)
+  let updated
+  if (existing) {
+    const at = idAt + existing.index
+    updated = `${text.slice(0, at)}"${flag}": ${value}${text.slice(at + existing[0].length)}`
+  } else if (flag === 'solid') {
+    // Most pieces omit solid until authored; insert after id (same pattern as layer).
+    const idToken = `"id": ${JSON.stringify(id)}`
+    const at = idAt + idToken.length
+    updated = `${text.slice(0, at)}, "${flag}": ${value}${text.slice(at)}`
+  } else {
+    throw new Error(`Template piece ${id} has no ${flag} value to change`)
+  }
   if (JSON.parse(updated).pieces.find((entry) => entry.id === id)[flag] !== value) {
     throw new Error(`Could not update template piece ${id}`)
   }
@@ -233,10 +239,10 @@ function applyTemplatePieceChange(file, change, extras = {}) {
   if (!change || typeof change !== 'object') throw new Error('body required')
   if (change.delete) return deleteTemplatePiece(file, change, extras)
   if ('layer' in change) return setTemplatePieceLayer(file, change)
-  if ('cover' in change || 'fade' in change) return setTemplatePieceFlag(file, change)
+  if ('cover' in change || 'fade' in change || 'solid' in change) return setTemplatePieceFlag(file, change)
   if ('emissive' in change) return setTemplatePieceEmissive(file, change)
   if ('emitColour' in change) return setTemplatePieceEmitColour(file, change)
-  throw new Error('cover, fade, layer, emissive, emitColour, or delete required')
+  throw new Error('cover, fade, solid, layer, emissive, emitColour, or delete required')
 }
 
 module.exports = {

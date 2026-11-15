@@ -2,6 +2,8 @@
 export {
   AUTO_PAINT_ENVIRONMENTS,
   AUTO_PAINT_WALL_MODES,
+  MAP_TYPE_FOR_ENVIRONMENT,
+  mapTypeForEnvironment,
   autoPaintRulesetEpochOf,
   defaultAutoPaintRulesetId,
   getAutoPaintRuleset,
@@ -21,10 +23,22 @@ export {
 } from './wallsTiles.js'
 export {
   pieceIdForAutoPaintTile,
+  pieceKitFromOutdoorFace,
   pieceKitFromRuleset,
   resolveAutoPaintTileId,
   rulesetUsesTemplatePieces,
 } from './templatePalette.js'
+export {
+  generateSettlementLayout,
+  OUTDOOR_FENCE_CORNER,
+  OUTDOOR_FENCE_GATE,
+  OUTDOOR_FENCE_KIT,
+  OUTDOOR_FENCE_PIECE,
+  OUTDOOR_SETTLEMENT_FACES,
+  OUTDOOR_WALL_FACE_PIECES,
+  rulesetUsesSettlementLayout,
+} from './settlementLayout.js'
+export { placeSettlementBuildingWalls } from './settlementWalls.js'
 export { collectFloorKeys, exteriorUnderlayKeys, floorIdsForRuleset } from './topology.js'
 export { tipKeyOf } from './wallsTemplate.js'
 export { generateAutoPaintMap } from './generate.js'

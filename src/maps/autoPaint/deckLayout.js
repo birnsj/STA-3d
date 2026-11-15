@@ -4,7 +4,7 @@ import { getTile } from '../mapFormat.js'
 import { WORLD_DOOR_MARK } from './constants.js'
 import { pickDoorwayOffsets } from './doorways.js'
 
-const MARKERS_PER_SIDE = 8
+const MARKERS_PER_SIDE = 4
 const MIN_ROOM = 4
 
 const key = ({ x, y }) => `${x},${y}`

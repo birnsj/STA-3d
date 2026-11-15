@@ -158,7 +158,7 @@ const tileFilesEndpoint = () =>
 const itemFilesEndpoint = () => quietDataEndpoint('item-files-endpoint', '/__items', ITEMS_FILE, setItemDescription)
 // Overlay emissive strength slider in Properties → Selection.
 const effectsFilesEndpoint = () => quietDataEndpoint('effects-files-endpoint', '/__effects', EFFECTS_FILE, applyEffectsChange)
-// Template Piece Cover / Fade / Emissive / Colour / Delete in Properties → Selection / Assets palette.
+// Template Piece Collision / Cover / Fade / Emissive / Colour / Delete in Properties → Selection / Assets palette.
 const templatePieceFilesEndpoint = () =>
   quietRelatedDataEndpoint(
     'template-piece-files-endpoint',

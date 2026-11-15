@@ -84,6 +84,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   const [showGrid, setShowGrid] = useState(true)
   const [gridSize, setGridSize] = useState(DEFAULT_EDITOR_GRID_SIZE)
   const [propFade, setPropFade] = useState(false)
+  const [showCollision, setShowCollision] = useState(false)
+  const [showWalkmap, setShowWalkmap] = useState(false)
   const [showBounds, setShowBounds] = useState(true)
   const [showCentre, setShowCentre] = useState(false)
   const [showGridOptions, setShowGridOptions] = useState(false)
@@ -479,6 +481,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           onRoomScale={doc.setRoomScale}
           buildingScale={doc.buildingScale}
           onBuildingScale={doc.setBuildingScale}
+          roomsInBuilding={doc.roomsInBuilding}
+          onRoomsInBuilding={doc.setRoomsInBuilding}
+          doorsInBuilding={doc.doorsInBuilding}
+          onDoorsInBuilding={doc.setDoorsInBuilding}
           cardTools={{ canGenerate: canDrawEpisodeArt, busy: doc.drawingCard, onGenerate: onGenerateCard }}
           onBack={() => setAutoPaintRulesetEditor(false)}
           onPlay={onPlay}
@@ -529,6 +535,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     onRoomScale: doc.setRoomScale,
     buildingScale: doc.buildingScale,
     onBuildingScale: doc.setBuildingScale,
+    roomsInBuilding: doc.roomsInBuilding,
+    onRoomsInBuilding: doc.setRoomsInBuilding,
+    doorsInBuilding: doc.doorsInBuilding,
+    onDoorsInBuilding: doc.setDoorsInBuilding,
   }
 
   const inspectors = {
@@ -598,6 +608,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
         onPlacementPreview={(checked) => updateDisplaySettings({ itemPlacementPreview: checked })}
         propFade={propFade}
         onPropFade={setPropFade}
+        showCollision={showCollision}
+        onShowCollision={setShowCollision}
+        showWalkmap={showWalkmap}
+        onShowWalkmap={setShowWalkmap}
         onPlay={onPlay}
         placing={placing}
         onPlacing={tools.onPlacingToggle}
@@ -651,6 +665,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
             showGrid={showGrid}
             gridSize={gridSize}
             propFade={propFade}
+            showCollision={showCollision}
+            showWalkmap={showWalkmap}
             showBounds={showBounds}
             showCentre={showCentre}
             showSurfaces={showSurfaces}

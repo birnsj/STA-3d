@@ -20,6 +20,18 @@ export const AUTO_PAINT_ENVIRONMENTS = Object.freeze([
   { id: 'naturalTerrain', label: 'Natural Terrain' },
 ])
 
+/** Ruleset environment → map.mapType (size presets, biome on/off, weather). Shared by Dev Edit + World Gen. */
+export const MAP_TYPE_FOR_ENVIRONMENT = Object.freeze({
+  starshipStation: 'templateDeck',
+  indoorBuilding: 'laboratory',
+  outdoorSettlement: 'colony',
+  naturalTerrain: 'wilderness',
+})
+
+export function mapTypeForEnvironment(environment) {
+  return MAP_TYPE_FOR_ENVIRONMENT[environment] || 'templateDeck'
+}
+
 // Tile walls only (Template Pieces path retired). Kept for older JSON that still writes wallMode.
 export const AUTO_PAINT_WALL_MODES = Object.freeze([{ id: 'tiles', label: 'Wall tiles' }])
 
@@ -168,6 +180,32 @@ export function resolveAutoPaintRuleset(raw = {}) {
       enabled: Boolean(propsIn.enabled),
       rules: Array.isArray(propsIn.rules) ? propsIn.rules : [],
     },
+    // Outdoor settlement layout (path, dirt yards, building faces). Ignored for starship deck kits.
+    settlement: resolveSettlement(base.settlement),
+  }
+}
+
+function resolveSettlement(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const faces = Array.isArray(raw.buildingFaces)
+    ? raw.buildingFaces.filter((face) => typeof face === 'string' && face.trim()).map((face) => face.trim())
+    : []
+  const maxFields = Number(raw.maxFields)
+  return {
+    dirt: typeof raw.dirt === 'string' && raw.dirt.trim() ? raw.dirt.trim() : 'ground',
+    path: typeof raw.path === 'string' && raw.path.trim() ? raw.path.trim() : 'path',
+    buildingFaces: faces.length ? faces : ['prefab', 'barn', 'city', 'timber'],
+    interiorWood:
+      typeof raw.interiorWood === 'string' && raw.interiorWood.trim() ? raw.interiorWood.trim() : 'plankFloor',
+    interiorStone:
+      typeof raw.interiorStone === 'string' && raw.interiorStone.trim()
+        ? raw.interiorStone.trim()
+        : 'templeFloor',
+    fields: raw.fields !== false,
+    fence: typeof raw.fence === 'string' && raw.fence.trim() ? raw.fence.trim() : 'fence',
+    crop: typeof raw.crop === 'string' && raw.crop.trim() ? raw.crop.trim() : 'cropRows',
+    tallCrop: typeof raw.tallCrop === 'string' && raw.tallCrop.trim() ? raw.tallCrop.trim() : 'tallCrop',
+    maxFields: Number.isFinite(maxFields) ? Math.max(1, Math.min(6, Math.round(maxFields))) : 3,
   }
 }
 

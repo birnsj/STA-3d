@@ -76,8 +76,12 @@ export function templateOverlayEmitColour(pieceId) {
 export function setTemplatePieceFlagLocal(id, flag, value) {
   const piece = getTemplatePiece(id)
   if (!piece) throw new Error(`No template piece ${id}`)
-  if (flag !== 'cover' && flag !== 'fade') throw new Error(`Unknown flag ${flag}`)
-  piece[flag] = Boolean(value)
+  if (flag !== 'cover' && flag !== 'fade' && flag !== 'solid') throw new Error(`Unknown flag ${flag}`)
+  const next = Boolean(value)
+  const prev = Boolean(piece[flag])
+  piece[flag] = next
+  // solid changes which placements are colliders; bump so edge-collision caches rebuild.
+  if (flag === 'solid' && prev !== next) templatePieceCatalogueEpoch += 1
   return piece[flag]
 }
 
@@ -149,6 +153,7 @@ export function templatePieceSpriteInfo(piece) {
     footprint: piece.footprint ?? null,
     cover: Boolean(piece.cover),
     fade: Boolean(piece.fade),
+    solid: Boolean(piece.solid),
     traits,
     images,
     animation: anim

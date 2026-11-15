@@ -90,7 +90,7 @@ export const WORLD_GENERATION_HELP_TOPICS = [
     title: 'Generate Map vs Auto-Paint',
     body: [
       'Generate Map (in this screen): builds a room grid of floors, cuts openings, then runs the wall pipeline (packing + corners + adjacency). Each press uses a new seed.',
-      'Right Map Properties carry over: size, location, biome, light, weather, name/episode, Room size (deck span). Building size is Legacy city/outdoor only.',
+      'Right Map Properties carry over: size, location, biome, light, weather, name/episode, Room size (deck span), Rooms / Doors (outdoor subdivision). Building size is outdoor settlement / Legacy city.',
       'After Generate, use Rules / Map toggles — Map shows the result; left Palette stays.',
       'Auto-Paint (Edit menu on the main map): you paint floors; Rebuild / live paint runs the same wall pipeline on the current footprint.',
       'Same ruleset, same flowchart and adjacency — different starting point (full layout vs your floors).',

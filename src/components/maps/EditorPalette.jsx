@@ -30,8 +30,10 @@ import TileThumbnail from './TileThumbnail.jsx'
 
 const PALETTE_DRAG_TYPE = 'application/x-sta-palette-group'
 
-// Left Asset Browser. One authoring-layer strip (same as World Generation Palette) picks the catalogue body.
+// Left Asset Browser. All + authoring-layer strip (same as World Generation Palette) picks the catalogue body.
 // Tool ids unchanged. Visual layout follows the Mission Editor mockup (thumbnail grid).
+
+const ALL_TAB = 'all'
 
 const MARKER_TOOLS = [
   { id: 'playerStarts', label: 'Player Start', swatch: 'player' },
@@ -192,8 +194,8 @@ export default function EditorPalette({
   onStatus = null,
 }) {
   const [query, setQuery] = useState('')
-  // Catalogue-only tabs (not authoring layers): Environment, Items — same as the old Assets strip.
-  const [catalogueTab, setCatalogueTab] = useState(null)
+  // First tab All (every tile/piece); Environment / Items stay catalogue-only (not authoring layers).
+  const [catalogueTab, setCatalogueTab] = useState(ALL_TAB)
   const [thumbScale, setThumbScale] = useState(loadThumbScale)
   const [open, setOpen] = useState(() => new Set())
   const [catalogueEpoch, setCatalogueEpoch] = useState(
@@ -526,10 +528,15 @@ export default function EditorPalette({
     saveThumbScale(thumbScale)
   }, [thumbScale])
 
+  const showAllSprites = catalogueTab === ALL_TAB
   const layerTab = LAYER_IDS.includes(activeLayer) ? activeLayer : 'ground'
-  const body = catalogueTab ?? BODY_FOR_LAYER[layerTab] ?? 'tiles'
+  const body = showAllSprites
+    ? 'tiles'
+    : catalogueTab === 'environment' || catalogueTab === 'items'
+      ? catalogueTab
+      : BODY_FOR_LAYER[layerTab] ?? 'tiles'
 
-  // Layers window / external active-layer changes leave catalogue-only tabs.
+  // Layers window / external active-layer changes leave All / Environment / Items.
   const [seenLayer, setSeenLayer] = useState(activeLayer)
   if (activeLayer && activeLayer !== seenLayer) {
     setSeenLayer(activeLayer)
@@ -542,6 +549,8 @@ export default function EditorPalette({
     onActiveLayer?.(layerId)
   }
 
+  const selectAllSprites = () => setCatalogueTab(ALL_TAB)
+
   const toggle = (id) =>
     setOpen((current) => {
       const next = new Set(current)
@@ -550,17 +559,17 @@ export default function EditorPalette({
       return next
     })
 
-  // Same layer filter as World Generation Palette: only thumbs for the active authoring layer.
+  // All = every tile/piece; layer tabs filter like World Generation Palette.
   const filteredGroups = useMemo(
     () =>
       GROUPS.map((group) => ({
         ...group,
         tiles: group.tiles.filter((tile) => {
-          if (layerOfTile(tile) !== layerTab) return false
+          if (!showAllSprites && layerOfTile(tile) !== layerTab) return false
           return matchesQuery(tile.label, q) || matchesQuery(tile.id, q)
         }),
       })).filter((group) => group.tiles.length > 0 || (canEditTiles && group.id !== 'other' && !q)),
-    [GROUPS, q, layerTab],
+    [GROUPS, q, layerTab, showAllSprites],
   )
 
   const filteredPieceGroups = useMemo(
@@ -569,7 +578,7 @@ export default function EditorPalette({
         .map((group) => ({
           ...group,
           pieces: group.pieces.filter((piece) => {
-            if (layerOfTemplatePiece(piece) !== layerTab) return false
+            if (!showAllSprites && layerOfTemplatePiece(piece) !== layerTab) return false
             return (
               !q ||
               matchesQuery(piece.label, q) ||
@@ -579,7 +588,7 @@ export default function EditorPalette({
           }),
         }))
         .filter((group) => group.pieces.length),
-    [pieceGroups, q, layerTab],
+    [pieceGroups, q, layerTab, showAllSprites],
   )
 
   const anyOpen = filteredGroups.some((group) => open.has(group.id))
@@ -610,6 +619,16 @@ export default function EditorPalette({
         </div>
       </div>
       <div className="ed-asset-tabs ge-layer-tabs" role="tablist" aria-label="Palette catalogues">
+        <button
+          type="button"
+          role="tab"
+          className={`ed-tab${showAllSprites ? ' is-active' : ''}`}
+          aria-selected={showAllSprites}
+          title="All tiles and Template Pieces"
+          onClick={selectAllSprites}
+        >
+          All
+        </button>
         {LAYER_IDS.map((layerId) => (
           <button
             key={layerId}

@@ -1,5 +1,9 @@
 import { Container, Graphics, Sprite } from 'pixi.js'
+import { isClear } from '../../../exploration/navigation.js'
 import { diamond, project, TILE_W, unproject } from '../../../maps/iso.js'
+import { templatePieceCatalogueEpochOf } from '../../../maps/templatePieces.js'
+import { projectWorld } from '../../../spike3d/isoProjection.js'
+import { buildMapColliders } from '../../../spike3d/mapColliders.js'
 import { drawLoneTiles } from '../canvasTiles.js'
 import { guideOrigin, snapToGuideGrid } from '../editorGrid.js'
 import { EASE } from './cssTiming.js'
@@ -202,6 +206,179 @@ export class EditorSurfaceView {
     if (!marks?.length) return
     for (const mark of marks) {
       this.graphics.poly(mark.points.flat(), true).fill(SURFACE_FILL).stroke(SURFACE_STROKE)
+    }
+  }
+
+  destroy() {
+    this.graphics.destroy()
+  }
+}
+
+// Collision debug overlay — same boxes as Play → Z (spike3d addColliderMeshes / buildMapColliders),
+// drawn as translucent iso prisms. board: { show, map }
+const COLLIDER_STYLE = {
+  wall: { fill: { color: 0x33ddff, alpha: 0.22 }, stroke: { color: 0xa8f7ff, width: 1, alpha: 0.95 } },
+  prop: { fill: { color: 0xffaa44, alpha: 0.22 }, stroke: { color: 0xffd090, width: 1, alpha: 0.95 } },
+}
+
+function colliderStyle(kind) {
+  return COLLIDER_STYLE[kind === 'prop' ? 'prop' : 'wall']
+}
+
+/** Draw one world AABB (X tile, Y up, Z tile) as the three iso-visible faces + edges. */
+function drawColliderPrism(graphics, box, style) {
+  const { minX, maxX, minY, maxY, minZ, maxZ } = box
+  if (![minX, maxX, minY, maxY, minZ, maxZ].every(Number.isFinite)) return
+  if (maxX - minX < 1e-6 || maxZ - minZ < 1e-6 || maxY - minY < 1e-6) return
+  const c = (x, y, z) => projectWorld(x, y, z)
+  // Painter order for our iso camera: +X face, +Z face, then top.
+  const faces = [
+    [c(maxX, minY, minZ), c(maxX, minY, maxZ), c(maxX, maxY, maxZ), c(maxX, maxY, minZ)],
+    [c(minX, minY, maxZ), c(maxX, minY, maxZ), c(maxX, maxY, maxZ), c(minX, maxY, maxZ)],
+    [c(minX, maxY, minZ), c(maxX, maxY, minZ), c(maxX, maxY, maxZ), c(minX, maxY, maxZ)],
+  ]
+  for (const face of faces) {
+    graphics.poly(face.flatMap((p) => [p.x, p.y]), true).fill(style.fill)
+  }
+  const corners = [
+    c(minX, minY, minZ),
+    c(maxX, minY, minZ),
+    c(maxX, minY, maxZ),
+    c(minX, minY, maxZ),
+    c(minX, maxY, minZ),
+    c(maxX, maxY, minZ),
+    c(maxX, maxY, maxZ),
+    c(minX, maxY, maxZ),
+  ]
+  const edges = [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 0],
+    [4, 5],
+    [5, 6],
+    [6, 7],
+    [7, 4],
+    [0, 4],
+    [1, 5],
+    [2, 6],
+    [3, 7],
+  ]
+  for (const [a, b] of edges) {
+    graphics.moveTo(corners[a].x, corners[a].y).lineTo(corners[b].x, corners[b].y).stroke(style.stroke)
+  }
+}
+
+export class EditorCollisionView {
+  constructor(layer) {
+    this.graphics = new Graphics()
+    layer.addChild(this.graphics)
+    // Cache by object identity — stringifying placements collapses to "[object Object]".
+    this._show = false
+    this._tiles = null
+    this._placements = null
+    this._epoch = -1
+  }
+
+  update(board) {
+    const show = Boolean(board?.show)
+    const map = board?.map
+    if (!show || !map?.tiles) {
+      if (this._show) {
+        this._show = false
+        this._tiles = null
+        this._placements = null
+        this._epoch = -1
+        this.graphics.clear()
+      }
+      return
+    }
+    const epoch = templatePieceCatalogueEpochOf()
+    const placements = map.templatePiecePlacements ?? []
+    if (
+      this._show &&
+      this._tiles === map.tiles &&
+      this._placements === placements &&
+      this._epoch === epoch
+    ) {
+      return
+    }
+    this._show = true
+    this._tiles = map.tiles
+    this._placements = placements
+    this._epoch = epoch
+    this.graphics.clear()
+
+    // Same collider list as Spike3dScene (Z toggle). Skip the floor slab and near-flat
+    // Floor32 / Doorway tip pads (barely above FLAT_SOLID_H) so walls/props read like Play → Z.
+    const boxes = buildMapColliders(map).filter(
+      (box) => box.kind !== 'floor' && box.maxY - box.minY >= 0.25,
+    )
+    boxes.sort((a, b) => a.minX + a.minZ - (b.minX + b.minZ))
+    for (const box of boxes) {
+      drawColliderPrism(this.graphics, box, colliderStyle(box.kind))
+    }
+  }
+
+  destroy() {
+    this.graphics.destroy()
+  }
+}
+
+// Walkmap: tile centres where a body can stand (exploration isClear / A* centreOk).
+// Green = walkable, red = blocked. board: { show, map }
+const WALKMAP_OK = { color: 0x3dd68c, alpha: 0.28 }
+const WALKMAP_BLOCKED = { color: 0xe5483a, alpha: 0.22 }
+const WALKMAP_OK_STROKE = { color: 0x8dffc0, width: 1, alpha: 0.45 }
+const WALKMAP_BLOCKED_STROKE = { color: 0xff8a7a, width: 1, alpha: 0.4 }
+
+export class EditorWalkmapView {
+  constructor(layer) {
+    this.graphics = new Graphics()
+    layer.addChild(this.graphics)
+    this._show = false
+    this._tiles = null
+    this._placements = null
+    this._epoch = -1
+  }
+
+  update(board) {
+    const show = Boolean(board?.show)
+    const map = board?.map
+    if (!show || !map?.tiles) {
+      if (this._show) {
+        this._show = false
+        this._tiles = null
+        this._placements = null
+        this._epoch = -1
+        this.graphics.clear()
+      }
+      return
+    }
+    const epoch = templatePieceCatalogueEpochOf()
+    const placements = map.templatePiecePlacements ?? []
+    if (
+      this._show &&
+      this._tiles === map.tiles &&
+      this._placements === placements &&
+      this._epoch === epoch
+    ) {
+      return
+    }
+    this._show = true
+    this._tiles = map.tiles
+    this._placements = placements
+    this._epoch = epoch
+    this.graphics.clear()
+
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        const ok = isClear(map, { x, y })
+        this.graphics
+          .poly(diamond({ x, y }).flat(), true)
+          .fill(ok ? WALKMAP_OK : WALKMAP_BLOCKED)
+          .stroke(ok ? WALKMAP_OK_STROKE : WALKMAP_BLOCKED_STROKE)
+      }
     }
   }
 

@@ -1007,7 +1007,7 @@ export default function useEditorTools({
   }
 
   // Assets thumbnail pick: clear board selection so Properties shows the catalogue asset.
-  // Selecting a tile / template brush also checks it for the multi-paint set.
+  // Selection alone does not check the paint-cycle box — only the checkbox does that.
   const selectTool = (next) => {
     clearBoardSelection()
     setTool(next)
@@ -1018,28 +1018,17 @@ export default function useEditorTools({
       setStatus(`Auto-Paint: ${getAutoPaintRuleset(autoPaintRulesetId)?.label ?? autoPaintRulesetId}`)
       return
     }
+    // If this brush is already in the cycle, start the next stroke from it.
     if (next?.startsWith('tile:')) {
       const id = next.slice('tile:'.length)
-      setPaintTileIds((prev) => {
-        if (prev.has(id)) return prev
-        const nextSet = new Set(prev)
-        nextSet.add(id)
-        return nextSet
-      })
-      const ordered = orderedPaintTileIds(new Set([...paintTileIds, id]))
+      const ordered = orderedPaintTileIds(paintTileIds)
       const at = ordered.indexOf(id)
-      paintCycleRef.current = at >= 0 ? at : 0
+      if (at >= 0) paintCycleRef.current = at
     } else if (next?.startsWith('template:')) {
       const id = next.slice('template:'.length)
-      setPaintTemplateIds((prev) => {
-        if (prev.has(id)) return prev
-        const nextSet = new Set(prev)
-        nextSet.add(id)
-        return nextSet
-      })
-      const ordered = orderedPaintTemplateIds(new Set([...paintTemplateIds, id]))
+      const ordered = orderedPaintTemplateIds(paintTemplateIds)
       const at = ordered.indexOf(id)
-      paintTemplateCycleRef.current = at >= 0 ? at : 0
+      if (at >= 0) paintTemplateCycleRef.current = at
     }
   }
 

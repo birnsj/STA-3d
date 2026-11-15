@@ -22,6 +22,7 @@ import {
   AUTO_PAINT_ENVIRONMENTS,
   getAutoPaintRuleset,
   listAutoPaintRulesets,
+  mapTypeForEnvironment,
   resolveAutoPaintRuleset,
   weightedIds,
 } from '../maps/autoPaint/rulesets.js'
@@ -50,14 +51,20 @@ function toolFromPaletteItem(item) {
   if (!item) return null
   if (item.kind === 'tile') return `tile:${item.id}`
   if (item.kind === 'piece') return `template:${item.id}`
+  if (item.kind === 'destructible') return `destructible:${item.id}`
+  if (item.kind === 'hazard') return `hazard:${item.id}`
+  if (item.kind === 'inventory') return `inventory:${item.id}`
   return null
 }
 
-/** tool string → GeSourcePalette selectedKey (`tile:id` / `piece:id`). */
+/** tool string → GeSourcePalette selectedKey (`tile:id` / `piece:id` / …). */
 function selectedKeyFromTool(tool) {
   if (!tool) return null
   if (tool.startsWith('tile:')) return tool
   if (tool.startsWith('template:')) return `piece:${tool.slice('template:'.length)}`
+  if (tool.startsWith('destructible:')) return tool
+  if (tool.startsWith('hazard:')) return tool
+  if (tool.startsWith('inventory:')) return tool
   return null
 }
 
@@ -250,6 +257,10 @@ export default function AutoPaintRulesetEditorScreen({
   onRoomScale,
   buildingScale = 100,
   onBuildingScale,
+  roomsInBuilding = 100,
+  onRoomsInBuilding,
+  doorsInBuilding = 100,
+  onDoorsInBuilding,
   cardTools = { canGenerate: false, busy: false, onGenerate: () => {} },
   onBack,
   onPlay,
@@ -765,14 +776,37 @@ export default function AutoPaintRulesetEditorScreen({
                 onChange={(event) => patch({ label: event.target.value })}
               />
             </label>
-            <label className="me-field" title="Where this kit is meant to be used (starship, colony, outdoors, …)">
+            <label
+              className="me-field"
+              title="Where this kit is meant to be used (starship, colony, outdoors, …). Also sets map type so Biome / Weather match."
+            >
               <span className="ce-field-label">Environment</span>
               <EditorSelect
                 className="me-select me-wide"
                 value={draft.environment}
                 aria-label="Environment"
-                title="Environment tag for this ruleset"
-                onChange={(event) => patch({ environment: event.target.value })}
+                title="Where this kit is meant to be used. Outdoor Settlement / Natural Terrain enable Biome."
+                onChange={(event) => {
+                  const environment = event.target.value
+                  // Pair Environment with the matching kit when present (starship ↔ Template 32, outdoor ↔ Outdoor Template 32).
+                  const preferredId =
+                    environment === 'outdoorSettlement' || environment === 'naturalTerrain'
+                      ? 'outdoor-template-32'
+                      : environment === 'starshipStation'
+                        ? 'template-32'
+                        : null
+                  const preferred = preferredId ? getAutoPaintRuleset(preferredId) : null
+                  if (preferred && preferredId !== selectedId) {
+                    setSelectedId(preferredId)
+                    const next = cloneRuleset({ ...preferred, environment })
+                    setDraft(next)
+                    setSaved(cloneRuleset(preferred))
+                  } else {
+                    patch({ environment })
+                  }
+                  const nextType = mapTypeForEnvironment(environment)
+                  if (map && nextType !== map.mapType) onMapType?.(nextType)
+                }}
               >
                 {AUTO_PAINT_ENVIRONMENTS.map((entry) => (
                   <option key={entry.id} value={entry.id}>
@@ -787,8 +821,8 @@ export default function AutoPaintRulesetEditorScreen({
           title="Palette"
           hint={
             showAll
-              ? 'Same categories as Dev Edit Palette (Locations, Biomes, …). Layer tabs filter; Expand opens tilesets. Click a thumb to edit its sprite above; drag onto a slot.'
-              : 'Template Pieces only (same catalogue as Dev Edit Palette). Click a thumb to edit its sprite above; drag onto a slot. Use Show all for every tileset category.'
+              ? 'Same tabs as Dev Edit Assets (All…Items). All shows every sprite; layer tabs filter; Environment and Items match Dev Edit. Click a thumb to edit its sprite above; drag tiles/pieces onto a slot.'
+              : 'Same tabs as Dev Edit Assets. All shows every Template Piece; layer tabs filter; Environment and Items always available. Click a thumb to edit its sprite above; drag onto a slot. Use Show all for every tileset category.'
           }
           items={paletteItems}
           selectedKey={selectedKeyFromTool(paletteTool)}
@@ -972,6 +1006,10 @@ export default function AutoPaintRulesetEditorScreen({
         onRoomScale={onRoomScale}
         buildingScale={buildingScale}
         onBuildingScale={onBuildingScale}
+        roomsInBuilding={roomsInBuilding}
+        onRoomsInBuilding={onRoomsInBuilding}
+        doorsInBuilding={doorsInBuilding}
+        onDoorsInBuilding={onDoorsInBuilding}
         onGenerateMap={generateMap}
         generateBusy={busy}
         cardTools={cardTools}

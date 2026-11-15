@@ -41,6 +41,16 @@ export function resolveTemplatePieceToTile(pieceId) {
     return getTile('doorway') ? 'doorway' : null
   }
   if (tags.has('grating')) return getTile('grating') ? 'grating' : null
+  // Outdoor Template 32 floor overlays → matching outdoor tiles (not starship deck plating).
+  if (pieceId === 'tplOutdoorGrass' || pieceId.endsWith('Grass')) return getTile('grass') ? 'grass' : null
+  if (pieceId === 'tplOutdoorGround') return getTile('ground') ? 'ground' : null
+  if (pieceId === 'tplOutdoorPath') return getTile('path') ? 'path' : null
+  if (pieceId === 'tplOutdoorPavement') return getTile('pavement') ? 'pavement' : getTile('path') ? 'path' : null
+  if (pieceId === 'tplOutdoorSavanna') return getTile('savanna') ? 'savanna' : getTile('grass') ? 'grass' : null
+  if (pieceId === 'tplOutdoorMud') return getTile('mud') ? 'mud' : null
+  if (pieceId === 'tplOutdoorCropRows') return getTile('cropRows') ? 'cropRows' : null
+  if (pieceId === 'tplOutdoorPlankFloor') return getTile('plankFloor') ? 'plankFloor' : null
+  if (pieceId === 'tplOutdoorFlagstone') return getTile('templeFloor') ? 'templeFloor' : null
   if (tags.has('floor') || tags.has('deck') || pieceId.includes('Floor')) {
     return getTile('floor') ? 'floor' : null
   }
@@ -101,6 +111,30 @@ export function pieceKitFromRuleset(ruleset) {
     fittingChance: Number.isFinite(Number(walls.fittingChance)) ? Number(walls.fittingChance) : 0,
     underWall: asWeightedPieces(ruleset?.floors?.underWall),
   }
+}
+
+/**
+ * Outdoor Template 32 wall kit for one building face (prefab / barn / city / …).
+ * `facePieces` is `{ straight, straightLong, corner }` Template Piece ids.
+ */
+export function pieceKitFromOutdoorFace(facePieces, underWall = null) {
+  if (!facePieces?.straight || !facePieces?.corner) {
+    return pieceKitFromRuleset({ walls: {}, floors: { underWall } })
+  }
+  return pieceKitFromRuleset({
+    floors: { underWall },
+    walls: {
+      straight: facePieces.straight,
+      straightLong: facePieces.straightLong || null,
+      corner: facePieces.corner,
+      hull: null,
+      hullLong: null,
+      hullCorner: null,
+      doorFrame: null,
+      fittings: [],
+      fittingChance: 0,
+    },
+  })
 }
 
 export { primaryId, weightedIds }

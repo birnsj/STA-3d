@@ -91,6 +91,7 @@
         "path",
         "prefabWall",
         "fence",
+        "fenceCorner",
         "tree",
         "rock"
       ]
@@ -1066,6 +1067,20 @@
       "fade": false,
       "height": 12,
       "role": null
+    },
+    {
+      "id": "fenceCorner",
+      "layer": "furniture",
+      "symbol": "ƒ",
+      "label": "Fence Corner",
+      "image": "/art/sprites/environment/settlement/fenceCorner.png",
+      "solid": true,
+      "blocksSight": false,
+      "cover": true,
+      "fade": false,
+      "height": 12,
+      "role": null,
+      "notes": "Corner post for field rings (straight fence runs meet here), like Template 32 wall corners."
     },
     {
       "id": "prefabWall",
