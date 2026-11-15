@@ -6,14 +6,19 @@ const CLIP_SECONDS = {
   idle: 10,
   walk: 0.7,
   trot: 0.45,
+  // Halt settle from walk/trot into idle (once).
+  stop: 0.55,
 }
 
+const MOVING_CLIPS = new Set(['walk', 'trot'])
+const CLIP_NAMES = new Set(['idle', 'walk', 'trot', 'stop'])
+
 /** Idle graze: +pitch tips nose toward the ground (forward); yaw period ≈ CLIP_SECONDS.idle. */
-const GRAZE_NECK_PITCH = 1.05
-const GRAZE_HEAD_PITCH = 0.42
+const GRAZE_NECK_PITCH = 0.32
+const GRAZE_HEAD_PITCH = 0.16
 const GRAZE_YAW_AMP = 0.42
-const ALERT_NECK_PITCH = 0.18
-const ALERT_HEAD_PITCH = 0.2
+const ALERT_NECK_PITCH = 0.06
+const ALERT_HEAD_PITCH = 0.08
 
 const STAMP_DURATION = 0.7
 const STAMP_WAIT_MIN = 1.1
@@ -21,7 +26,7 @@ const STAMP_WAIT_MAX = 3.4
 
 /**
  * CharacterBody-like wrapper for the procedural horse.
- * Clips: idle | walk | trot — seek/progress/pause for the Animation Viewer.
+ * Clips: idle | walk | trot | stop.
  */
 export class HorseBody {
   constructor({ height = HORSE_HEIGHT } = {}) {
@@ -29,11 +34,13 @@ export class HorseBody {
     this.root = this.model.root
     this.root.name = 'horse_body'
     this._clip = 'idle'
+    this._pace = 'walk'
     this._gaitPhase = 0
     this._weight = 0
     this._idleT = 0
     this._paused = false
     this._progress = 0
+    this._actionDone = true
     // Idle hoof fidget: one leg at a time lifts then settles.
     this._stampLeg = -1
     this._stampT = 0
@@ -53,15 +60,41 @@ export class HorseBody {
     return this.model.body?.position?.y ?? 0
   }
 
+  get actionDone() {
+    return this._actionDone
+  }
+
   play(clip) {
-    const name = clip === 'walk' || clip === 'trot' || clip === 'idle' ? clip : 'idle'
-    if (this._clip === name) return true
+    const name = CLIP_NAMES.has(clip) ? clip : 'idle'
+    const nextPace = name === 'trot' || name === 'walk' ? name : name === 'idle' ? 'walk' : this._pace
+    if (this._clip === name && this._pace === nextPace) return true
+    const wasMoving = MOVING_CLIPS.has(this._clip)
+    const nowMoving = MOVING_CLIPS.has(name)
+    const sameClip = this._clip === name
     this._clip = name
-    this._progress = 0
-    this._gaitPhase = 0
-    this._weight = name === 'idle' ? 0 : name === 'trot' ? 1 : 0.7
+    this._pace = nextPace
+    // Keep stride phase across walk↔trot so the legs don't pop. Reset leaving/entering idle/stop.
+    if (!sameClip && !(wasMoving && nowMoving)) {
+      this._progress = 0
+      if (!nowMoving && name !== 'stop') this._gaitPhase = 0
+    }
+    if (name === 'idle') this._weight = 0
+    else if (name === 'stop') this._weight = Math.max(this._weight, 0.55)
+    this._actionDone = name !== 'stop'
     if (name !== 'idle') this._clearStamps()
     return true
+  }
+
+  _isTrotPace() {
+    return this._pace === 'trot' && this._isMovingClip()
+  }
+
+  _stridePeriod() {
+    return this._isTrotPace() ? CLIP_SECONDS.trot : CLIP_SECONDS.walk
+  }
+
+  _moveWeight() {
+    return this._isTrotPace() ? 1 : 0.7
   }
 
   _clearStamps() {
@@ -82,7 +115,7 @@ export class HorseBody {
    */
   _updateStamps(dt, { seek = false } = {}) {
     const graze = 1 - this._weight
-    if (graze < 0.35) {
+    if (graze < 0.35 || this._clip === 'stop') {
       this._clearStamps()
       return
     }
@@ -93,55 +126,42 @@ export class HorseBody {
       const local = this._idleT % cycle
       const slot = Math.floor(this._idleT / cycle)
       const leg = ((slot * 3 + 1) % 4 + 4) % 4
-      const lifts = [0, 0, 0, 0]
-      if (local < STAMP_DURATION) lifts[leg] = this._stampEnvelope(local / STAMP_DURATION) * graze
-      this._legLifts = lifts
+      this._legLifts = [0, 0, 0, 0]
+      if (local < STAMP_DURATION) this._legLifts[leg] = this._stampEnvelope(local / STAMP_DURATION)
       return
     }
 
     if (this._stampLeg < 0) {
       this._stampWait -= dt
       if (this._stampWait <= 0) {
-        this._stampLeg = Math.floor(Math.random() * 4)
+        this._stampLeg = (Math.random() * 4) | 0
         this._stampT = 0
       }
-    } else {
-      this._stampT += dt
-      const u = this._stampT / STAMP_DURATION
-      const lifts = [0, 0, 0, 0]
-      if (u >= 1) {
-        this._stampLeg = -1
-        this._stampWait = STAMP_WAIT_MIN + Math.random() * (STAMP_WAIT_MAX - STAMP_WAIT_MIN)
-        this._legLifts = lifts
-      } else {
-        lifts[this._stampLeg] = this._stampEnvelope(u) * graze
-        this._legLifts = lifts
-      }
+      this._legLifts = [0, 0, 0, 0]
+      return
     }
+
+    this._stampT += dt
+    const u = this._stampT / STAMP_DURATION
+    this._legLifts = [0, 0, 0, 0]
+    if (u >= 1) {
+      this._stampLeg = -1
+      this._stampWait = STAMP_WAIT_MIN + Math.random() * (STAMP_WAIT_MAX - STAMP_WAIT_MIN)
+      return
+    }
+    this._legLifts[this._stampLeg] = this._stampEnvelope(u)
   }
 
-  get current() {
-    return this._clip
+  pause() {
+    this._paused = true
   }
 
-  setPaused(paused) {
-    this._paused = Boolean(paused)
+  resume() {
+    this._paused = false
   }
 
-  get paused() {
-    return this._paused
-  }
-
-  setViewerHoldOnce() {}
-
-  setViewerLoopOnce() {}
-
-  setAppearance() {}
-
-  setAttachmentSettings() {}
-
-  seek(u) {
-    const t = Math.min(1, Math.max(0, Number(u) || 0))
+  seek(progress01) {
+    const t = Math.min(1, Math.max(0, progress01))
     this._progress = t
     this._applyFromProgress()
     return t
@@ -155,14 +175,25 @@ export class HorseBody {
     return CLIP_SECONDS[this._clip] ?? 1
   }
 
+  _isMovingClip() {
+    return MOVING_CLIPS.has(this._clip)
+  }
+
   _applyFromProgress() {
-    const moving = this._clip === 'walk' || this._clip === 'trot'
-    const targetWeight = moving ? (this._clip === 'trot' ? 1 : 0.7) : 0
-    this._weight = targetWeight
+    const moving = this._isMovingClip()
+    const stopping = this._clip === 'stop'
+    if (this._clip === 'trot') this._pace = 'trot'
+    else if (this._clip === 'walk') this._pace = 'walk'
+    const targetWeight = moving ? this._moveWeight() : 0
+    this._weight = stopping ? Math.max(0, 0.75 * (1 - this._progress)) : targetWeight
     if (moving) {
       this._gaitPhase = this._progress
       this._idleT = 0
       this._clearStamps()
+    } else if (stopping) {
+      this._idleT = 0
+      this._clearStamps()
+      this._actionDone = this._progress >= 0.999
     } else {
       this._gaitPhase = 0
       this._idleT = this._progress * this._seconds()
@@ -173,8 +204,10 @@ export class HorseBody {
 
   _writePose() {
     const graze = 1 - this._weight
-    const trot = this._clip === 'trot' ? 1 : 0
-    const walk = this._clip === 'walk' ? 1 : 0
+    const trot = this._isTrotPace() ? 1 : 0
+    const walk = this._isMovingClip() && !trot ? 1 : 0
+    const stopping = this._clip === 'stop'
+    const stopPlant = stopping ? Math.min(1, this._progress * 1.35) : 0
     // Slow look left / right while grazing (one full cycle per idle clip length).
     const look = Math.sin((this._idleT * (Math.PI * 2)) / CLIP_SECONDS.idle)
     const grazeBob = Math.sin(this._idleT * 1.35) * 0.05 * graze
@@ -182,17 +215,20 @@ export class HorseBody {
     // One nod per gait cycle; trot holds the nose farther forward with a slower bounce.
     const gaitNod = Math.sin(this._gaitPhase * Math.PI * 2) * this._weight
     const neckPitch =
-      GRAZE_NECK_PITCH * graze +
-      (ALERT_NECK_PITCH + this._weight * 0.08 + walk * 0.1 + trot * 0.52) * this._weight +
+      GRAZE_NECK_PITCH * graze * (1 - stopPlant) +
+      (ALERT_NECK_PITCH + this._weight * 0.04 + walk * 0.05 + trot * 0.14) * this._weight +
       grazeBob +
-      gaitNod * (0.05 * walk + 0.14 * trot)
+      gaitNod * (0.03 * walk + 0.06 * trot) +
+      // Stop: lift the nose from the forward gait posture.
+      stopPlant * 0.04
     const headPitch =
-      GRAZE_HEAD_PITCH * graze +
-      (ALERT_HEAD_PITCH + walk * 0.06 + trot * 0.28) * this._weight +
+      GRAZE_HEAD_PITCH * graze * (1 - stopPlant) +
+      (ALERT_HEAD_PITCH + walk * 0.03 + trot * 0.1) * this._weight +
       grazeBob * 0.55 +
-      gaitNod * (0.04 * walk + 0.09 * trot)
-    const neckYaw = look * GRAZE_YAW_AMP * graze
-    const headYaw = look * GRAZE_YAW_AMP * 0.35 * graze
+      gaitNod * (0.02 * walk + 0.05 * trot) +
+      stopPlant * 0.04
+    const neckYaw = look * GRAZE_YAW_AMP * graze * (1 - stopPlant)
+    const headYaw = look * GRAZE_YAW_AMP * 0.35 * graze * (1 - stopPlant)
     // Idle: slow swish; walk/trot: stronger side sway (gait also adds in applyPose).
     const tailSwing =
       Math.sin(this._idleT * 1.05) * 0.28 * graze + Math.sin(this._idleT * 2.4) * 0.12 * this._weight
@@ -202,34 +238,37 @@ export class HorseBody {
       weight: this._weight,
       bounce:
         breathe +
-        this._weight * (0.02 + trot * 0.03) * Math.abs(Math.sin(this._gaitPhase * Math.PI * 2)),
+        this._weight * (0.02 + trot * 0.03) * Math.abs(Math.sin(this._gaitPhase * Math.PI * 2)) * (1 - stopPlant),
       neckPitch,
       neckYaw,
       headPitch,
       headYaw,
       tailSwing,
       tailCurl,
+      stopPlant,
       legLifts: this._legLifts,
     })
   }
 
   update(dt, travel = 0) {
     if (this._paused || !(dt > 0) || dt > 0.1) return
-    const moving = this._clip === 'walk' || this._clip === 'trot'
-    const targetWeight = moving ? (this._clip === 'trot' ? 1 : 0.7) : 0
-    this._weight += (targetWeight - this._weight) * (1 - Math.exp(-(moving ? 8 : 12) * dt))
+    const moving = this._isMovingClip()
+    const stopping = this._clip === 'stop'
+    const targetWeight = moving ? this._moveWeight() : 0
 
-    if (this._weight > 0.02) {
-      const stride = this._clip === 'trot' ? 2.8 : 2.2
-      const stepped = Math.min(0.6, Math.max(0, travel ?? 0))
-      if (stepped > 1e-5) this._gaitPhase = (this._gaitPhase + stepped / stride) % 1
-      else this._gaitPhase = (this._gaitPhase + dt / (this._clip === 'trot' ? 0.45 : 0.7)) % 1
+    if (stopping) {
+      this._progress = Math.min(1, this._progress + dt / this._seconds())
+      this._weight = Math.max(0, 0.75 * (1 - this._progress))
+      // Hold the last stride phase — advancing it after the root has stopped reads as skating.
+      if (this._progress >= 0.999) this._actionDone = true
+    } else {
+      this._weight += (targetWeight - this._weight) * (1 - Math.exp(-(moving ? 8 : 12) * dt))
+      if (this._weight > 0.02 && moving) {
+        this._gaitPhase = (this._gaitPhase + dt / this._stridePeriod()) % 1
+      }
+      this._idleT += dt
+      this._progress = moving ? this._gaitPhase : (this._progress + dt / this._seconds()) % 1
     }
-
-    this._idleT += dt
-    // Viewer scrubber: progress loops with clip length (travel-driven gait still advances phase above).
-    this._progress = (this._progress + dt / this._seconds()) % 1
-    if (moving) this._gaitPhase = this._progress
 
     this._updateStamps(dt, { seek: false })
     this._writePose()

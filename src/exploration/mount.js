@@ -110,16 +110,50 @@ export function isMounted(state, memberId) {
   return Boolean(horseForRider(state, memberId))
 }
 
+/**
+ * Climb-up / climb-off stand point beside the horse (left of facing).
+ * Ride walks here first; mount/dismount visuals lerp from this side into the saddle.
+ */
+export function mountSidePoint(map, horse) {
+  const heading = horse?.heading ?? 0
+  const origin = horse?.position ?? { x: 0, y: 0 }
+  const at = {
+    x: origin.x + Math.cos(heading + Math.PI / 2) * 1.15,
+    y: origin.y + Math.sin(heading + Math.PI / 2) * 1.15,
+  }
+  if (!map) return at
+  const walk = nearestWalkableTile(map, { x: Math.round(at.x), y: Math.round(at.y) })
+  if (walk && isClear(map, { x: walk.x, y: walk.y })) return { x: walk.x, y: walk.y }
+  return at
+}
+
+/** Close enough to climb: near the horse and near the side stand (or already beside it). */
+function inMountReach(member, horse, map) {
+  if (!member || !horse) return false
+  const side = mountSidePoint(map, horse)
+  const toHorse = dist(member.position, horse.position)
+  const toSide = dist(member.position, side)
+  // Prefer the side pad; allow a slightly wider horse radius so a near miss still locks on.
+  return toSide <= 0.7 || (toHorse <= 1.15 && toSide <= 1.35)
+}
+
 export function horsesInMountRange(state, memberId) {
   const member = state.party?.members?.[memberId]
   if (!member || !canAct(member) || state.mode === 'COMBAT') return []
   if (isMounted(state, memberId)) return []
-  return getHorses(state).filter((horse) => !horse.riderId && dist(member.position, horse.position) <= MOUNT_INTERACT_RANGE)
+  const map = state.party?.map
+  return getHorses(state).filter((horse) => {
+    if (horse.riderId) return false
+    // Still require being in interact band of the horse so far-away Ride walks over.
+    if (dist(member.position, horse.position) > MOUNT_INTERACT_RANGE) return false
+    return inMountReach(member, horse, map)
+  })
 }
 
 export function canMount(state, memberId, horseId = null) {
   const member = state.party?.members?.[memberId]
   if (!member || !canAct(member) || member.sneaking) return false
+  if (member.rideAnim) return false
   if (isMounted(state, memberId)) return false
   const horses = horsesInMountRange(state, memberId)
   if (!horses.length) return false
@@ -139,15 +173,15 @@ function withHorses(state, horses) {
   return { ...state, mount: { ...(state.mount || {}), horses } }
 }
 
-/** Climb on: snap rider onto the horse and play the mount clip. */
+/** Climb on: lock to the horse (sim at horse tile) and play the mount clip (visual side→saddle). */
 export function mountHorse(state, memberId, horseId = null) {
   if (!canMount(state, memberId, horseId)) return state
   const horses = horsesInMountRange(state, memberId)
   const horse = (horseId ? horses.find((entry) => entry.id === horseId) : horses[0]) ?? null
   if (!horse) return state
   const member = state.party.members[memberId]
-  const facing = member.facing ?? { x: Math.cos(horse.heading), y: Math.sin(horse.heading) }
-  const heading = Math.atan2(facing.y || 0, facing.x || 1)
+  // Face the same way as the horse so the climb reads from the near side.
+  const heading = horse.heading ?? Math.atan2(member.facing?.y || 0, member.facing?.x || 1)
   const nextHorses = getHorses(state).map((entry) =>
     entry.id === horse.id
       ? { ...entry, riderId: memberId, position: { ...entry.position }, heading }
@@ -157,6 +191,7 @@ export function mountHorse(state, memberId, horseId = null) {
     ...state.party.members,
     [memberId]: {
       ...member,
+      // Sim centre locks to the horse; Spike3d lerps the mesh from the side into the saddle.
       position: { ...horse.position },
       heading,
       facing: { x: Math.cos(heading), y: Math.sin(heading) },
@@ -203,14 +238,9 @@ export function finishDismount(state, memberId) {
   const member = state.party?.members?.[memberId]
   if (!member) return state
   if (!horse && !member.mounted && !member.rideAnim) return state
-  const anchor = horse?.position ?? member.position
-  const heading = horse?.heading ?? member.heading ?? 0
-  const side = {
-    x: anchor.x + Math.cos(heading + Math.PI / 2) * 1.1,
-    y: anchor.y + Math.sin(heading + Math.PI / 2) * 1.1,
-  }
-  const land = nearestWalkableTile(state.party.map, { x: Math.round(side.x), y: Math.round(side.y) })
-  const position = land ? { x: land.x, y: land.y } : side
+  const position = horse
+    ? mountSidePoint(state.party.map, horse)
+    : { ...member.position }
   const nextHorses = getHorses(state).map((entry) =>
     entry.riderId === memberId ? { ...entry, riderId: null, position: { ...entry.position } } : entry,
   )

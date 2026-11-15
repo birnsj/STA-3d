@@ -2,7 +2,9 @@ import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } fro
 import { controllerFor } from '../../actors/controllers.js'
 import { getNpcs, isHostile } from '../../exploration/awareness.js'
 import { getHorses } from '../../exploration/mount.js'
+import { RIDE_SPEED_MULT } from '../../exploration/mountConstants.js'
 import { getMembers, isSelected } from '../../exploration/partyControl.js'
+import partyControlData from '../../data/adaptation/exploration/partyControl.json'
 import { getEntityKnowledge, isVisibleToParty, KNOWLEDGE } from '../../exploration/partyKnowledge.js'
 import { fadeWholeBigObjects } from '../../maps/bigObjects.js'
 import { figureShapes, pickAt, rectOnGround } from '../../maps/boardHitTest.js'
@@ -150,7 +152,6 @@ export default function PixiExplorationBoard(props) {
     onSelect,
     onSelectBox,
     onOpenMenu,
-    onToggleMenu = null,
     onOpenNpcMenu,
     onOpenHorseMenu = null,
     onStaggerDone = null,
@@ -333,16 +334,7 @@ export default function PixiExplorationBoard(props) {
       ring: dropTarget ? 'dropTarget' : selected ? 'selected' : 'player',
       arrowColour: dropTarget ? DROP : lead ? YELLOW : BLUE,
       bodyColour: accent,
-      label: lead
-        ? {
-            text: member.mounted ? 'RIDE' : 'LEAD',
-            y: spike3d ? SPIKE3D_TAG_Y : NPC_TAG_Y,
-            size: 9,
-            weight: '700',
-            colour: dropTarget ? DROP : YELLOW,
-            letterSpacing: 0.72,
-          }
-        : null,
+      label: null,
       beam,
       // Fall / getup sheets are large; ask early so blast stagger can play getUp.
       // Skip character sheet preload when spike3d draws the body (Phase E).
@@ -356,8 +348,7 @@ export default function PixiExplorationBoard(props) {
     })
     if (!member.beaming && !member.arriving) {
       const token = !hasCharacterSprite(portrait.spriteSet)
-      const leadY = spike3d ? SPIKE3D_TAG_Y : NPC_TAG_Y
-      targets.push({ kind: 'member', id: member.id, depth, down: animation.down, shapes: figureShapes(centre, { scale: FIGURE_SCALE, token: token && !animation.down, label: lead ? 'LEAD' : null, labelY: leadY }) })
+      targets.push({ kind: 'member', id: member.id, depth, down: animation.down, shapes: figureShapes(centre, { scale: FIGURE_SCALE, token: token && !animation.down }) })
     }
   })
   for (const npc of getNpcs(world)) {
@@ -576,8 +567,6 @@ export default function PixiExplorationBoard(props) {
     return () => clearTimeout(timer)
   }, [objectShotKey, objectShotSound?.sound, objectShotSound?.injuryMode])
 
-  figuresDebugRef.current = figures
-
   // The scene reads the latest description every frame; pointer handlers read the latest targets.
   const revealed = useContext(MapRevealedContext)
   const boardRef = useRef(null)
@@ -589,28 +578,84 @@ export default function PixiExplorationBoard(props) {
     const centre = project(horse.position)
     const depth = atDepth(horse.position, 0.55)
     const tagY = spike3d ? SPIKE3D_TAG_Y : NPC_TAG_Y
-    targets.push({
-      kind: 'horse',
-      id: horse.id,
-      depth,
-      shapes: figureShapes(centre, { scale: FIGURE_SCALE * 1.75, label: 'Horse', labelY: tagY }),
-    })
+    // Free horses act like neutral NPCs: ground ring + name tag; click opens Ride. Ridden horses share the rider's ring.
+    if (!horse.riderId) {
+      const menuOpen = menu?.horseId === horse.id
+      figures.push({
+        id: `mount:${horse.id}`,
+        centre,
+        depth,
+        seed: horse.id,
+        phase: null,
+        facing: { x: Math.cos(horse.heading), y: Math.sin(horse.heading) },
+        gait: 'idle',
+        down: false,
+        condition: null,
+        blastReact: null,
+        onStaggerDone: null,
+        hazardOverlay: null,
+        panic: false,
+        spriteSet: null,
+        portraitId: null,
+        colour: null,
+        image: null,
+        name: 'Horse',
+        ring: menuOpen ? 'selected' : 'neutral',
+        ringScale: 1.55,
+        arrowColour: menuOpen ? YELLOW : PURPLE,
+        bodyColour: PURPLE,
+        label: { text: 'Horse', y: tagY, size: 9, weight: '700', colour: menuOpen ? YELLOW : PURPLE, letterSpacing: 0.36 },
+        hideSprite: true,
+        mount: true,
+        position: horse.position,
+        enemy: false,
+        pose: null,
+        beam: null,
+        preload: false,
+        faded: false,
+      })
+    }
+    // While ridden, clicks go to the rider (select / deselect like on foot). Free horses keep the Ride hit target.
+    if (!horse.riderId) {
+      targets.push({
+        kind: 'horse',
+        id: horse.id,
+        depth,
+        shapes: figureShapes(centre, { scale: FIGURE_SCALE * 1.75, label: 'Horse', labelY: tagY }),
+      })
+    }
   })
+  const walkSpeed = partyControlData.movement.walkSpeed
   const horsePoses = horseList.map((horse) => {
     const rider = horse.riderId ? state.members?.[horse.riderId] : null
     const moving = Boolean(rider?.moving || rider?.running)
+    // Foot `running` alone rarely stays true while riding (short holds / ease-in). Mounted cruise is
+    // walkSpeed × RIDE_SPEED_MULT — trot once pace is near that so the horse reaches full trot.
+    const pace = rider?.pace ? Math.hypot(rider.pace.x, rider.pace.y) : 0
+    const trotting = Boolean(rider?.running) || pace >= walkSpeed * RIDE_SPEED_MULT * 0.85
     return {
       id: `horse:${horse.id}`,
       kind: 'horse',
       position: horse.position,
       facing: { x: Math.cos(horse.heading), y: Math.sin(horse.heading) },
-      gait: moving ? (rider?.running ? 'trot' : 'walk') : 'idle',
+      gait: moving ? (trotting ? 'trot' : 'walk') : 'idle',
       riderId: horse.riderId ? `u${horse.riderId}` : null,
     }
   })
+  // X clip overlay: people + horses (mount ring figures use a different id; skip them).
+  figuresDebugRef.current = [
+    ...figures.filter((figure) => !figure.mount),
+    ...horsePoses.map((pose) => ({
+      id: pose.id,
+      centre: project(pose.position),
+      hideSprite: true,
+      gait: pose.gait,
+    })),
+  ]
   spikePosesRef.current = [
     ...figures
-      .filter((figure) => figure.position)
+      // Mount figures are ring/label only — the procedural horse is posed via horsePoses.
+      .filter((figure) => figure.position && !figure.mount)
       .map((figure) => {
         const portraitId = figure.portraitId || figure.spriteSet || null
         const moving = figure.gait === 'walk' || figure.gait === 'run' || figure.gait === 'sneakWalk'
@@ -869,12 +914,10 @@ export default function PixiExplorationBoard(props) {
     const mouse = event.pointerType === 'mouse'
     if (target.kind === 'member') {
       // A right press goes on to the board (a drag still draws the selection box); remember whose it was.
+      // Right-click without a drag opens their ring via onOpenMenu. Left click only selects.
       if (mouse && event.button === 2) rightPressedRef.current = target.id
       if (mouse && event.button !== 0) return false
-      // Left click selects and toggles their ring. Right-click without a drag still opens via onOpenMenu (and adds them
-      // to the selection without clearing anyone else).
       onSelect(target.id, isAdditive(event))
-      ;(onToggleMenu ?? onOpenMenu)?.(target.id)
       return true
     }
     if (target.kind === 'npc') {

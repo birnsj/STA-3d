@@ -60,7 +60,7 @@ import { recommendPartyAction } from '../exploration/partyActions.js'
 import { objectFor } from '../world/objects.js'
 import { activeHazards, isStanding } from '../world/environment.js'
 import { hazardChallengeId, isHazardChallengeId } from '../world/EnvironmentalHazard.js'
-import { canMountHorse, horseById } from '../exploration/mount.js'
+import { canMountHorse, horseById, mountSidePoint } from '../exploration/mount.js'
 import { canAct, getMembers } from '../exploration/partyControl.js'
 import { isVisibleToParty } from '../exploration/partyKnowledge.js'
 import { bagFreeSlots, groundItemViews } from '../rules/inventory.js'
@@ -434,10 +434,21 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       : lastTargetScan && sweptScanKey !== lastTargetScanKey && targetScanRings
         ? { key: lastTargetScanKey, rings: targetScanRings, onDone: () => setSweptScanKey(lastTargetScanKey) }
         : null
-  const select = useCallback((id, additive) => dispatch({ type: additive ? 'toggleSelect' : 'select', id }), [dispatch])
-  const selectBox = useCallback((ids, additive) => dispatch({ type: 'selectBox', ids, additive }), [dispatch])
-  // Left-click (or a right-click without a drag) opens a member's menu. Right-click also adds them to the selection
-  // without clearing anyone else; left-click selects first (PixiExplorationBoard), then opens the ring.
+  const select = useCallback(
+    (id, additive) => {
+      closeMenu('member')
+      dispatch({ type: additive ? 'toggleSelect' : 'select', id })
+    },
+    [closeMenu, dispatch],
+  )
+  const selectBox = useCallback(
+    (ids, additive) => {
+      closeMenu('member')
+      dispatch({ type: 'selectBox', ids, additive })
+    },
+    [closeMenu, dispatch],
+  )
+  // Right-click without a drag opens a member's ring (and adds them to the selection if needed). Left click only selects.
   const selectedIds = state.party.selectedIds
   const openMenu = (id) => {
     if (!selectedIds.includes(id)) dispatch({ type: 'toggleSelect', id })
@@ -701,6 +712,10 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       },
       sneak: () => dispatch({ type: 'toggleSneakFor', id: menuMember.id }),
       beamOut: () => ending.askBeamOut(menuMember.id),
+      dismount: () => {
+        setPendingMount(null)
+        dispatch({ type: 'dismountHorse', memberId: menuMember.id })
+      },
     }).map((button) => ({
       ...button,
       onClick: () => {
@@ -851,7 +866,9 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       dispatch({ type: 'mountHorse', memberId, horseId })
       return
     }
-    dispatch({ type: 'moveTo', target: { ...horse.position }, fresh: true })
+    // Walk to the climb-up side, then lock on (not into the horse centre).
+    const side = mountSidePoint(party.map, horse)
+    dispatch({ type: 'moveTo', target: { ...side }, fresh: true })
     setPendingMount({ horseId, memberId, combatId: state.lastCombat?.id ?? null })
   }
   const horseButtons =
@@ -890,7 +907,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     ? 'Interacting: Escape closes the panel; walking out of reach closes it too. The world keeps moving.'
     : noiseTool
       ? 'Noise tool: click the floor to make a noise there.'
-      : `Click or hold the left button to move. Click a ground item to walk over and pick it up; hold for Pick Up / Go To; drag it to carry it. Click a portrait (or 1-${members.length}) to select one; Shift + click to add or remove. Right-drag a box to select several (Ctrl adds). C: character sheet. I: inventory. L: Captain's Log. Click a character for their actions; click someone else to talk to them.`
+      : `Click or hold the left button to move. Click a ground item to walk over and pick it up; hold for Pick Up / Go To; drag it to carry it. Left-click a character to select; right-click for their actions. Click a horse to Ride. Click a portrait (or 1-${members.length}) to select one; Shift + click to add or remove. Right-drag a box to select several (Ctrl adds). C: character sheet. I: inventory. L: Captain's Log. Click someone else to talk to them.`
   const hintFaded = useFadeAfter(hint)
 
   // Parent swaps to MissionEndScreen once onOutro runs (must not return before hooks above).
@@ -961,7 +978,6 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           onSelect={select}
           onSelectBox={selectBox}
           onOpenMenu={openMenu}
-          onToggleMenu={toggleMemberMenu}
           onOpenNpcMenu={toggleNpcMenu}
           onOpenHorseMenu={toggleHorseMenu}
           onStaggerDone={(id) => dispatch({ type: 'clearBlastReact', id })}

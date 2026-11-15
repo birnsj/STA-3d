@@ -87,7 +87,7 @@ Busy % of the main thread, walking (baseline 81%) / idle (baseline ~39%, noisy):
 | World tick (no per-frame React re-render) | 22% | 23% | Upper bound only: it is the game running |
 | Sprite sheet re-timing (`getAnimations()` per render) | 70% | 35% | Real but small: it forces ~3 style recalcs per frame. Candidate, not done |
 | Animated-tile redraw | 69% | ~same | Candidate, not done; changing it needs a visual-equivalence test |
-| Weather (map weather is Clear) | 73% | 35% | Not done; changing weather draw rate needs designer approval |
+| Weather (map weather is Clear) | 73% | 35% | Done (2026-11): weather canvas capped at 60 Hz, DPR ≤ 2, density area-capped at 1080p; spark/aurora gradients cached (`WeatherFx.jsx`, `weatherKinds.js`) |
 | NPCs (4 on this map) | 75% | noisy | Within noise |
 | Challenge-object outline filters | 49% vs 51% | | Within noise: no change warranted |
 

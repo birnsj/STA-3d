@@ -5,13 +5,18 @@
 // follows a board can repeat them seamlessly across the map. Kinds without one (sky and screen effects) stay on screen.
 const AREA_UNIT = 10000
 const TAU = Math.PI * 2
+/** Density stops scaling past 1080p so ultrawide / 4K do not multiply particle cost. */
+const DENSITY_AREA_CAP = 1920 * 1080
 
 export const between = ([low, high]) => low + Math.random() * (high - low)
 const wrap = (value, size, margin) => {
   const span = size + margin * 2
   return ((((value + margin) % span) + span) % span) - margin
 }
-const countFor = (layer, width, height, min = 1) => Math.max(min, Math.round(((layer.density ?? 0) * width * height) / AREA_UNIT))
+const countFor = (layer, width, height, min = 1) => {
+  const area = Math.min(width * height, DENSITY_AREA_CAP)
+  return Math.max(min, Math.round(((layer.density ?? 0) * area) / AREA_UNIT))
+}
 const rgba = (colour, alpha) => `rgba(${colour}, ${alpha})`
 
 // Rain, sand, snow and ash: particles that travel along the layer's angle and wrap around the screen.
@@ -150,13 +155,21 @@ const sparks = {
     }
   },
   draw(ctx, state, layer) {
+    // One radial glow, reused with globalAlpha — avoids createRadialGradient every burst every frame.
+    if (!state.glow) {
+      const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 26)
+      glow.addColorStop(0, rgba(layer.colour, 0.9))
+      glow.addColorStop(1, rgba(layer.colour, 0))
+      state.glow = glow
+    }
     for (const emitter of state.emitters) {
       if (emitter.burst <= 0) continue
-      const glow = ctx.createRadialGradient(emitter.x, emitter.y, 0, emitter.x, emitter.y, 26)
-      glow.addColorStop(0, rgba(layer.colour, 0.9 * (emitter.burst / SPARK_BURST)))
-      glow.addColorStop(1, rgba(layer.colour, 0))
-      ctx.fillStyle = glow
-      ctx.fillRect(emitter.x - 26, emitter.y - 26, 52, 52)
+      ctx.save()
+      ctx.translate(emitter.x, emitter.y)
+      ctx.globalAlpha = emitter.burst / SPARK_BURST
+      ctx.fillStyle = state.glow
+      ctx.fillRect(-26, -26, 52, 52)
+      ctx.restore()
     }
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
@@ -271,11 +284,15 @@ const aurora = {
       const top = band.top * height
       const edge = (x, offset) =>
         top + offset + Math.sin(x * 0.006 + time * (layer.speed ?? 0.4) + band.phase) * height * 0.05 + Math.sin(x * 0.017 + time * 0.9 + band.phase) * height * 0.015
-      const gradient = ctx.createLinearGradient(0, top, 0, top + depth)
-      gradient.addColorStop(0, rgba(band.colour, 0))
-      gradient.addColorStop(0.25, rgba(band.colour, layer.alpha ?? 0.22))
-      gradient.addColorStop(1, rgba(band.colour, 0))
-      ctx.fillStyle = gradient
+      if (!band.fill || band._h !== height) {
+        band._h = height
+        const gradient = ctx.createLinearGradient(0, top, 0, top + depth)
+        gradient.addColorStop(0, rgba(band.colour, 0))
+        gradient.addColorStop(0.25, rgba(band.colour, layer.alpha ?? 0.22))
+        gradient.addColorStop(1, rgba(band.colour, 0))
+        band.fill = gradient
+      }
+      ctx.fillStyle = band.fill
       ctx.beginPath()
       ctx.moveTo(0, edge(0, 0))
       for (let x = 24; x <= width + 24; x += 24) ctx.lineTo(x, edge(x, 0))

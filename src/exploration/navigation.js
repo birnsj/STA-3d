@@ -117,24 +117,43 @@ export function isClear(map, point, r = RADIUS) {
 }
 
 // Whether a character could walk the straight line from a to b without touching a solid tile.
-export function isClearLine(map, a, b) {
+export function isClearLine(map, a, b, r = RADIUS) {
   const steps = Math.max(1, Math.ceil(distance(a, b) / SAMPLE_STEP))
   for (let i = 1; i <= steps; i++) {
-    if (!isClear(map, { x: a.x + ((b.x - a.x) * i) / steps, y: a.y + ((b.y - a.y) * i) / steps })) return false
+    if (!isClear(map, { x: a.x + ((b.x - a.x) * i) / steps, y: a.y + ((b.y - a.y) * i) / steps }, r)) return false
   }
   return true
 }
 
 // The farthest point along a -> b a character could walk to before touching a solid tile.
-export function clearUpTo(map, a, b) {
+export function clearUpTo(map, a, b, r = RADIUS) {
   const steps = Math.max(1, Math.ceil(distance(a, b) / SAMPLE_STEP))
   let last = a
   for (let i = 1; i <= steps; i++) {
     const point = { x: a.x + ((b.x - a.x) * i) / steps, y: a.y + ((b.y - a.y) * i) / steps }
-    if (!isClear(map, point)) return last
+    if (!isClear(map, point, r)) return last
     last = point
   }
   return b
+}
+
+/**
+ * Body circle plus optional forward samples (mounted neck/head). facing: {x,y} world direction.
+ */
+export function isClearFacing(map, point, facing, bodyR = RADIUS, noseReach = 0) {
+  if (!isClear(map, point, bodyR)) return false
+  if (!(noseReach > 0)) return true
+  const len = Math.hypot(facing?.x ?? 0, facing?.y ?? 0)
+  if (len < 1e-6) return true
+  const fx = facing.x / len
+  const fy = facing.y / len
+  // Tip samples stay near foot width so the neck doesn't catch every nearby object;
+  // the body circle still keeps the barrel off walls.
+  const noseR = Math.min(RADIUS * 1.05, bodyR * 0.7)
+  for (const t of [0.55, 1]) {
+    if (!isClear(map, { x: point.x + fx * noseReach * t, y: point.y + fy * noseReach * t }, noseR)) return false
+  }
+  return true
 }
 
 /**
@@ -142,33 +161,49 @@ export function clearUpTo(map, a, b) {
  * Old behaviour free-moved while overlapping, which let Wall32 playtest phase through bulkheads
  * after a separation shove or a jam against a 32px strip.
  */
-function unstick(map, from, delta) {
+function unstick(map, from, delta, clearAt) {
   const candidates = [
     { x: from.x + delta.x, y: from.y + delta.y },
     { x: from.x + delta.x, y: from.y },
     { x: from.x, y: from.y + delta.y },
   ]
   for (const point of candidates) {
-    if (isClear(map, point)) return point
+    if (clearAt(point)) return point
   }
   const span = Math.max(RADIUS, Math.hypot(delta.x, delta.y), 0.2)
   for (let i = 0; i < 8; i++) {
     const angle = (i * Math.PI) / 4
     const point = { x: from.x + Math.cos(angle) * span, y: from.y + Math.sin(angle) * span }
-    if (isClear(map, point)) return point
+    if (clearAt(point)) return point
+  }
+  // Prefer backing out opposite the intended step when a long body is jammed into a wall.
+  const backLen = Math.hypot(delta.x, delta.y)
+  if (backLen > 1e-6) {
+    for (const dist of [0.35, 0.7, 1.1, 1.5]) {
+      const point = { x: from.x - (delta.x / backLen) * dist, y: from.y - (delta.y / backLen) * dist }
+      if (clearAt(point)) return point
+    }
   }
   const tile = nearestWalkableTile(map, from)
-  if (tile && isClear(map, tile)) return { x: tile.x, y: tile.y }
+  if (tile && clearAt(tile)) return { x: tile.x, y: tile.y }
   return from
 }
 
-// Moves by delta one axis at a time, so a character pressed against a wall slides along it instead of stopping.
-export function slide(map, from, delta) {
+/**
+ * Moves by delta one axis at a time, so a character pressed against a wall slides along it instead of stopping.
+ * opts: { radius, facing, noseReach } — mounted horses pass a wider body + forward nose clearance.
+ */
+export function slide(map, from, delta, opts = {}) {
+  const r = opts.radius ?? RADIUS
+  const facing = opts.facing ?? null
+  const noseReach = opts.noseReach ?? 0
+  const clearAt = (point) =>
+    facing && noseReach > 0 ? isClearFacing(map, point, facing, r, noseReach) : isClear(map, point, r)
   const dest = { x: from.x + delta.x, y: from.y + delta.y }
-  if (isClear(map, dest)) return dest
-  if (isClear(map, { x: dest.x, y: from.y })) return { x: dest.x, y: from.y }
-  if (isClear(map, { x: from.x, y: dest.y })) return { x: from.x, y: dest.y }
-  if (!isClear(map, from)) return unstick(map, from, delta)
+  if (clearAt(dest)) return dest
+  if (clearAt({ x: dest.x, y: from.y })) return { x: dest.x, y: from.y }
+  if (clearAt({ x: from.x, y: dest.y })) return { x: from.x, y: dest.y }
+  if (!clearAt(from)) return unstick(map, from, delta, clearAt)
   return from
 }
 
@@ -309,13 +344,13 @@ export const walkingDistanceTo = (map, field, point) => {
 }
 
 // Drops waypoints the character can skip by walking straight, so routes cut across rooms instead of zig-zagging.
-function straighten(map, from, points) {
+function straighten(map, from, points, r = RADIUS) {
   const result = []
   let current = from
   let i = 0
   while (i < points.length) {
     let j = points.length - 1
-    while (j > i && !isClearLine(map, current, points[j])) j--
+    while (j > i && !isClearLine(map, current, points[j], r)) j--
     result.push(points[j])
     current = points[j]
     i = j + 1
@@ -325,8 +360,8 @@ function straighten(map, from, points) {
 
 // The waypoints from a position to a target point. Ends on the target itself when it is reachable and clear, otherwise on
 // the centre of the nearest reachable walkable tile (so a click on a wall walks up to it).
-export function planRoute(map, from, target) {
-  if (isClearLine(map, from, target)) return [target]
+export function planRoute(map, from, target, r = RADIUS) {
+  if (isClearLine(map, from, target, r)) return [target]
   const fromTile = tileOf(from)
   const start = tileCentreWalkable(map, fromTile.x, fromTile.y) ? fromTile : nearestWalkableTile(map, from)
   const goal = nearestWalkableTile(map, target)
@@ -334,8 +369,8 @@ export function planRoute(map, from, target) {
   const end = tiles[tiles.length - 1]
   const reached = end.x === goal.x && end.y === goal.y
   const points = tiles.slice(1)
-  const finish = reached && isClear(map, target) ? target : end
+  const finish = reached && isClear(map, target, r) ? target : end
   if (points.length) points[points.length - 1] = finish
   else points.push(finish)
-  return straighten(map, from, points)
+  return straighten(map, from, points, r)
 }

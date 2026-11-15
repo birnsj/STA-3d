@@ -182,13 +182,13 @@ class SpikeActor {
     // Always track the sim tile (landing tile during a blast) even while physics drives the mesh.
     this._yawTarget = facingToYaw(facing)
     if (!this.ragdollActive) {
-      // Sim delta drives stride cadence (setPose runs before update, so root is already snapped).
       if (this._posReady) {
         this._pendingTravel = Math.hypot(position.x - this._tx, position.y - this._tz)
       }
       this._tx = position.x
       this._tz = position.y
-      // Mounted riders are placed on the horse saddle each frame — don't plant feet on the tile.
+      // Mounted riders are seated on the horse each frame — don't plant feet on the tile.
+      // Snap with the sim (same as LEAD / rings) so the label doesn't jitter against the mesh.
       if (!this._mounted) {
         this.root.position.set(this._tx, 0, this._tz)
         this._paintX = this._tx
@@ -230,7 +230,11 @@ class SpikeActor {
       else if (gait === 'sneakIdle') clip = 'sneakIdle'
       else if (gait === 'walk') clip = 'walk'
       else if (gait === 'stepBack') clip = 'stepBack'
-      else clip = 'idle'
+      else clip = this._mounted ? 'rideIdle' : 'idle'
+    }
+    // Mounted: never play foot idle / standing fidgets — stay in the saddle loop.
+    if (this._mounted && (clip === 'idle' || IDLE_FIDGETS.includes(clip))) {
+      clip = 'rideIdle'
     }
     // Standing idle: random look-around / shift / etc. Walk, combat poses, beam-wait clear the timer.
     if (clip === 'idle' && !this._down && !this._mounted && this._beam !== 'waiting') {
@@ -348,9 +352,7 @@ class SpikeActor {
         return
       }
     }
-    let travel = 0
     if (this._posReady && dt > 0) {
-      travel = this._pendingTravel
       this._pendingTravel = 0
       if (!this._mounted) {
         this.root.position.set(this._tx, 0, this._tz)
@@ -360,16 +362,15 @@ class SpikeActor {
         while (dy < -Math.PI) dy += Math.PI * 2
         this._yaw += dy * yawK
         this.root.rotation.y = this._yaw
-        this._paintX = this.root.position.x
-        this._paintZ = this.root.position.z
+        this._paintX = this._tx
+        this._paintZ = this._tz
       } else if (this.shadow) {
         this.shadow.visible = false
       }
     }
-    // Cadence from distance travelled so stride length tracks party walk/run speed.
     // Death-locked corpses keep their last applied rest — don't let the animator ease them.
     if (!(this._deathLocked && this._down)) {
-      this.body.update(dt, travel)
+      this.body.update(dt, null)
       // After a non-ragdoll defeat fall holds its last frame, lock the corpse on a death rest.
       if (this._down && !this.ragdollActive) {
         const clip = this.body.current
@@ -626,10 +627,16 @@ export class Spike3dScene {
     for (const horse of this.horses.values()) horse.update(dt)
     for (const actor of this.actors.values()) actor.update(dt)
     // Seat riders on saddles after both horse and actor have advanced this frame.
+    // Mount: lerp side→saddle with clip progress; dismount: reverse; ride: locked on.
     for (const horse of this.horses.values()) {
       if (!horse._riderId) continue
       const rider = this.actors.get(horse._riderId)
-      if (rider) horse.attachRider(rider)
+      if (!rider) continue
+      const clip = rider.body?.current
+      let blend = 1
+      if (clip === 'mount') blend = rider.body?.progress ?? 0
+      else if (clip === 'dismount') blend = 1 - (rider.body?.progress ?? 0)
+      horse.attachRider(rider, blend)
     }
     // Step Rapier only while at least one body is tumbling.
     if (this.physics && this._anyRagdoll()) this.physics.step(dt)
@@ -654,23 +661,46 @@ export class Spike3dScene {
       this.sun.position.set(sx / n + 8, 14, sz / n + 6)
     }
 
-    // Painter order by tile x+z among characters + horses.
-    const list = [...this.actors.values(), ...this.horses.values()].sort((a, b) => {
-      const d = a.paintKey() - b.paintKey()
+    // Painter order by tile x+z. Mounted horse+rider share one pass so depth sorts
+    // limbs against the barrel (clearDepth between them made every rider mesh win or lose as a slab).
+    const ridden = new Set()
+    const groups = []
+    for (const horse of this.horses.values()) {
+      const rider = horse._riderId ? this.actors.get(horse._riderId) : null
+      if (rider) {
+        ridden.add(rider.id)
+        const hp = horse.paintKey()
+        const rp = rider.paintKey()
+        groups.push({
+          id: horse.id,
+          paint: Math.max(hp, rp),
+          lead: rp >= hp ? rider : horse,
+          items: [horse, rider],
+        })
+      } else {
+        groups.push({ id: horse.id, paint: horse.paintKey(), lead: horse, items: [horse] })
+      }
+    }
+    for (const actor of this.actors.values()) {
+      if (ridden.has(actor.id)) continue
+      groups.push({ id: actor.id, paint: actor.paintKey(), lead: actor, items: [actor] })
+    }
+    groups.sort((a, b) => {
+      const d = a.paint - b.paint
       return d !== 0 ? d : String(a.id).localeCompare(String(b.id))
     })
-    for (const actor of list) actor.setVisible(false)
-    if (list.length === 0) {
+    for (const g of groups) for (const item of g.items) item.setVisible(false)
+    if (groups.length === 0) {
       this.renderer.render(this.scene, this.camera)
     } else {
-      for (const actor of list) {
+      for (const g of groups) {
         this.renderer.clearDepth()
-        this._syncOccludersForActor(actor)
-        actor.setVisible(true)
+        this._syncOccludersForActor(g.lead)
+        for (const item of g.items) item.setVisible(true)
         this.renderer.render(this.scene, this.camera)
-        actor.setVisible(false)
+        for (const item of g.items) item.setVisible(false)
       }
-      for (const actor of list) actor.setVisible(true)
+      for (const g of groups) for (const item of g.items) item.setVisible(true)
       // Restore fade-only visibility so debug collider toggle / next frame start clean.
       this._syncFadedOccluders(this._fadedOccluders)
     }

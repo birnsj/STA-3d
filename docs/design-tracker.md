@@ -8,7 +8,7 @@ Open design decisions for the designer. Each entry separates what the book says 
 
 ### Outdoor horse mount (implemented 2026-11-14)
 
-Book: no rule. Prototype: Horse Spawn markers (`markers.horseSpawns`) in the editor; outdoor maps auto-spawn one if none authored; click ring Ride / Dismount / Attack; **M** still toggles; 1.6× move while riding; mount/dismount/ride seated clips (legs astride); combat auto-dismounts. Attack removes the horse (prototype). Implementer picks open for review: ride multiplier, Attack outcome, mounted combat. Where: `src/exploration/mount.js`, `src/spike3d/HorseModel.js`, `HumanoidAnimator.js`, `docs/prototype-rules.md` (Exploration).
+Book: no rule. Prototype: Horse Spawn markers (`markers.horseSpawns`) in the editor; outdoor maps auto-spawn one if none authored; click ring Ride / Dismount / Attack; **M** still toggles; 1.15× move while riding; mount/dismount/ride seated clips (legs astride); combat auto-dismounts. Attack removes the horse (prototype). Implementer picks open for review: ride multiplier, Attack outcome, mounted combat. Where: `src/exploration/mount.js`, `src/spike3d/HorseModel.js`, `HumanoidAnimator.js`, `docs/prototype-rules.md` (Exploration).
 
 ### Starship save and footer (implemented 2026-10-25)
 

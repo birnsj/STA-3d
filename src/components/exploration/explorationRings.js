@@ -7,7 +7,7 @@ import { dispositionName, isDown, STATE, stateName } from '../../exploration/awa
 import { challengeFor } from '../../exploration/challengeObjects.js'
 import { previewObjectShot } from '../../exploration/explorationEnvironment.js'
 import { canScan, canScanNpc, scanRadius } from '../../exploration/partyScan.js'
-import { canDismountHorse, canMountHorse, horseById, isMounted } from '../../exploration/mount.js'
+import { canDismount, canDismountHorse, canMountHorse, horseById, isMounted } from '../../exploration/mount.js'
 import { challengeScanner, destructibleScanner, destructibleShooter, groundItemScanner, npcButtonPerformer, ringPartyView } from '../../exploration/ringParty.js'
 import { canAct } from '../../exploration/partyControl.js'
 import { getEquippedItems } from '../../rules/equipment.js'
@@ -20,18 +20,21 @@ import { destructibleScanCard, isDestructibleScanned } from '../../world/destruc
 
 const NOT_BUILT = 'Not built yet.'
 
-// A party member's radial menu (left-click on them; designer decision, 2026-10-20; was right-click): Scan, Use, Switch, Search,
+// A party member's radial menu (right-click; left-click only selects): Scan, Use, Switch, Search,
 // First Aid, Attack, Inventory, Sneak and Beam Out, each for that character only. Use, Search, First Aid and Attack
 // are shown but not built yet (they may later act on objects). Inventory replaced Interact (designer request, 2026-10-18).
-// actions: { scan, switchTo, inventory, sneak, beamOut }.
+// When mounted, Dismount is included (horse hit target is off while ridden so selection works like on foot).
+// actions: { scan, switchTo, inventory, sneak, beamOut, dismount }.
 export function memberMenuButtons(state, member, actions) {
   const up = !isDefeated(member.condition)
   const scan = canScan(state, member.id)
   const radius = scanRadius(member.character)
   const name = member.character.name
   const isOnlySelected = state.party.selectedIds.length === 1 && state.party.selectedIds[0] === member.id
+  const mounted = Boolean(member.mounted)
+  const canGetOff = mounted && canDismount(state, member.id)
   const unbuilt = (id, label, icon) => ({ id, label, icon, enabled: false, title: `${label}: ${NOT_BUILT}` })
-  return [
+  const buttons = [
     { id: 'scan', label: 'Scan', icon: 'scan', enabled: scan.possible, title: scan.possible ? `Scan (Reason + Science): location and environment, plus life signs and enemies within ${radius} tiles.` : `Scan: ${scan.reason}`, onClick: actions.scan },
     unbuilt('useItem', 'Use', 'useItem'),
     { id: 'switch', label: 'Switch', icon: 'switch', enabled: up && !isOnlySelected, title: `Switch to ${name}: select them and make them the lead.`, onClick: actions.switchTo },
@@ -46,7 +49,7 @@ export function memberMenuButtons(state, member, actions) {
       title: `Inventory: open ${name}'s carried gear (I).`,
       onClick: actions.inventory,
     },
-    { id: 'sneak', label: 'Sneak', icon: 'sneak', enabled: up, active: member.sneaking, title: `Sneak: ${name} crouches and moves slowly, harder to notice.`, onClick: actions.sneak },
+    { id: 'sneak', label: 'Sneak', icon: 'sneak', enabled: up && !mounted, active: member.sneaking, title: mounted ? 'Sneak: dismount first.' : `Sneak: ${name} crouches and moves slowly, harder to notice.`, onClick: actions.sneak },
     {
       id: 'beamOut',
       label: 'Beam Out',
@@ -56,6 +59,17 @@ export function memberMenuButtons(state, member, actions) {
       onClick: actions.beamOut,
     },
   ]
+  if (mounted) {
+    buttons.splice(2, 0, {
+      id: 'dismount',
+      label: 'Dismount',
+      icon: 'switch',
+      enabled: Boolean(canGetOff && actions.dismount),
+      title: canGetOff ? `Dismount: ${name} climbs off beside the horse.` : 'Dismount: not riding.',
+      onClick: actions.dismount,
+    })
+  }
+  return buttons
 }
 
 // A challenge object's radial menu (left click on it while in reach): Scan (Reason + Science, tricorder range), then one
@@ -360,8 +374,9 @@ export function groundItemMenuButtons(state, instanceId, actions, pickedId = nul
   ]
 }
 
-// A horse's radial menu (left-click): Ride, Dismount, Attack. Ride walks over when out of range (like Talk).
-// Attack is a prototype remove (not STA combat). actions: { ride, dismount, attack }.
+// A horse's radial menu (left-click, same as NPCs): Ride, Dismount, Attack. Free horses show a neutral ground ring.
+// Ride walks over when out of range (like Talk). Attack is a prototype remove (not STA combat).
+// actions: { ride, dismount, attack }.
 export function horseMenuButtons(state, horseId, actions) {
   const horse = horseById(state, horseId)
   if (!horse) return []
@@ -382,12 +397,12 @@ export function horseMenuButtons(state, horseId, actions) {
       : isMounted(state, memberId)
         ? 'Ride: dismount first.'
         : inRange
-          ? 'Ride: climb onto the horse.'
-          : 'Walk over and climb onto the horse.'
+          ? 'Ride: climb on from beside the horse.'
+          : 'Walk to the near side, then climb on.'
   const dismountTitle = !up
     ? 'Dismount: the lead cannot act.'
     : canGetOff
-      ? 'Dismount: climb off beside the horse.'
+      ? 'Dismount: climb off onto the near side.'
       : 'Dismount: the lead is not riding this horse.'
   const attackTitle = !up
     ? 'Attack: the lead cannot act.'

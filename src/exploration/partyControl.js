@@ -11,6 +11,7 @@ import { controllerFor, isUp } from '../actors/controllers.js'
 import data from '../data/adaptation/exploration/partyControl.json'
 import { placeAwayTeam } from './awayTeam.js'
 import { assignSlots, DEFAULT_FORMATION_ID, formationTargets, getFormation } from './formations.js'
+import { RIDE_BODY_RADIUS, RIDE_NOSE_REACH } from './mountConstants.js'
 import { distance, isClear, isClearLine, nearestWalkableTile, planRoute, RADIUS, slide, tileOf, walkingDistances, walkingDistanceTo } from './navigation.js'
 
 const MOVE = data.movement
@@ -144,10 +145,12 @@ export function getCohesion(state) {
   return members.every((member) => walkingDistanceTo(state.map, field, member.position) <= MOVE.groupedDistance) ? 'grouped' : 'separated'
 }
 
+const bodyRadius = (member) => (member?.mounted ? RIDE_BODY_RADIUS : RADIUS)
+
 const pointOrder = (map, member, target, run = false) => ({
   ...member,
   order: { type: 'point', target, run },
-  path: planRoute(map, member.position, target),
+  path: planRoute(map, member.position, target, bodyRadius(member)),
   replanIn: MOVE.replanSeconds,
   stall: { seconds: 0, best: Infinity },
 })
@@ -303,7 +306,16 @@ function tick(state, rawSeconds) {
       shouldStepBack(member, selectedIds)
     let next = member
     if (stepping) {
-      const position = slide(state.map, member.position, step)
+      // Mounted: wider barrel + forward nose samples so the horse mesh can't sink through walls.
+      const facing = direction && Math.hypot(direction.x, direction.y) > 0.05 ? direction : member.facing
+      const position = slide(
+        state.map,
+        member.position,
+        step,
+        member.mounted
+          ? { radius: RIDE_BODY_RADIUS, facing, noseReach: RIDE_NOSE_REACH }
+          : undefined,
+      )
       const pace = smoothPace(member.pace, { x: (position.x - member.position.x) / seconds, y: (position.y - member.position.y) / seconds }, seconds)
       const moving = isMovingPace(pace) || pushOnly
       // A runner easing into place at the end, or held up, drops to a walk.
@@ -454,9 +466,12 @@ function resolveOverlaps(map, members, ids, selectedIds) {
       // Selected point-mover keeps walk. Unselected standers (former lead, etc.) and followers play step-back.
       if (shareA) {
         const shoved = shouldStepBack(a, selectedIds)
+        const slideOpts = a.mounted
+          ? { radius: RIDE_BODY_RADIUS, facing: a.facing, noseReach: RIDE_NOSE_REACH }
+          : undefined
         result[a.id] = {
           ...a,
-          position: slide(map, a.position, { x: -dir.x * shareA, y: -dir.y * shareA }),
+          position: slide(map, a.position, { x: -dir.x * shareA, y: -dir.y * shareA }, slideOpts),
           ...(shoved
             ? { pushed: true, moving: true, facing: { x: dir.x, y: dir.y }, heading: Math.atan2(dir.y, dir.x) }
             : {}),
@@ -464,9 +479,12 @@ function resolveOverlaps(map, members, ids, selectedIds) {
       }
       if (shareB) {
         const shoved = shouldStepBack(b, selectedIds)
+        const slideOpts = b.mounted
+          ? { radius: RIDE_BODY_RADIUS, facing: b.facing, noseReach: RIDE_NOSE_REACH }
+          : undefined
         result[b.id] = {
           ...b,
-          position: slide(map, b.position, { x: dir.x * shareB, y: dir.y * shareB }),
+          position: slide(map, b.position, { x: dir.x * shareB, y: dir.y * shareB }, slideOpts),
           ...(shoved
             ? {
                 pushed: true,

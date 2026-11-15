@@ -653,7 +653,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
               <div className="av-dock-slot av-dock-model">
                 <p className="ed-dock-title">Model</p>
                 {isHorseSet ? (
-                  <p className="me-text">Procedural horse · idle / walk / trot</p>
+                  <p className="me-text">Procedural horse · idle / walk / trot / stop</p>
                 ) : (
                   <div className="av-dock-model-fields">
                     <select className="me-select" value={species} aria-label="Species" onChange={(e) => setSpecies(e.target.value)}>

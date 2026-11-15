@@ -28,11 +28,8 @@ const LOCO_SPEED = {
   hazardPanicRun: SPEED_RUN,
 }
 
-const WALK_STRIDE = 2.56
-const RUN_STRIDE = 3.3
 const WALK_SECONDS = 0.8
 const RUN_SECONDS = 0.6
-const MAX_TRAVEL = 0.55
 
 const K_UP = 7.5
 const K_DOWN = 16
@@ -231,8 +228,8 @@ function evalActionPose(clip, u) {
   const ease = t * t * (3 - 2 * t)
   const p = basePose()
 
-  if (clip === 'rideIdle') return evalRidePose(t, false)
-  if (clip === 'ride') return evalRidePose(t, true)
+  if (clip === 'rideIdle') return evalRidePose(t, false, 0)
+  if (clip === 'ride') return evalRidePose(t, true, 0)
   if (clip === 'mount') return evalMountPose(t)
   if (clip === 'dismount') return evalDismountPose(t)
 
@@ -703,32 +700,70 @@ function evalHazardPanicUpper(t) {
   }
 }
 
-/** Seated astride a horse — hips in the saddle, thighs wrapped around the barrel, hands on reins. */
-function evalRidePose(u, moving) {
+/**
+ * Seated astride a horse — hips in the saddle, thighs wrapped around the barrel, hands on reins.
+ * On this rig +thigh X swings the foot aft; use −X so the thighs sit forward over the barrel (not over the rump).
+ * −arm X is forward of the torso; low/negative armSide keeps the hands down by the reins (not a T-pose).
+ * pace 0..1: how far the rider bends forward (from horse travel speed).
+ */
+function evalRidePose(u, moving, pace = 0) {
   const w = clamp01(u) * Math.PI * 2
-  const bob = moving ? Math.sin(w) : Math.sin(w * 0.5)
-  const bounce = moving ? 0.035 * Math.abs(Math.sin(w)) : 0.01 * Math.sin(w * 0.5)
-  const open = deg(44)
+  // Straddle the barrel — a bit wider than standing hip width so the thighs clear the horse.
+  const open = deg(46)
+  const bend = clamp01(pace)
+  // Positive lean / spineLean / chestLean tip the torso toward +Z (horse forward).
+  const leanAdd = deg(4) + deg(16) * bend
+  const spineAdd = deg(5) + deg(14) * bend
+  const chestAdd = deg(2) + deg(10) * bend
+  if (moving) {
+    const bob = Math.sin(w)
+    return {
+      ...basePose(),
+      pitch: 0,
+      // Thighs forward over the barrel; knees bent so shins hang to the stirrups.
+      thigh: [deg(-42) + deg(2.5) * bob, deg(-42) - deg(2.5) * bob],
+      knee: [deg(78) + deg(3) * bob, deg(78) - deg(3) * bob],
+      legSide: [open, open],
+      // Hands close together on the reins (armSide − = tuck inward); reach farther as they lean in.
+      arm: [deg(-38) - deg(10) * bend + deg(2) * bob, deg(-40) - deg(10) * bend - deg(2) * bob],
+      elbow: [deg(78) - deg(6) * bend, deg(80) - deg(6) * bend],
+      shoulder: [deg(2), deg(3)],
+      armSide: [deg(-26), deg(-26)],
+      lean: deg(6) + leanAdd,
+      spineLean: deg(10) + spineAdd + deg(0.8) * bob,
+      chestLean: deg(4) + chestAdd,
+      hipDrop: 2.4,
+      bounce: 0.018 * Math.abs(bob) * (1 + 0.25 * bend),
+      torsoYaw: deg(1.2) * bob,
+      headPitch: deg(4) + deg(10) * bend,
+      headYaw: deg(2) * Math.sin(w * 0.5) * (1 - 0.5 * bend),
+      prop: false,
+      aim: 0,
+    }
+  }
+  // Idle in the saddle: slow look L→R, weight shift; arms hang down to the reins.
+  // Still apply a little forward bend if pace is easing down from a gallop.
+  const look = Math.sin(w)
+  const settle = Math.sin(w * 2 + 0.7)
+  const breathe = Math.sin(w * 0.5)
   return {
     ...basePose(),
     pitch: 0,
-    // Thighs forward over the barrel; knees bent so shins hang toward the stirrups.
-    thigh: [deg(32) + deg(5) * bob, deg(32) - deg(5) * bob],
-    knee: [deg(88) + deg(7) * bob, deg(88) - deg(7) * bob],
-    legSide: [open, open],
-    arm: [deg(-28) + deg(3) * bob, deg(-32) - deg(3) * bob],
-    elbow: [deg(55), deg(58)],
-    shoulder: [deg(-8), deg(-10)],
-    armSide: [deg(12), deg(12)],
-    lean: deg(5),
-    spineLean: deg(8) + deg(1.5) * bob,
-    chestLean: deg(3),
-    // Seat depth is mostly from HorseActor saddle attach; small settle only.
+    thigh: [deg(-40) + deg(3) * settle, deg(-40) - deg(3) * settle],
+    knee: [deg(76) + deg(4) * settle, deg(76) - deg(4) * settle],
+    legSide: [open + deg(2) * settle, open - deg(2) * settle],
+    arm: [deg(-18) - deg(6) * bend + deg(3) * settle, deg(-20) - deg(6) * bend - deg(2) * look],
+    elbow: [deg(86) + deg(4) * breathe, deg(88) + deg(3) * settle],
+    shoulder: [deg(1), deg(2)],
+    armSide: [deg(-24), deg(-24)],
+    lean: deg(5) + leanAdd * 0.55 + deg(4) * look * 0.35,
+    spineLean: deg(8) + spineAdd * 0.55 + deg(2) * breathe,
+    chestLean: deg(3) + chestAdd * 0.55 + deg(1.5) * breathe,
     hipDrop: 2.4,
-    bounce,
-    torsoYaw: deg(2) * bob,
-    headPitch: deg(4),
-    headYaw: moving ? deg(3) * Math.sin(w * 0.5) : deg(4) * Math.sin(w * 0.25),
+    bounce: 0.012 * breathe,
+    torsoYaw: deg(10) * look * 0.45,
+    headPitch: deg(6) + deg(6) * bend + deg(5) * settle * 0.4,
+    headYaw: deg(32) * look * (1 - 0.4 * bend),
     prop: false,
     aim: 0,
   }
@@ -876,6 +911,8 @@ export class HumanoidAnimator {
     this._bounce = 0
     this._hipDrop = 0
     this._pitch = 0
+    // 0..1 how hard the rider is bent forward over the horse (from travel speed).
+    this._ridePace = 0
     this._arm = [0, 0]
     this._shoulder = [0, 0]
     this._elbow = [deg(8), deg(10)]
@@ -1103,6 +1140,16 @@ export class HumanoidAnimator {
       }
       const u = seconds > 0 ? Math.min(1, this._actionT / seconds) : 1
       const holdEnd = (mode === 'hold' || (mode === 'once' && this._viewerHoldOnce && !this._viewerLoopOnce)) && this._actionDone
+      // Rider lean eases with the ride clip (moving vs idle in saddle) — no travel pulses.
+      if (clip === 'ride' || clip === 'rideIdle') {
+        const paceTarget = clip === 'ride' ? 1 : 0
+        this._ridePace = easeToward(this._ridePace, paceTarget, 3.5, dt)
+        const desired = evalRidePose(holdEnd ? 1 : u, clip === 'ride', this._ridePace)
+        // Normal blend rates — stopping=true used K_STOP and twitched every bob sample.
+        this._applyDesired(desired, dt, 0, false)
+        return
+      }
+      this._ridePace = easeToward(this._ridePace, 0, 12, dt)
       const desired = evalActionPose(clip, holdEnd ? 1 : u)
       this._applyDesired(desired, dt, 0, true)
       return
@@ -1129,15 +1176,11 @@ export class HumanoidAnimator {
     const weightEase = weight * weight * (3 - 2 * weight)
     const crouch = sneak ? 0.85 : 0
 
+    // Steady time-based stride (same as the Animation Viewer). Travel-locked phase fought the
+    // ~60Hz sim vs high-Hz paint rate and read as fast jitter even after EMA smoothing.
     if (speed > 0.015) {
-      const stride = lerp(WALK_STRIDE, RUN_STRIDE, runMix) * (sneak ? 0.7 : 1)
-      if (travel == null) {
-        const cycle = lerp(WALK_SECONDS, RUN_SECONDS, runMix) * (sneak ? 1.35 : 1)
-        this._gaitPhase = (this._gaitPhase + dt / cycle) % 1
-      } else {
-        const stepped = Math.min(MAX_TRAVEL, Math.max(0, travel))
-        if (stepped > 1e-5) this._gaitPhase = (this._gaitPhase + stepped / stride) % 1
-      }
+      const cycle = lerp(WALK_SECONDS, RUN_SECONDS, runMix) * (sneak ? 1.35 : 1)
+      this._gaitPhase = (this._gaitPhase + dt / cycle) % 1
     }
 
     this._idleT += dt

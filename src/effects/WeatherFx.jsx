@@ -3,9 +3,16 @@ import { between, WEATHER_KINDS } from './weatherKinds.js'
 import { perfOff } from '../dev/perfProbe.js'
 import './effects.css'
 
-// A weather overlay for a positioned parent: a canvas that redraws the weather's layers every frame (layer settings in
-// weather.json, layer kinds in weatherKinds.js). Clicks pass through it to whatever is underneath.
+// A weather overlay for a positioned parent: a canvas that redraws the weather's layers on a capped cadence (layer
+// settings in weather.json, layer kinds in weatherKinds.js). Clicks pass through it to whatever is underneath.
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+/** Match the world clock — high-Hz displays must not multiply weather canvas cost. */
+const WEATHER_HZ = 60
+const WEATHER_MS = 1000 / WEATHER_HZ
+const FRAME_TOLERANCE_MS = 1
+/** Soft particles do not need 3× buffers; caps GPU upload and fill rate on retina. */
+const MAX_PIXEL_RATIO = 2
 
 // A flash (lightning, an ion discharge, a power flicker): a double flicker that fades out, then a random wait for the next.
 function flashAlpha(state, dt, range) {
@@ -21,7 +28,7 @@ function flashAlpha(state, dt, range) {
 }
 
 // Extra room drawn around the view when following a board, so streaks, fog banks and sparks near an edge aren't cut off.
-const FOLLOW_PAD = 200
+const FOLLOW_PAD = 140
 
 // The board's box on the canvas, in canvas CSS pixels. Measuring forces a style and layout pass, so it is only done when
 // something is resized, never per frame.
@@ -109,7 +116,7 @@ export default function WeatherFx({ fx, virtualWidth = null, follow = null }) {
     window.addEventListener('resize', remeasure)
 
     const resize = () => {
-      ratio = window.devicePixelRatio || 1
+      ratio = Math.min(MAX_PIXEL_RATIO, window.devicePixelRatio || 1)
       baseScale = null
       const scale = virtualWidth && canvas.clientWidth ? canvas.clientWidth / virtualWidth : 1
       width = canvas.clientWidth / scale
@@ -130,10 +137,11 @@ export default function WeatherFx({ fx, virtualWidth = null, follow = null }) {
       }
       const view = follow ? followedView() : null
       if (view) baseScale ??= view.scale
+      const zoom = view && baseScale ? view.scale / baseScale : 1
       for (const entry of layers) {
         const { layer, kind, state } = entry
         if (!still) kind.step(state, layer, dt, time, width, height)
-        if (view && kind.period) drawFollowing(ctx, ratio, entry, time, width, height, view, view.scale / baseScale)
+        if (view && kind.period) drawFollowing(ctx, ratio, entry, time, width, height, view, zoom)
         else kind.draw(ctx, state, layer, time, width, height)
       }
       if (fx.pulse) {
@@ -152,10 +160,17 @@ export default function WeatherFx({ fx, virtualWidth = null, follow = null }) {
     let frame = 0
     let last = performance.now()
     const tick = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000)
+      frame = requestAnimationFrame(tick)
+      // Background tabs: keep the clock warm but skip canvas work.
+      if (document.hidden) {
+        last = now
+        return
+      }
+      const elapsed = now - last
+      if (elapsed < WEATHER_MS - FRAME_TOLERANCE_MS) return
+      const dt = Math.min(0.05, elapsed / 1000)
       last = now
       draw(now / 1000, dt)
-      frame = requestAnimationFrame(tick)
     }
 
     // A still overlay draws once, unless it follows a board, which it must keep tracking as the camera moves.

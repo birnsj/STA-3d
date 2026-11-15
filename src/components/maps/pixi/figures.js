@@ -627,7 +627,7 @@ export class FigureView {
         return
       }
       this.container.visible = true
-      this.drawRing(figure.ring)
+      this.drawRing(figure.ring, figure.ringScale)
       this.arrow.visible = Boolean(figure.facing) && !figure.down
       if (this.arrow.visible) drawArrow(this.arrow, figure.facing, figure.arrowColour ?? 0xffffff)
       return
@@ -667,7 +667,7 @@ export class FigureView {
     const slide = knockback && !gettingUp ? this.blastSlide({ ...figure, knockback }, now) : 0
     this.container.position.set(centre.x + (knockback?.x ?? 0) * slide, centre.y + (knockback?.y ?? 0) * slide)
     this.container.zIndex = depth
-    this.drawRing(figure.ring)
+    this.drawRing(figure.ring, figure.ringScale)
     if (!figure.ringPulse) this.pulseFrom = null
     else this.pulseFrom ??= now
     this.ring.alpha = figure.ringPulse && !reducedMotion() ? pulseAlpha(now - this.pulseFrom) : 1
@@ -786,13 +786,14 @@ export class FigureView {
     this.hazardFx.visible = true
   }
 
-  // style: a RINGS name, or { fill, stroke } of its own.
-  drawRing(style) {
-    const look = typeof style === 'string' ? style : JSON.stringify(style)
+  // style: a RINGS name, or { fill, stroke } of its own. ringScale: ellipse size (horses use >1).
+  drawRing(style, ringScale = 1) {
+    const scale = Number(ringScale) > 0 ? Number(ringScale) : 1
+    const look = `${typeof style === 'string' ? style : JSON.stringify(style)}@${scale}`
     if (this.shown.ring === look) return
     this.shown.ring = look
     const { fill, stroke } = typeof style === 'string' ? RINGS[style] : style
-    this.ring.clear().ellipse(0, 0, 22, 11).fill(fill).stroke(stroke)
+    this.ring.clear().ellipse(0, 0, 22 * scale, 11 * scale).fill(fill).stroke(stroke)
   }
 
   // The animation to show now: the board's pose if it gives one (combat: unitPose.js shownPose, played at

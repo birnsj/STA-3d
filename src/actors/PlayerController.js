@@ -9,13 +9,14 @@ import { escapeHazardStep, safeReachable } from '../combat/hazardAvoidance.js'
 import { getReachableTiles } from '../combat/movementSystem.js'
 import { tileDistance } from '../combat/rangeSystem.js'
 import data from '../data/adaptation/exploration/partyControl.json'
-import { RIDE_SPEED_MULT } from '../exploration/mountConstants.js'
-import { distance, isClearLine, planRoute } from '../exploration/navigation.js'
+import { RIDE_BODY_RADIUS, RIDE_SPEED_MULT } from '../exploration/mountConstants.js'
+import { distance, isClearLine, planRoute, RADIUS } from '../exploration/navigation.js'
 import { sneakCatchUpSpeed, sneakSpeed } from '../exploration/sneak.js'
 import { worldToGrid } from '../exploration/tacticalGrid.js'
 import { CharacterController, wrapAngle } from './CharacterController.js'
 
 const rideMult = (member) => (member?.mounted ? RIDE_SPEED_MULT : 1)
+const rideRadius = (member) => (member?.mounted ? RIDE_BODY_RADIUS : RADIUS)
 
 const MOVE = data.movement
 const TURN_RATE = (MOVE.turnRateDegrees * Math.PI) / 180
@@ -161,7 +162,9 @@ export class PlayerController extends CharacterController {
       if (replanIn <= 0) {
         replanIn = MOVE.replanSeconds
         // Pushed off the route (e.g. around a corner by a crowd): find a new one.
-        if (path.length && !isClearLine(map, member.position, path[0])) path = planRoute(map, member.position, member.order.target)
+        if (path.length && !isClearLine(map, member.position, path[0], rideRadius(member))) {
+          path = planRoute(map, member.position, member.order.target, rideRadius(member))
+        }
       }
       const remaining = remainingLength(member.position, path)
       const progressed = remaining < member.stall.best - 0.05
@@ -189,12 +192,13 @@ export class PlayerController extends CharacterController {
     if (blockedFor.seconds > BLOCKED_SECONDS) return { ...still, member: { ...member, path: [], parkedFor: target, blocked: { seconds: 0 } } }
     let path = member.path
     let replanIn = member.replanIn - seconds
-    if (isClearLine(map, member.position, target)) {
+    const radius = rideRadius(member)
+    if (isClearLine(map, member.position, target, radius)) {
       path = [target]
     } else {
       while (path.length > 1 && distance(member.position, path[0]) < WAYPOINT_REACHED) path = path.slice(1)
       if (replanIn <= 0 || !path.length) {
-        path = planRoute(map, member.position, target)
+        path = planRoute(map, member.position, target, radius)
         replanIn = MOVE.replanSeconds
       }
     }
