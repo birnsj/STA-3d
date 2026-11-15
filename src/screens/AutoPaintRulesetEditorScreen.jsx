@@ -273,6 +273,10 @@ export default function AutoPaintRulesetEditorScreen({
   onRoomsInBuilding,
   doorsInBuilding = 100,
   onDoorsInBuilding,
+  includeBuildings = true,
+  onIncludeBuildings,
+  includeRoads = true,
+  onIncludeRoads,
   cardTools = { canGenerate: false, busy: false, onGenerate: () => {} },
   onBack,
   onPlay,
@@ -1182,6 +1186,10 @@ export default function AutoPaintRulesetEditorScreen({
         onRoomsInBuilding={onRoomsInBuilding}
         doorsInBuilding={doorsInBuilding}
         onDoorsInBuilding={onDoorsInBuilding}
+        includeBuildings={includeBuildings}
+        onIncludeBuildings={onIncludeBuildings}
+        includeRoads={includeRoads}
+        onIncludeRoads={onIncludeRoads}
         onGenerateMap={generateMap}
         generateBusy={busy}
         cardTools={cardTools}

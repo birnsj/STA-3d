@@ -623,6 +623,8 @@ function markersAtEnds(cells, distance, random) {
  * @param {number} [roomScale=1] Map Properties Room size (1 = 100%) — interior room span
  * @param {number} [roomsInBuilding=1] Map Properties Rooms in building (0–1) — how fully to subdivide
  * @param {number} [doorsInBuilding=1] Map Properties Doors in building (0–1) — interior doorway density
+ * @param {boolean} [includeBuildings=true] Map Properties Buildings checkbox
+ * @param {boolean} [includeRoads=true] Map Properties Roads checkbox — main path + door stubs
  */
 export function generateSettlementLayout(
   map,
@@ -639,6 +641,8 @@ export function generateSettlementLayout(
     roomScale = 1,
     roomsInBuilding = 1,
     doorsInBuilding = 1,
+    includeBuildings = true,
+    includeRoads = true,
     biomeId = null,
     featureScale = 0.75,
     fields = true,
@@ -659,6 +663,8 @@ export function generateSettlementLayout(
   const rScale = Number.isFinite(Number(roomScale)) && Number(roomScale) > 0 ? Number(roomScale) : 1
   const roomDensity = Number.isFinite(Number(roomsInBuilding)) ? clamp01(Number(roomsInBuilding)) : 1
   const doorDensity = Number.isFinite(Number(doorsInBuilding)) ? clamp01(Number(doorsInBuilding)) : 1
+  const placeBuildings = includeBuildings !== false
+  const placeRoads = includeRoads !== false
   const biome = biomeId ? biomeFor(biomeId) : null
   const floorOpts = { wood: interiorWood, stone: interiorStone }
   const interiorIds = new Set()
@@ -672,12 +678,14 @@ export function generateSettlementLayout(
   const middle =
     Math.floor((across - pathWidth) / 2) + randomInt(random, -Math.floor(across / 8), Math.floor(across / 8))
   const pathStart = Math.max(1, Math.min(across - 1 - pathWidth, middle))
-  tiles.forEach((row, y) =>
-    row.forEach((_, x) => {
-      const offset = (horizontal ? y : x) - pathStart
-      if (offset >= 0 && offset < pathWidth) tiles[y][x] = path
-    }),
-  )
+  if (placeRoads) {
+    tiles.forEach((row, y) =>
+      row.forEach((_, x) => {
+        const offset = (horizontal ? y : x) - pathStart
+        if (offset >= 0 && offset < pathWidth) tiles[y][x] = path
+      }),
+    )
+  }
 
   // Corner fields first (small keep) so crops stay visible without blocking all building sites.
   const earlyFieldCount = fields !== false ? Math.min(2, Math.max(1, Number(maxFields) || 3)) : 0
@@ -698,7 +706,7 @@ export function generateSettlementLayout(
     horizontal ? (rect.y1 < pathStart ? 'bottom' : 'top') : rect.x1 < pathStart ? 'right' : 'left'
 
   // Count from map area (Legacy colony); Building size grows footprints, so fewer may fit.
-  const targetCount = Math.max(2, Math.min(5, Math.round((width * height) / 110)))
+  const targetCount = placeBuildings ? Math.max(2, Math.min(5, Math.round((width * height) / 110))) : 0
   const openIds = new Set([grass, dirt])
   const buildings = []
   // Soften oversized footprints when placement keeps failing (Legacy placeBuildings).
@@ -731,16 +739,18 @@ export function generateSettlementLayout(
       doorsInBuilding: doorDensity,
     })
     // Path stub from door to the main path.
-    let cursor = { ...shell.outside }
-    for (let step = 0; step < 8 && inBounds(tiles, cursor); step++) {
-      if (tiles[cursor.y][cursor.x] === path) break
-      if (tiles[cursor.y][cursor.x] === grass || tiles[cursor.y][cursor.x] === dirt) {
-        tiles[cursor.y][cursor.x] = path
+    if (placeRoads) {
+      let cursor = { ...shell.outside }
+      for (let step = 0; step < 8 && inBounds(tiles, cursor); step++) {
+        if (tiles[cursor.y][cursor.x] === path) break
+        if (tiles[cursor.y][cursor.x] === grass || tiles[cursor.y][cursor.x] === dirt) {
+          tiles[cursor.y][cursor.x] = path
+        }
+        const dir = DOOR_STEP[side]
+        cursor = { x: cursor.x + dir[0], y: cursor.y + dir[1] }
       }
-      const dir = DOOR_STEP[side]
-      cursor = { x: cursor.x + dir[0], y: cursor.y + dir[1] }
     }
-    paintYardAndEdge(tiles, keep, rect, { dirt, grass, path, yard: 2 })
+    paintYardAndEdge(tiles, keep, rect, { dirt, grass, path: placeRoads ? path : dirt, yard: 2 })
     roomCells(grow(rect, 2)).forEach((cell) => {
       if (inBounds(tiles, cell)) keep.add(key(cell))
     })

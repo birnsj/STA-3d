@@ -25,6 +25,10 @@ export default function WorldGenerationMapPanel({
   onRoomsInBuilding,
   doorsInBuilding = 100,
   onDoorsInBuilding,
+  includeBuildings = true,
+  onIncludeBuildings,
+  includeRoads = true,
+  onIncludeRoads,
   onGenerateMap,
   generateBusy = false,
   cardTools = { canGenerate: false, busy: false, onGenerate: () => {} },
@@ -65,6 +69,10 @@ export default function WorldGenerationMapPanel({
             onRoomsInBuilding={onRoomsInBuilding}
             doorsInBuilding={doorsInBuilding}
             onDoorsInBuilding={onDoorsInBuilding}
+            includeBuildings={includeBuildings}
+            onIncludeBuildings={onIncludeBuildings}
+            includeRoads={includeRoads}
+            onIncludeRoads={onIncludeRoads}
             onGenerateMap={onGenerateMap}
             generateBusy={generateBusy}
             cardTools={cardTools}

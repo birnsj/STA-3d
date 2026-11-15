@@ -1,5 +1,5 @@
 {
-  "notes": "Auto-Paint construction rulesets (new generator). Independent of Generate Map / Generator Editor. Template 32 = starship deck grid; Outdoor Template 32 = settlement layout (path, multi-building, dirt yards edged with path).",
+  "notes": "Auto-Paint / Generate Map rulesets. Template 32 = starship; Outdoor Template 32 = generic settlement; biome-* = outdoor settlement kits from biomes.json (ground/path/fence + outdoor wall faces). Selecting a biome ruleset sets map.biome.",
   "rulesets": [
     {
       "schemaVersion": 1,
@@ -74,7 +74,12 @@
       "settlement": {
         "dirt": "ground",
         "path": "path",
-        "buildingFaces": ["prefab", "barn", "city", "timber"],
+        "buildingFaces": [
+          "prefab",
+          "barn",
+          "city",
+          "timber"
+        ],
         "interiorWood": "plankFloor",
         "interiorStone": "templeFloor",
         "fields": true,
@@ -109,6 +114,1401 @@
         "corner": [
           {
             "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-temperate",
+      "label": "Temperate",
+      "environment": "outdoorSettlement",
+      "biomeId": "temperate",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab",
+          "city"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": true,
+        "fence": "fence",
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 3
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "grass",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-forest",
+      "label": "Forest",
+      "environment": "outdoorSettlement",
+      "biomeId": "forest",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "ground",
+        "buildingFaces": [
+          "timber"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "grass",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorTimberWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorTimberWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorTimberWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-swamp",
+      "label": "Swamp",
+      "environment": "outdoorSettlement",
+      "biomeId": "swamp",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "boardwalk",
+        "buildingFaces": [
+          "timber"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "mud",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorTimberWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorTimberWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorTimberWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-desert",
+      "label": "Desert",
+      "environment": "outdoorSettlement",
+      "biomeId": "desert",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "stone"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "sand",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorStoneWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorStoneWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorStoneWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-iceField",
+      "label": "Ice Field",
+      "environment": "outdoorSettlement",
+      "biomeId": "iceField",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "snow",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-volcanic",
+      "label": "Volcanic",
+      "environment": "outdoorSettlement",
+      "biomeId": "volcanic",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "ruin"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "ash",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorRuinWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorRuinWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorRuinWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-barren",
+      "label": "Barren",
+      "environment": "outdoorSettlement",
+      "biomeId": "barren",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab",
+          "city"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "regolith",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-jungle",
+      "label": "Jungle",
+      "environment": "outdoorSettlement",
+      "biomeId": "jungle",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "ground",
+        "buildingFaces": [
+          "timber"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "jungleFloor",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorTimberWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorTimberWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorTimberWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-grassland",
+      "label": "Grassland",
+      "environment": "outdoorSettlement",
+      "biomeId": "grassland",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab",
+          "stone"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "savanna",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-tundra",
+      "label": "Tundra",
+      "environment": "outdoorSettlement",
+      "biomeId": "tundra",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "tundra",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-coast",
+      "label": "Coast",
+      "environment": "outdoorSettlement",
+      "biomeId": "coast",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "boardwalk",
+        "buildingFaces": [
+          "prefab",
+          "city"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "beach",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-mountains",
+      "label": "Mountains",
+      "environment": "outdoorSettlement",
+      "biomeId": "mountains",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab",
+          "city"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "scree",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-geothermal",
+      "label": "Geothermal Field",
+      "environment": "outdoorSettlement",
+      "biomeId": "geothermal",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "ruin"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "sulphurCrust",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorRuinWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorRuinWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorRuinWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-crystal",
+      "label": "Crystal Fields",
+      "environment": "outdoorSettlement",
+      "biomeId": "crystal",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab",
+          "city"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "crystalGround",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-fungal",
+      "label": "Fungal Forest",
+      "environment": "outdoorSettlement",
+      "biomeId": "fungal",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "prefab",
+          "timber"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "fungalGround",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-acidMarsh",
+      "label": "Acid Marsh",
+      "environment": "outdoorSettlement",
+      "biomeId": "acidMarsh",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "boardwalk",
+        "buildingFaces": [
+          "prefab",
+          "city"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "toxicMud",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorPrefabWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorPrefabWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorPrefabWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-bioluminescent",
+      "label": "Bioluminescent Jungle",
+      "environment": "outdoorSettlement",
+      "biomeId": "bioluminescent",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "timber"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "glowMoss",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorTimberWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorTimberWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorTimberWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-rustDesert",
+      "label": "Rust Desert",
+      "environment": "outdoorSettlement",
+      "biomeId": "rustDesert",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "stone"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "rustDust",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorStoneWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorStoneWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorStoneWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": null,
+        "hullLong": null,
+        "hullCorner": null,
+        "doorFrame": null,
+        "fittings": [],
+        "fittingChance": 0
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "biome-glassPlains",
+      "label": "Glass Plains",
+      "environment": "outdoorSettlement",
+      "biomeId": "glassPlains",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "settlement": {
+        "dirt": "ground",
+        "path": "path",
+        "buildingFaces": [
+          "ruin"
+        ],
+        "interiorWood": "plankFloor",
+        "interiorStone": "templeFloor",
+        "fields": false,
+        "fence": null,
+        "crop": "cropRows",
+        "tallCrop": "tallCrop",
+        "maxFields": 1
+      },
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "glassPlain",
+            "weight": 1
+          }
+        ],
+        "underWall": null,
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplOutdoorRuinWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplOutdoorRuinWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplOutdoorRuinWall32Corner",
             "weight": 1
           }
         ],

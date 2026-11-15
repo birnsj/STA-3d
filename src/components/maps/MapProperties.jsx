@@ -59,6 +59,10 @@ export default function MapProperties({
   onRoomsInBuilding,
   doorsInBuilding = 100,
   onDoorsInBuilding,
+  includeBuildings = true,
+  onIncludeBuildings,
+  includeRoads = true,
+  onIncludeRoads,
   /** When true (World Generation Ruleset Map panel), ruleset is chosen in the left editor. */
   worldGeneration = false,
 }) {
@@ -73,8 +77,10 @@ export default function MapProperties({
   const onRulesetChange = (id) => {
     if (!id) return
     onRulesetId?.(id)
-    const nextType = mapTypeForEnvironment(getAutoPaintRuleset(id)?.environment)
+    const ruleset = getAutoPaintRuleset(id)
+    const nextType = mapTypeForEnvironment(ruleset?.environment)
     if (nextType !== map.mapType) onMapType?.(nextType)
+    if (ruleset?.biomeId && ruleset.biomeId !== map.biome) onBiome?.(ruleset.biomeId)
   }
 
   return (
@@ -264,6 +270,22 @@ export default function MapProperties({
           value={doorsInBuilding}
           onChange={onDoorsInBuilding}
         />
+        <label className="me-check" title="Outdoor settlement: place buildings when Generate Map runs. Deck layouts ignore this.">
+          <input
+            type="checkbox"
+            checked={includeBuildings}
+            onChange={(event) => onIncludeBuildings?.(event.target.checked)}
+          />{' '}
+          Buildings
+        </label>
+        <label className="me-check" title="Outdoor settlement: paint the main road and door stubs when Generate Map runs. Deck layouts ignore this.">
+          <input
+            type="checkbox"
+            checked={includeRoads}
+            onChange={(event) => onIncludeRoads?.(event.target.checked)}
+          />{' '}
+          Roads
+        </label>
         <button
           type="button"
           className="me-button me-generate"

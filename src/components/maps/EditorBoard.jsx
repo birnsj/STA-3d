@@ -7,22 +7,28 @@ import { surfaceOverlayMarks } from '../../maps/surfaceOverlay.js'
 import { layerOfTile } from '../../maps/layers.js'
 import {
   brushPositions,
+  destructibleAt,
+  groundItemAt,
+  groundItemAtBoard,
   groundItemElevation,
   groundItemSprites,
   groundItemTargetAt,
+  hasMarkers,
   npcAt,
   paintBrush,
   paintFloor,
   placementProbeState,
   previewGroundItem,
   swapTiles,
+  templatePieceAt,
+  templatePieceAtBoard,
   templatePieceFits,
   templatePieceSprites,
   templatePieceTargetAt,
 } from '../../maps/mapEdits.js'
-import { getTile } from '../../maps/mapFormat.js'
+import { getTile, isEmptyTile } from '../../maps/mapFormat.js'
 import { editorPropFadeIds } from '../../maps/propPick.js'
-import { getTemplatePiece, templatePieceArt } from '../../maps/templatePieces.js'
+import { getTemplatePiece, templatePieceArt, templatePieceFootprint } from '../../maps/templatePieces.js'
 import { getItemById } from '../../rules/equipment.js'
 import { propSpriteSize, stackFootprint, stackSizeOf, surfaceTileAtBoard } from '../../rules/placement.js'
 import { applyEnvironmentTiles, createEnvironment } from '../../world/environment.js'
@@ -95,13 +101,74 @@ function seatGhostOnCursor(scene, client) {
   ghost.depth = world.x + world.y + 1000
 }
 
-function groundLootViews(map, selectedGroundItemId, inventoryTool, hover, selectedTemplatePieceId, templateTool, templateHover, templateRotation = 0) {
+function groundLootViews(
+  map,
+  selectedGroundItemId,
+  inventoryTool,
+  hover,
+  selectedTemplatePieceId,
+  templateTool,
+  templateHover,
+  templateRotation = 0,
+  moveFrom = null,
+) {
   // The same list the editor picks from (mapEdits groundItemSprites / templatePieceSprites), so a click lands on what is drawn.
+  // While Move carries an item/piece, hide the original so the cursor ghost is the only copy.
   const list = [
-    ...groundItemSprites(map).map((sprite) => ({ ...sprite, hovered: sprite.id === selectedGroundItemId, inReach: true })),
-    ...templatePieceSprites(map).map((sprite) => ({ ...sprite, hovered: sprite.id === selectedTemplatePieceId, inReach: true })),
+    ...groundItemSprites(map)
+      .filter((sprite) => sprite.id !== moveFrom?.groundItem)
+      .map((sprite) => ({ ...sprite, hovered: sprite.id === selectedGroundItemId, inReach: true })),
+    ...templatePieceSprites(map)
+      .filter((sprite) => sprite.id !== moveFrom?.templatePiece)
+      .map((sprite) => ({ ...sprite, hovered: sprite.id === selectedTemplatePieceId, inReach: true })),
   ]
-  if (inventoryTool && hover) {
+  // Move carry: the picked object follows the cursor until placed (seatGhostOnCursor).
+  if (moveFrom?.groundItem) {
+    const entry = (map.groundItemPlacements ?? []).find((item) => item.id === moveFrom.groundItem)
+    const def = entry ? getItemById(entry.itemId) : null
+    if (def && hover) {
+      const probe = placementProbeState(map)
+      const target = previewGroundItem(map, hover, entry.itemId)
+      const at = target.position ?? hover
+      const live = groundItemElevation(map, { position: at, on: target.on }, probe)
+      list.push({
+        id: '__ghost',
+        position: at,
+        z: live.z,
+        worldImage: def.worldImage,
+        worldTile: def.worldTile ?? 'crate',
+        spriteSize: propSpriteSize(def),
+        category: def.category,
+        depth: (live.depth ?? hover.x + hover.y) + 0.001,
+        hovered: false,
+        inReach: true,
+        moveCarry: true,
+      })
+    }
+  } else if (moveFrom?.templatePiece) {
+    const entry = (map.templatePiecePlacements ?? []).find((piece) => piece.id === moveFrom.templatePiece)
+    const def = entry ? getTemplatePiece(entry.pieceId) : null
+    const art = def ? templatePieceArt(def, entry.rotation ?? 0) : null
+    if (def && art && hover) {
+      list.push({
+        id: '__ghost',
+        position: hover,
+        z: 0,
+        rotation: 0,
+        yaw: art.yaw,
+        worldImage: art.href,
+        spriteSize: art.size,
+        spriteAnchorX: art.anchorX,
+        animation: art.animation,
+        pieceId: entry.pieceId,
+        category: def.tags?.includes('wall') ? 'wall' : 'template',
+        depth: hover.x + hover.y + 1000,
+        hovered: false,
+        inReach: true,
+        moveCarry: true,
+      })
+    }
+  } else if (inventoryTool && hover) {
     const probe = placementProbeState(map)
     const def = getItemById(inventoryTool)
     if (def) {
@@ -123,8 +190,7 @@ function groundLootViews(map, selectedGroundItemId, inventoryTool, hover, select
         inReach: true,
       })
     }
-  }
-  if (templateTool && templateHover) {
+  } else if (templateTool && templateHover) {
     const def = getTemplatePiece(templateTool)
     const art = templatePieceArt(def, templateRotation)
     if (def && art) {
@@ -154,13 +220,63 @@ function groundLootViews(map, selectedGroundItemId, inventoryTool, hover, select
 // Ground brushes use paintFloor (same as the click): walls keep standing and only floorUnder changes.
 function tilePreview(map, hover, brush, rotated, moveFrom) {
   if (!hover) return null
-  if (moveFrom && !moveFrom.markers) return { layout: boardLayout(swapTiles(map, moveFrom, hover)), positions: [moveFrom, hover], key: `move:${moveFrom.x},${moveFrom.y}>${hover.x},${hover.y}` }
+  // Move carrying a tile: preview the swap at the hover cell (origin clears / destination shows the carried tile).
+  const tileSwap =
+    moveFrom && !moveFrom.markers && !moveFrom.destructible && !moveFrom.templatePiece && !moveFrom.groundItem
+  if (tileSwap) {
+    return {
+      layout: boardLayout(swapTiles(map, moveFrom, hover)),
+      positions: [moveFrom, hover],
+      key: `move-carry:${moveFrom.x},${moveFrom.y}>${hover.x},${hover.y}`,
+    }
+  }
   if (!brush || hover.x >= map.width || hover.y >= map.height) return null
   if (layerOfTile(brush) === 'ground') {
     const next = paintFloor(map, hover, brush).map ?? map
     return { layout: boardLayout(next), positions: [hover], key: `brush:${brush}@${hover.x},${hover.y}` }
   }
   return { layout: boardLayout(paintBrush(map, hover, brush, rotated)), positions: brushPositions(map, hover, brush, rotated), key: `brush:${brush}:${rotated}@${hover.x},${hover.y}` }
+}
+
+/**
+ * Cyan outline while Move is idle: the object under the pointer that a click would pick up.
+ * While carrying, drop-target outline is drawn separately (is-place).
+ * @returns {{ kind: string, id?: string, position: {x,y}, entry?: object } | null}
+ */
+function resolveMoveHighlightTarget(map, position, boardPoint, moveFrom, gridSize) {
+  if (moveFrom) return null
+  if (!position) return null
+  // Same order as Move pick: markers before Template Piece / inventory sprites that cover the cell.
+  if (hasMarkers(map, position)) return { kind: 'markers', position }
+  const hitTemplate = boardPoint
+    ? templatePieceAtBoard(map, boardPoint)
+    : templatePieceAt(map, position, { cellPx: gridSize })
+  if (hitTemplate) return { kind: 'templatePiece', id: hitTemplate.id, position: hitTemplate.position, entry: hitTemplate }
+  const hitItem = boardPoint ? groundItemAtBoard(map, boardPoint) : groundItemAt(map, position, { cellPx: gridSize })
+  if (hitItem) return { kind: 'groundItem', id: hitItem.id, position: hitItem.position, entry: hitItem }
+  const dest = destructibleAt(map, position)
+  if (dest) return { kind: 'destructible', id: dest.id, position: dest.position ?? position, entry: dest }
+  const tile = { x: Math.round(position.x), y: Math.round(position.y) }
+  if (tile.x < 0 || tile.y < 0 || tile.x >= map.width || tile.y >= map.height) return null
+  if (isEmptyTile(map.tiles[tile.y][tile.x])) return null
+  return { kind: 'tile', position: tile }
+}
+
+/** SVG polygon point strings for the Move highlight. */
+function moveHighlightPolygons(map, target) {
+  if (!target) return []
+  if (target.kind === 'templatePiece' && target.entry) {
+    const def = getTemplatePiece(target.entry.pieceId)
+    const fp = templatePieceFootprint(def, target.entry.rotation ?? 0)
+    const cells = { width: Math.max(0.25, (fp?.width ?? 64) / 64), depth: Math.max(0.25, (fp?.depth ?? 64) / 64) }
+    return [pts(footprintDiamond(target.entry.position, cells))]
+  }
+  if (target.kind === 'groundItem' && target.entry) {
+    const live = groundItemElevation(map, target.entry)
+    return [pts(footprintDiamond(target.entry.position, stackFootprint(stackSizeOf(target.entry.itemId)), live.z))]
+  }
+  const at = { x: Math.round(target.position.x), y: Math.round(target.position.y) }
+  return [pts(diamond(at))]
 }
 
 const SELECTED = 0xffb347
@@ -239,6 +355,8 @@ export default function EditorBoard({
   movingGroundItem = false,
   selectedTemplatePieceId = null,
   movingTemplatePiece = false,
+  /** Edit → Toggle Move: pointer may grab drawn items / templates, not only floor tiles. */
+  moving = false,
   templateTool = null,
   templateRotation = 0,
   inventoryTool = null,
@@ -286,8 +404,12 @@ export default function EditorBoard({
   const { hostRef, failed } = usePixiScene((host, isCancelled) => startMapScene(host, () => {
     const scene = sceneRef.current
     if (!scene) return null
-    // Inventory ghosts follow the free cursor; Template Piece ghosts stay on the snapped guide cell.
-    if (scene.groundLoot?.some((item) => item.id === '__ghost' && !item.pieceId && item.spriteAnchorX == null)) {
+    // Inventory ghosts and Move-carry ghosts follow the free cursor; Template Piece paint stays on the guide cell.
+    if (
+      scene.groundLoot?.some(
+        (item) => item.id === '__ghost' && (item.moveCarry || (!item.pieceId && item.spriteAnchorX == null)),
+      )
+    ) {
       seatGhostOnCursor(scene, cursorClientRef.current)
     }
     const loot = scene.groundLoot ?? []
@@ -307,9 +429,12 @@ export default function EditorBoard({
     }
   }, isCancelled))
   const [hover, setHoverState] = useState(null)
+  // Board px under the pointer while Move is on (needed to outline the drawn object, not only the floor cell).
+  const [hoverBoardPoint, setHoverBoardPoint] = useState(null)
   // Only a move onto another cell counts, so the board re-renders once per grid step rather than per pointer move.
-  const setHover = (position) => {
+  const setHover = (position, boardPoint = null) => {
     hoverRef.current = position
+    if (moving) setHoverBoardPoint(boardPoint)
     if (sameHover(position, hover)) return
     setHoverState(position)
     onHover(position)
@@ -320,12 +445,14 @@ export default function EditorBoard({
   const pointerAt = (event) => {
     if (inventoryTool || movingGroundItem) return itemAt(event, map, gridSize)
     if (templateTool || movingTemplatePiece) return templateAt(event, map, gridSize)
+    // Move uses tile cells for hover / drop. Drawn objects are hit via boardPoint in onPaint / onPaintEnd
+    // (itemAt always snaps on-map, so it must not replace the tile under Move).
     return tileAt(event, map, brush)
   }
 
   useEffect(() => {
     const stop = () => {
-      if (painting.current) onPaintEnd?.(hoverRef.current)
+      if (painting.current) onPaintEnd?.(hoverRef.current, boardPointRef.current)
       painting.current = false
     }
     window.addEventListener('pointerup', stop)
@@ -350,6 +477,8 @@ export default function EditorBoard({
     ? map.areas.map((area) => ({ id: `${area.position.x},${area.position.y}`, position: area.position, name: area.name, doomed: doomed(area.position) }))
     : []
   const spawnFacingAt = (position) => (npcAt(map, position) ? null : snapFacing(spawnFacing(map, position)))
+  const hideCarriedMarkers = (position) =>
+    Boolean(moveFrom?.markers && position.x === moveFrom.x && position.y === moveFrom.y)
   const markers = [
     ...(layerShown('furniture')
       ? challengeDefinitionsFor(map).map((definition) => ({
@@ -363,48 +492,56 @@ export default function EditorBoard({
         }))
       : []),
     ...(layerShown('characters')
-      ? map.markers.playerStarts.map((start, index) => ({
-          id: `p${start.x},${start.y}`,
-          position: start,
-          kind: 'player',
-          label: `P${index + 1}`,
-          facing: spawnFacingAt(start),
-          selected: isSelected('playerStarts', start),
-          doomed: doomed(start),
-        }))
+      ? map.markers.playerStarts
+          .filter((start) => !hideCarriedMarkers(start))
+          .map((start, index) => ({
+            id: `p${start.x},${start.y}`,
+            position: start,
+            kind: 'player',
+            label: `P${index + 1}`,
+            facing: spawnFacingAt(start),
+            selected: isSelected('playerStarts', start),
+            doomed: doomed(start),
+          }))
       : []),
     ...(layerShown('characters')
-      ? map.markers.enemySpawns.map((spawn, index) => ({
-          id: `e${spawn.x},${spawn.y}`,
-          position: spawn,
-          kind: 'enemy',
-          label: `E${index + 1}`,
-          facing: spawnFacingAt(spawn),
-          selected: isSelected('enemySpawns', spawn),
-          doomed: doomed(spawn),
-        }))
+      ? map.markers.enemySpawns
+          .filter((spawn) => !hideCarriedMarkers(spawn))
+          .map((spawn, index) => ({
+            id: `e${spawn.x},${spawn.y}`,
+            position: spawn,
+            kind: 'enemy',
+            label: `E${index + 1}`,
+            facing: spawnFacingAt(spawn),
+            selected: isSelected('enemySpawns', spawn),
+            doomed: doomed(spawn),
+          }))
       : []),
     ...(layerShown('characters')
-      ? (map.markers.horseSpawns ?? []).map((spawn, index) => ({
-          id: `h${spawn.x},${spawn.y}`,
-          position: spawn,
-          kind: 'horse',
-          label: `H${index + 1}`,
-          facing: spawnFacingAt(spawn),
-          selected: isSelected('horseSpawns', spawn),
-          doomed: doomed(spawn),
-        }))
+      ? (map.markers.horseSpawns ?? [])
+          .filter((spawn) => !hideCarriedMarkers(spawn))
+          .map((spawn, index) => ({
+            id: `h${spawn.x},${spawn.y}`,
+            position: spawn,
+            kind: 'horse',
+            label: `H${index + 1}`,
+            facing: spawnFacingAt(spawn),
+            selected: isSelected('horseSpawns', spawn),
+            doomed: doomed(spawn),
+          }))
       : []),
     ...(layerShown('characters')
-      ? (map.npcs ?? []).map((npc) => ({
-          id: `n${npc.id}`,
-          position: npc.position,
-          kind: isHostile(npc) ? 'enemy' : 'npc',
-          label: npc.conversationId ? 'N…' : 'N',
-          facing: npc.facing ?? 0,
-          selected: npc.id === selectedNpcId,
-          doomed: doomed(npc.position),
-        }))
+      ? (map.npcs ?? [])
+          .filter((npc) => !hideCarriedMarkers(npc.position))
+          .map((npc) => ({
+            id: `n${npc.id}`,
+            position: npc.position,
+            kind: isHostile(npc) ? 'enemy' : 'npc',
+            label: npc.conversationId ? 'N…' : 'N',
+            facing: npc.facing ?? 0,
+            selected: npc.id === selectedNpcId,
+            doomed: doomed(npc.position),
+          }))
       : []),
     ...((map.npcs ?? []).find((npc) => npc.id === selectedNpcId)?.patrol ?? []).map((point, index) => ({
       id: `w${selectedNpcId}:${index}`,
@@ -418,8 +555,24 @@ export default function EditorBoard({
     ...(layerShown('markers')
       ? (map.objectives ?? []).flatMap((objective, index) => {
           const position = objectivePosition(map, objective)
-          return position ? [{ id: `o${index}`, position, kind: 'objective', label: `O${index + 1}`, facing: null, selected: false, doomed: false }] : []
+          return position && !hideCarriedMarkers(position)
+            ? [{ id: `o${index}`, position, kind: 'objective', label: `O${index + 1}`, facing: null, selected: false, doomed: false }]
+            : []
         })
+      : []),
+    // Move carry: markers ride the hover cell until placed (same idea as the inventory ghost).
+    ...(moveFrom?.markers && hover
+      ? [
+          {
+            id: '__move-marker',
+            position: { x: Math.round(hover.x), y: Math.round(hover.y) },
+            kind: 'player',
+            label: 'M',
+            facing: null,
+            selected: true,
+            doomed: false,
+          },
+        ]
       : []),
   ]
   const { itemPlacementPreview } = useDisplaySettings()
@@ -427,27 +580,59 @@ export default function EditorBoard({
     () => (inventoryTool || templateTool ? null : tilePreview(map, hover, brush, rotated, moveFrom)),
     [map, hover, brush, rotated, moveFrom, inventoryTool, templateTool],
   )
+  // Cyan outline: object under the pointer that a click would pick up (Move idle only).
+  const moveHighlight = useMemo(() => {
+    if (!moving || moveFrom) return []
+    const target = resolveMoveHighlightTarget(map, hover, hoverBoardPoint, moveFrom, gridSize)
+    return moveHighlightPolygons(map, target)
+  }, [moving, map, hover, hoverBoardPoint, moveFrom, gridSize])
+  // Green drop footprint while carrying (same cell mark inventory paint uses).
+  const moveDropMark = useMemo(() => {
+    if (!moving || !moveFrom || !hover) return null
+    if (moveFrom.groundItem) {
+      const entry = (map.groundItemPlacements ?? []).find((item) => item.id === moveFrom.groundItem)
+      if (!entry) return null
+      const target = previewGroundItem(map, hover, entry.itemId)
+      const at = target.position ?? hover
+      const live = groundItemElevation(map, { position: at, on: target.on })
+      return {
+        ok: target.ok,
+        points: pts(footprintDiamond(at, stackFootprint(stackSizeOf(entry.itemId)), live.z)),
+      }
+    }
+    if (moveFrom.templatePiece) {
+      const entry = (map.templatePiecePlacements ?? []).find((piece) => piece.id === moveFrom.templatePiece)
+      if (!entry) return null
+      const def = getTemplatePiece(entry.pieceId)
+      const fp = templatePieceFootprint(def, entry.rotation ?? 0)
+      const cells = { width: Math.max(0.25, (fp?.width ?? 64) / 64), depth: Math.max(0.25, (fp?.depth ?? 64) / 64) }
+      return { ok: true, points: pts(footprintDiamond(hover, cells)) }
+    }
+    return { ok: true, points: pts(diamond({ x: Math.round(hover.x), y: Math.round(hover.y) })) }
+  }, [moving, moveFrom, hover, map])
   const surfaces = useMemo(() => (showSurfaces ? surfaceOverlayMarks(map) : null), [map, showSurfaces])
   const groundLoot = useMemo(() => {
     const showFurniture = layerShown('furniture')
     const showWalls = layerShown('walls')
-    if (!showFurniture && !showWalls) return []
+    const carryingLoot = Boolean(moveFrom?.groundItem || moveFrom?.templatePiece)
+    if (!showFurniture && !showWalls && !carryingLoot) return []
     const full = groundLootViews(
       map,
       selectedGroundItemId,
       showFurniture ? inventoryTool : null,
-      showFurniture && inventoryTool ? hover : null,
+      carryingLoot || (showFurniture && inventoryTool) ? hover : null,
       selectedTemplatePieceId,
       showWalls ? templateTool : null,
       showWalls && templateTool ? hover : null,
       templateRotation,
+      moveFrom,
     )
     return full.filter((entry) => {
       if (entry.id === '__ghost') return true
       if (entry.pieceId) return showWalls
       return showFurniture
     })
-  }, [map, selectedGroundItemId, selectedTemplatePieceId, inventoryTool, templateTool, templateRotation, hover, layerShown])
+  }, [map, selectedGroundItemId, selectedTemplatePieceId, inventoryTool, templateTool, templateRotation, hover, layerShown, moveFrom])
   // The cell a click would fill, drawn on the board while an inventory item is the tool.
   const itemPlaceMark = useMemo(() => {
     if (!itemPlacementPreview || !inventoryTool || !hover) return null
@@ -459,6 +644,7 @@ export default function EditorBoard({
       points: pts(footprintDiamond(at, stackFootprint(stackSizeOf(inventoryTool)), live.z)),
     }
   }, [itemPlacementPreview, inventoryTool, hover, map])
+  const carrying = Boolean(moving && moveFrom)
   useLayoutEffect(() => {
     sceneRef.current = {
       layout,
@@ -518,7 +704,7 @@ export default function EditorBoard({
         }}
       >
         <polygon
-          className="me-cells"
+          className={`me-cells${moving ? (carrying ? ' is-move-carrying' : ' is-move-tool') : ''}`}
           points={outline}
           onPointerDown={(event) => {
             cursorClientRef.current = { x: event.clientX, y: event.clientY }
@@ -526,7 +712,7 @@ export default function EditorBoard({
             const position = event.button === 0 ? pointerAt(event) : null
             if (!position) return
             painting.current = true
-            setHover(position)
+            setHover(position, boardPointRef.current)
             onPaint(position, { first: true, boardPoint: boardPointRef.current })
           }}
           onPointerMove={(event) => {
@@ -534,18 +720,31 @@ export default function EditorBoard({
             boardPointRef.current = boardPointOf(event)
             const position = pointerAt(event)
             const moved = !sameHover(position, hover)
-            setHover(position)
+            // Always refresh board point while Move is on so the object outline tracks the pointer on one cell.
+            if (moving) setHoverBoardPoint(boardPointRef.current)
+            setHover(position, boardPointRef.current)
             if (position && moved && painting.current) onPaint(position, { first: false })
           }}
           onPointerLeave={() => {
             cursorClientRef.current = null
             boardPointRef.current = null
+            setHoverBoardPoint(null)
             setHover(null)
           }}
         />
         <g className="me-overlay">
-          {moveFrom && !inventoryTool && !templateTool && <polygon className="me-hover is-move-source" points={pts(diamond(moveFrom))} />}
-          {hover && !inventoryTool && !templateTool && <polygon className={`me-hover${erasesSomething ? ' is-erase' : ''}`} points={pts(diamond(hover))} />}
+          {moveHighlight.map((points, index) => (
+            <polygon key={`move-hl-${index}`} className="me-hover is-move-source" points={points} />
+          ))}
+          {hover && !moving && !inventoryTool && !templateTool && (
+            <polygon className={`me-hover${erasesSomething ? ' is-erase' : ''}`} points={pts(diamond(hover))} />
+          )}
+          {hover && moving && !carrying && moveHighlight.length === 0 && (
+            <polygon className="me-hover" points={pts(diamond({ x: Math.round(hover.x), y: Math.round(hover.y) }))} />
+          )}
+          {carrying && moveDropMark && (
+            <polygon className={`me-hover is-place${moveDropMark.ok ? '' : ' is-invalid'}`} points={moveDropMark.points} />
+          )}
           {inventoryTool && hover && itemPlaceMark && (
             <polygon className={`me-hover is-place${itemPlaceMark.ok ? '' : ' is-invalid'}`} points={itemPlaceMark.points} />
           )}

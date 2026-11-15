@@ -188,6 +188,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     boardKey: doc.boardKey,
     suspended: dialogOpen || boardBlocked,
     layers: editorLayers.layers,
+    setActiveLayer: editorLayers.setActive,
     beginStroke: doc.beginStroke,
     endStroke: doc.endStroke,
     onObjectivePlaced: (index) => setObjectiveEditor({ index }),
@@ -485,6 +486,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           onRoomsInBuilding={doc.setRoomsInBuilding}
           doorsInBuilding={doc.doorsInBuilding}
           onDoorsInBuilding={doc.setDoorsInBuilding}
+          includeBuildings={doc.includeBuildings}
+          onIncludeBuildings={doc.setIncludeBuildings}
+          includeRoads={doc.includeRoads}
+          onIncludeRoads={doc.setIncludeRoads}
           cardTools={{ canGenerate: canDrawEpisodeArt, busy: doc.drawingCard, onGenerate: onGenerateCard }}
           onBack={() => setAutoPaintRulesetEditor(false)}
           onPlay={onPlay}
@@ -539,6 +544,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     onRoomsInBuilding: doc.setRoomsInBuilding,
     doorsInBuilding: doc.doorsInBuilding,
     onDoorsInBuilding: doc.setDoorsInBuilding,
+    includeBuildings: doc.includeBuildings,
+    onIncludeBuildings: doc.setIncludeBuildings,
+    includeRoads: doc.includeRoads,
+    onIncludeRoads: doc.setIncludeRoads,
   }
 
   const inspectors = {
@@ -684,6 +693,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
             movingGroundItem={tools.movingGroundItem}
             selectedTemplatePieceId={tools.selectedTemplatePieceId}
             movingTemplatePiece={tools.movingTemplatePiece}
+            moving={tools.moving}
             templateTool={tool?.startsWith('template:') ? tool.slice('template:'.length) : null}
             templateRotation={tools.templateRotation}
             inventoryTool={tool?.startsWith('inventory:') ? tool.slice('inventory:'.length) : null}

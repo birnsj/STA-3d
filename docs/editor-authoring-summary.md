@@ -28,12 +28,14 @@ Layout matches the Mission Editor mockup chrome (ed-shell).
                   Name / Episode / Card also on Properties → Map)
 
   Left — Assets (EditorPalette)
-    Tabs: Tiles | Environment | Items | Markers | NPCs
+    Tabs: All | Ground | Walls | Furniture | Characters | Markers | Environment | Items
     Tiles includes Template Piece groups (`templatePieces.json`) above tile
     tilesets; DEV can author tilesets / import PNG / CRUD Template Pieces
     Search; selecting a thumbnail drives the paint tool and Selection props
     Multi-brush: checkboxes on tile / Template Piece thumbs cycle while painting
     (Unreal foliage-style); selected brush stays in the set
+    Paint / Move / Delete / board pick auto-select the matching active layer
+    so the Assets filter and Layers window stay in sync
 
   Center — Viewport
     Map title, board (Pixi), tile coord HUD, notices

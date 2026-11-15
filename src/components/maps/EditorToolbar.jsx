@@ -319,7 +319,7 @@ export default function EditorToolbar({
             className={`me-button ed-icon-btn${moving ? ' is-on' : ''}`}
             aria-pressed={moving}
             aria-label="Move"
-            title="Swap tiles or move markers"
+            title="Move: click an object to pick it up, click again to place. Esc cancels."
             onClick={() => onMoving(!moving)}
           >
             <IconMove />

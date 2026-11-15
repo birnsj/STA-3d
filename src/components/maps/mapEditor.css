@@ -615,6 +615,13 @@
   fill: transparent;
   cursor: var(--cursor-crosshair);
 }
+/* Move tool: move icon until something is picked up; then hide the cursor so the carried ghost is the pointer. */
+.me-cells.is-move-tool {
+  cursor: var(--cursor-move);
+}
+.me-cells.is-move-carrying {
+  cursor: none;
+}
 
 .me-hover {
   fill: rgba(255, 255, 255, 0.12);

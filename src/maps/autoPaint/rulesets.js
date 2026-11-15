@@ -152,11 +152,16 @@ export function resolveAutoPaintRuleset(raw = {}) {
       ? optionalRole(floorsIn.underWall)
       : optionalRole(FALLBACK.floors.underWall)
 
+  const biomeId =
+    typeof base.biomeId === 'string' && base.biomeId.trim() ? base.biomeId.trim() : null
+
   return {
     schemaVersion: 1,
     id: typeof base.id === 'string' && base.id.trim() ? base.id.trim() : FALLBACK.id,
     label: typeof base.label === 'string' && base.label.trim() ? base.label.trim() : FALLBACK.label,
     environment: ENV_IDS.has(base.environment) ? base.environment : FALLBACK.environment,
+    // Outdoor biome kits only — Generate Map / Ruleset picker sync map.biome from this.
+    ...(biomeId ? { biomeId } : {}),
     wallMode: WALL_MODE_IDS.has(base.wallMode) ? base.wallMode : FALLBACK.wallMode,
     floors: {
       defaultTile,
@@ -191,6 +196,12 @@ function resolveSettlement(raw) {
     ? raw.buildingFaces.filter((face) => typeof face === 'string' && face.trim()).map((face) => face.trim())
     : []
   const maxFields = Number(raw.maxFields)
+  const fence =
+    raw.fence === null || raw.fence === ''
+      ? null
+      : typeof raw.fence === 'string' && raw.fence.trim()
+        ? raw.fence.trim()
+        : 'fence'
   return {
     dirt: typeof raw.dirt === 'string' && raw.dirt.trim() ? raw.dirt.trim() : 'ground',
     path: typeof raw.path === 'string' && raw.path.trim() ? raw.path.trim() : 'path',
@@ -202,7 +213,7 @@ function resolveSettlement(raw) {
         ? raw.interiorStone.trim()
         : 'templeFloor',
     fields: raw.fields !== false,
-    fence: typeof raw.fence === 'string' && raw.fence.trim() ? raw.fence.trim() : 'fence',
+    fence,
     crop: typeof raw.crop === 'string' && raw.crop.trim() ? raw.crop.trim() : 'cropRows',
     tallCrop: typeof raw.tallCrop === 'string' && raw.tallCrop.trim() ? raw.tallCrop.trim() : 'tallCrop',
     maxFields: Number.isFinite(maxFields) ? Math.max(1, Math.min(6, Math.round(maxFields))) : 3,
@@ -291,6 +302,14 @@ export function listAutoPaintRulesets() {
       underlayTile: cloneRole(entry.doors.underlayTile),
     },
     props: { ...entry.props, rules: [...entry.props.rules] },
+    ...(entry.settlement
+      ? {
+          settlement: {
+            ...entry.settlement,
+            buildingFaces: [...(entry.settlement.buildingFaces ?? [])],
+          },
+        }
+      : {}),
   }))
 }
 
@@ -366,6 +385,15 @@ export function autoPaintRulesetsSnapshot() {
         wallWall: entry.adjacency.wallWall.map((pair) => ({ ...pair })),
         wallFloor: entry.adjacency.wallFloor.map((pair) => ({ ...pair })),
       },
+      ...(entry.biomeId ? { biomeId: entry.biomeId } : {}),
+      ...(entry.settlement
+        ? {
+            settlement: {
+              ...entry.settlement,
+              buildingFaces: [...(entry.settlement.buildingFaces ?? [])],
+            },
+          }
+        : {}),
     })),
   }
 }

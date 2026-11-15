@@ -133,6 +133,8 @@ function generateSettlementMap(source, ruleset, random, layoutScale, mapType, wi
     Number.isFinite(Number(layoutScale.doorsInBuilding))
       ? Math.max(0, Math.min(1, Number(layoutScale.doorsInBuilding)))
       : 1
+  const includeBuildings = layoutScale.includeBuildings !== false
+  const includeRoads = layoutScale.includeRoads !== false
 
   const layout = generateSettlementLayout(
     { width, height },
@@ -148,7 +150,9 @@ function generateSettlementMap(source, ruleset, random, layoutScale, mapType, wi
       roomScale,
       roomsInBuilding,
       doorsInBuilding,
-      biomeId: source.biome,
+      includeBuildings,
+      includeRoads,
+      biomeId: source.biome || ruleset.biomeId || null,
       featureScale: 0.75,
       fields: settlement.fields !== false,
       fence: settlement.fence || null,

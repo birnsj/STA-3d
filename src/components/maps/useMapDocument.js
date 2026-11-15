@@ -53,6 +53,9 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
   const [buildingScale, setBuildingScale] = useState(100)
   const [roomsInBuilding, setRoomsInBuilding] = useState(100)
   const [doorsInBuilding, setDoorsInBuilding] = useState(100)
+  // Outdoor settlement Generate Map toggles (not saved with the map).
+  const [includeBuildings, setIncludeBuildings] = useState(true)
+  const [includeRoads, setIncludeRoads] = useState(true)
   // When checked, Generate Map also scatters hazard regions on the new layout (editor option; not saved with the map).
   const [generateHazards, setGenerateHazards] = useState(false)
   // The map as last opened, saved or generated (null when the open map exists nowhere else), so switching only the
@@ -210,6 +213,8 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
       buildings: buildingScale / 100,
       roomsInBuilding: roomsInBuilding / 100,
       doorsInBuilding: doorsInBuilding / 100,
+      includeBuildings,
+      includeRoads,
     })
     if (result.error) {
       setStatus(result.error)
@@ -372,6 +377,10 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     setRoomsInBuilding,
     doorsInBuilding,
     setDoorsInBuilding,
+    includeBuildings,
+    setIncludeBuildings,
+    includeRoads,
+    setIncludeRoads,
     generateHazards,
     setGenerateHazards,
     confirmDiscard,
