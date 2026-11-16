@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import useResettableState from '../useResettableState.js'
 import { canEditEffects, setOverlayEmissive, setOverlayEmitColour } from '../../maps/effectsFiles.js'
-import { DEFAULT_AMBIENT_COLOUR, FULL_LIGHT, getTile, imageSize } from '../../maps/mapFormat.js'
+import { DEFAULT_AMBIENT_COLOUR, getTile, imageSize } from '../../maps/mapFormat.js'
 import {
   OVERLAY_EMISSIVE_MAX,
   OVERLAY_EMISSIVE_MIN,
@@ -285,61 +285,7 @@ function toColourInput(hex) {
   return value.length === 4 ? `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}` : value
 }
 
-function AmbientLightControl({ ambient, ambientColour, onAmbient, onAmbientColour }) {
-  const ambientValue = ambient ?? FULL_LIGHT
-  const colour = ambientColour || DEFAULT_AMBIENT_COLOUR
-  const [hex, setHex] = useState(colour)
-  const [syncedColour, setSyncedColour] = useState(colour)
-  if (syncedColour !== colour) {
-    setSyncedColour(colour)
-    setHex(colour)
-  }
-
-  return (
-    <PropertySection id="light" title="Light" tip="Map ambient brightness and tint. Glowing tiles stay lit when the room is dark.">
-      <div className="ed-light-pool">
-        <label className="ed-emissive" title="Ambient light: how bright the room is. Glowing tiles stay lit in the dark.">
-          <span className="ed-emissive-label">Ambient</span>
-          <input
-            type="range"
-            min="0"
-            max={FULL_LIGHT}
-            step="5"
-            value={ambientValue}
-            aria-label="Ambient light"
-            onChange={(event) => onAmbient?.(Number(event.target.value))}
-          />
-          <span className="ed-emissive-value">{ambientValue}%</span>
-        </label>
-        <label className="ed-emissive" title="Ambient light colour: the tint of the room when light is low.">
-          <span className="ed-emissive-label">Colour</span>
-          <input
-            className="ed-colour"
-            type="color"
-            value={toColourInput(hex)}
-            aria-label="Ambient light colour"
-            onChange={(event) => {
-              setHex(event.target.value)
-              onAmbientColour?.(event.target.value)
-            }}
-          />
-          <input
-            className="ed-colour-hex me-name"
-            value={hex}
-            aria-label="Ambient light colour hex"
-            onChange={(event) => {
-              const next = event.target.value.trim()
-              setHex(next)
-              if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(next)) onAmbientColour?.(next)
-            }}
-          />
-        </label>
-      </div>
-    </PropertySection>
-  )
-}
-
-function SpriteDetails({ tile, onStatus, ambient, ambientColour, onAmbient, onAmbientColour }) {
+function SpriteDetails({ tile, onStatus }) {
   const info = tileSpriteInfo(tile)
   const [emissive, setEmissive] = useState(() => overlayEmissive(tile.id))
   const [emitColour, setEmitColour] = useState(() => overlayEmitColour(tile.id))
@@ -363,14 +309,6 @@ function SpriteDetails({ tile, onStatus, ambient, ambientColour, onAmbient, onAm
           ]}
         />
       </PropertySection>
-      {(info.glow || info.wallGlow || info.activeGlow || anim?.overlay || tile.wall) && (
-        <AmbientLightControl
-          ambient={ambient}
-          ambientColour={ambientColour}
-          onAmbient={onAmbient}
-          onAmbientColour={onAmbientColour}
-        />
-      )}
       <PropertySection id="images" title="Images" defaultOpen={false}>
         <PropRows rows={info.images.map((entry) => [entry.label, entry.name, entry.href])} />
       </PropertySection>
@@ -549,8 +487,8 @@ function TemplateEmissiveControls({ pieceId, value, onValue, colour, fallbackCol
   )
 }
 
-// Same Sprite / Light / Images / Animation / Emission sections as catalogue tiles, for Template Pieces.
-export function TemplatePieceDetails({ piece, ambient, ambientColour, onAmbient, onAmbientColour, onStatus }) {
+// Same Sprite / Images / Animation / Emission sections as catalogue tiles, for Template Pieces.
+export function TemplatePieceDetails({ piece, onStatus }) {
   const info = templatePieceSpriteInfo(piece)
   const [emissive, setEmissive] = useState(() => templateOverlayEmissive(piece.id))
   const [emitColour, setEmitColour] = useState(() => templateOverlayEmitColour(piece.id))
@@ -574,14 +512,6 @@ export function TemplatePieceDetails({ piece, ambient, ambientColour, onAmbient,
           ]}
         />
       </PropertySection>
-      {(anim?.overlay || piece.height > 0) && (
-        <AmbientLightControl
-          ambient={ambient}
-          ambientColour={ambientColour}
-          onAmbient={onAmbient}
-          onAmbientColour={onAmbientColour}
-        />
-      )}
       <PropertySection id="images" title="Images" defaultOpen={false}>
         <PropRows rows={info.images.map((entry) => [entry.label, entry.name, entry.href])} />
       </PropertySection>
@@ -656,10 +586,6 @@ export default function AssetProperties({
   hazardIntensity = 2,
   onHazardIntensity,
   animateTiles = true,
-  ambient,
-  ambientColour,
-  onAmbient,
-  onAmbientColour,
 }) {
   const asset = parseTool(tool)
   if (!asset) return <p className="me-text">Select a thumbnail in the Palette to edit it here.</p>
@@ -699,15 +625,7 @@ export default function AssetProperties({
           </div>
           {!canEditTiles && <p className="me-text is-muted">Cover and Fade can only be changed in the dev build.</p>}
         </PropertySection>
-        <SpriteDetails
-          key={tile.id}
-          tile={tile}
-          onStatus={onStatus}
-          ambient={ambient}
-          ambientColour={ambientColour}
-          onAmbient={onAmbient}
-          onAmbientColour={onAmbientColour}
-        />
+        <SpriteDetails key={tile.id} tile={tile} onStatus={onStatus} />
       </div>
     )
   }
@@ -739,15 +657,7 @@ export default function AssetProperties({
             ]}
           />
         </PropertySection>
-        <SpriteDetails
-          key={tile.id}
-          tile={tile}
-          onStatus={onStatus}
-          ambient={ambient}
-          ambientColour={ambientColour}
-          onAmbient={onAmbient}
-          onAmbientColour={onAmbientColour}
-        />
+        <SpriteDetails key={tile.id} tile={tile} onStatus={onStatus} />
       </div>
     )
   }
@@ -810,17 +720,7 @@ export default function AssetProperties({
           )}
           <p className="me-text">Click the board to place this overlay. R rotates 90°. Pathing and sight still use the deck underlay.</p>
         </PropertySection>
-        {piece && (
-          <TemplatePieceDetails
-            key={piece.id}
-            piece={piece}
-            onStatus={onStatus}
-            ambient={ambient}
-            ambientColour={ambientColour}
-            onAmbient={onAmbient}
-            onAmbientColour={onAmbientColour}
-          />
-        )}
+        {piece && <TemplatePieceDetails key={piece.id} piece={piece} onStatus={onStatus} />}
       </div>
     )
   }

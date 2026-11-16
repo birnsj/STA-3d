@@ -7,6 +7,7 @@ import EditorSelect from '../components/maps/EditorSelect.jsx'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import { subEditorFileMenus } from '../components/maps/editorSubMenus.js'
 import AssetProperties from '../components/maps/AssetProperties.jsx'
+import BoardSunOrbitDial from '../components/maps/BoardSunOrbitDial.jsx'
 import EditorColourField, { SUN_COLOUR_PRESETS } from '../components/maps/EditorColourField.jsx'
 import GeSourcePalette from '../components/maps/GeSourcePalette.jsx'
 import {
@@ -865,6 +866,15 @@ export default function AutoPaintRulesetEditorScreen({
               />
               <span className="me-ambient-value">{sun.azimuthDeg}°</span>
             </label>
+            <BoardSunOrbitDial
+              azimuthDeg={sun.azimuthDeg}
+              colour={sun.colour}
+              shadowStrength={sun.shadowStrength}
+              onAzimuth={(azimuthDeg) => {
+                setSun((prev) => ({ ...prev, azimuthDeg }))
+                setBoardSunSettings({ azimuthDeg })
+              }}
+            />
             <EditorColourField
               label="Sun colour"
               title="Sun colour: tints 3D figure lighting in Play."

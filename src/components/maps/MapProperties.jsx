@@ -12,6 +12,7 @@ import {
   setBoardSunSettings,
   subscribeBoardSunSettings,
 } from '../../spike3d/boardSunSettings.js'
+import BoardSunOrbitDial from './BoardSunOrbitDial.jsx'
 import EditorColourField, { SUN_COLOUR_PRESETS } from './EditorColourField.jsx'
 import EditorControlsHelp from './EditorControlsHelp.jsx'
 import EpisodeCardPicker from './EpisodeCardPicker.jsx'
@@ -206,6 +207,15 @@ export default function MapProperties({
           />
           <span className="me-ambient-value">{sun.azimuthDeg}°</span>
         </label>
+        <BoardSunOrbitDial
+          azimuthDeg={sun.azimuthDeg}
+          colour={sun.colour}
+          shadowStrength={sun.shadowStrength}
+          onAzimuth={(azimuthDeg) => {
+            setSun((prev) => ({ ...prev, azimuthDeg }))
+            setBoardSunSettings({ azimuthDeg })
+          }}
+        />
         <EditorColourField
           label="Sun colour"
           title="Sun key colour: tints 3D figure lighting in Play."

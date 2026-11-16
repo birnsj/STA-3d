@@ -68,10 +68,6 @@ export default function EditorPropertiesPanel({
               hazardIntensity={hazardIntensity}
               onHazardIntensity={onHazardIntensity}
               animateTiles={animateTiles}
-              ambient={map.ambient}
-              ambientColour={map.ambientColour}
-              onAmbient={mapProps?.onAmbient}
-              onAmbientColour={mapProps?.onAmbientColour}
             />
           ) : (
             <EditorInspectors
@@ -84,10 +80,6 @@ export default function EditorPropertiesPanel({
               {...inspectors}
               onStatus={onStatus}
               animateTiles={animateTiles}
-              ambient={map.ambient}
-              ambientColour={map.ambientColour}
-              onAmbient={mapProps?.onAmbient}
-              onAmbientColour={mapProps?.onAmbientColour}
             />
           )}
         </div>

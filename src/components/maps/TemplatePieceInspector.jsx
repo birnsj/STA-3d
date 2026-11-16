@@ -12,10 +12,6 @@ export default function TemplatePieceInspector({
   onMove,
   onDelete,
   animateTiles = true,
-  ambient,
-  ambientColour,
-  onAmbient,
-  onAmbientColour,
   onStatus = null,
 }) {
   const def = getTemplatePiece(object.pieceId)
@@ -110,16 +106,7 @@ export default function TemplatePieceInspector({
           </button>
         </div>
       </PropertySection>
-      {def && (
-        <TemplatePieceDetails
-          piece={def}
-          onStatus={onStatus}
-          ambient={ambient}
-          ambientColour={ambientColour}
-          onAmbient={onAmbient}
-          onAmbientColour={onAmbientColour}
-        />
-      )}
+      {def && <TemplatePieceDetails piece={def} onStatus={onStatus} />}
     </div>
   )
 }

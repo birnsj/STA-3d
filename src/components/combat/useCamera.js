@@ -35,6 +35,10 @@ const MIN_ZOOM = 0.6
 const ZOOM_STEP = 1.15
 // One closer wheel step than the original 2× cap, shared by exploration, combat, and the map editor.
 const MAX_ZOOM = 2 * ZOOM_STEP
+// Wheel → target zoom: pixel delta scale (trackpads send small values; mice ~100/notch).
+const ZOOM_WHEEL_GAIN = 0.00135
+// Share of remaining zoom gap closed per 60 Hz frame (higher = snappier, lower = silkier).
+const ZOOM_GLIDE = 0.22
 
 function swallowNextClick() {
   const swallow = (event) => {
@@ -94,6 +98,12 @@ export default function useCamera(
   const [zoom, setZoom] = useState(1)
   const cameraRef = useRef(camera)
   const zoomRef = useRef(zoom)
+  // Wheel updates the target; the tick eases zoomRef toward it so notches don't jump the board.
+  const zoomTargetRef = useRef(1)
+  // World point kept under the cursor (or follow focus) while zoom is easing.
+  const zoomAnchorRef = useRef(null)
+  const zoomingRef = useRef(false)
+  const viewSizeRef = useRef({ width: view.width, height: view.height })
   // The world point the camera is gliding to centre on (not a corner), so a zoom mid-glide doesn't restart it.
   const targetRef = useRef(null)
   const heldRef = useRef(new Set())
@@ -165,17 +175,19 @@ export default function useCamera(
   const width = view.width / zoom
   const height = view.height / zoom
   const { x: focusX, y: focusY } = focus.point
+  viewSizeRef.current = { width: view.width, height: view.height }
 
   // A camera move changes nothing on the board except which part of it is on screen, but it happens on every animation
   // frame of a glide or drag. Writing the viewBox straight onto the element keeps those frames out of React, which would
   // otherwise rebuild the board's hundreds of tiles each time; the state is committed once the move settles.
-  const writeViewBox = (point) => {
-    svgRef.current?.setAttribute('viewBox', `${point.x} ${point.y} ${width} ${height}`)
+  const writeViewBox = (point, size = null) => {
+    const live = size ?? { width: viewSizeRef.current.width / zoomRef.current, height: viewSizeRef.current.height / zoomRef.current }
+    svgRef.current?.setAttribute('viewBox', `${point.x} ${point.y} ${live.width} ${live.height}`)
   }
 
   // React renders the viewBox from state, which lags behind during a move: put the live camera back after every render.
   useLayoutEffect(() => {
-    if (movingRef.current) writeViewBox(cameraRef.current)
+    if (movingRef.current || zoomingRef.current) writeViewBox(cameraRef.current)
   })
 
   useEffect(() => {
@@ -184,32 +196,45 @@ export default function useCamera(
     // Native listener: React's wheel handler is passive and can't stop the page from scrolling.
     const wheel = (event) => {
       event.preventDefault()
+      // Continuous delta (trackpad + mouse). Line/page modes → approximate pixels.
+      let dy = event.deltaY
+      if (event.deltaMode === 1) dy *= 16
+      else if (event.deltaMode === 2) dy *= viewSizeRef.current.height || 800
+      const from = zoomTargetRef.current
+      const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, from * Math.exp(-dy * ZOOM_WHEEL_GAIN)))
+      if (nextZoom === from) return
       const oldZoom = zoomRef.current
-      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, oldZoom * (event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP)))
-      if (newZoom === oldZoom) return
-      const oldSize = { width: view.width / oldZoom, height: view.height / oldZoom }
-      const newSize = { width: view.width / newZoom, height: view.height / newZoom }
+      const oldSize = {
+        width: viewSizeRef.current.width / oldZoom,
+        height: viewSizeRef.current.height / oldZoom,
+      }
       const current = cameraRef.current
       const following = followRef.current.follow
       let anchor
       if (following) {
-        anchor = followRef.current.point
+        anchor = { x: followRef.current.point.x, y: followRef.current.point.y }
       } else {
         const rect = element.getBoundingClientRect()
-        anchor = { x: current.x + ((event.clientX - rect.left) / rect.width) * oldSize.width, y: current.y + ((event.clientY - rect.top) / rect.height) * oldSize.height }
+        anchor = {
+          x: current.x + ((event.clientX - rect.left) / rect.width) * oldSize.width,
+          y: current.y + ((event.clientY - rect.top) / rect.height) * oldSize.height,
+        }
       }
-      const fx = (anchor.x - current.x) / oldSize.width
-      const fy = (anchor.y - current.y) / oldSize.height
-      const next = clamp({ x: anchor.x - fx * newSize.width, y: anchor.y - fy * newSize.height }, { minX, maxX, minY, maxY }, newSize)
+      zoomAnchorRef.current = {
+        x: anchor.x,
+        y: anchor.y,
+        fx: (anchor.x - current.x) / oldSize.width,
+        fy: (anchor.y - current.y) / oldSize.height,
+        following,
+      }
       if (!following) targetRef.current = null
-      zoomRef.current = newZoom
-      cameraRef.current = next
-      setZoom(newZoom)
-      setCamera(next)
+      zoomTargetRef.current = nextZoom
+      zoomingRef.current = true
+      movingRef.current = true
     }
     element.addEventListener('wheel', wheel, { passive: false })
     return () => element.removeEventListener('wheel', wheel)
-  }, [minX, maxX, minY, maxY, view.width, view.height])
+  }, [minX, maxX, minY, maxY])
 
   useEffect(() => {
     if (follow && !wasFollowingRef.current) beginReturnToFocus()
@@ -254,20 +279,66 @@ export default function useCamera(
 
   useEffect(() => {
     const limits = { minX, maxX, minY, maxY }
-    const size = { width, height }
     let frame
     let last = performance.now()
     const tick = (now) => {
       const seconds = Math.min(50, now - last) / 1000
       last = now
+      // Live zoom size — do not close over React zoom or wheel easing fights a stale viewBox.
+      const liveZoom = zoomRef.current
+      const size = {
+        width: viewSizeRef.current.width / liveZoom,
+        height: viewSizeRef.current.height / liveZoom,
+      }
       let dx = 0
       let dy = 0
       for (const key of heldRef.current) {
         dx += KEYS[key][0]
         dy += KEYS[key][1]
       }
-      const current = cameraRef.current
+      let current = cameraRef.current
       let next = null
+      let zoomChanged = false
+      let zoomSettled = false
+
+      // Ease zoom toward the wheel target; keep the anchor under the cursor / follow point.
+      if (zoomingRef.current) {
+        const want = zoomTargetRef.current
+        const gap = want - liveZoom
+        if (Math.abs(gap) < 0.0008) {
+          zoomRef.current = want
+          zoomingRef.current = false
+          zoomChanged = true
+          zoomSettled = true
+        } else {
+          const ease = 1 - (1 - ZOOM_GLIDE) ** (seconds * 60)
+          zoomRef.current = liveZoom + gap * ease
+          zoomChanged = true
+        }
+        const z = zoomRef.current
+        const newSize = {
+          width: viewSizeRef.current.width / z,
+          height: viewSizeRef.current.height / z,
+        }
+        const anchor = zoomAnchorRef.current
+        if (anchor) {
+          const focusPoint = anchor.following ? followRef.current.point : anchor
+          const fx = anchor.following
+            ? (focusPoint.x - current.x) / size.width
+            : anchor.fx
+          const fy = anchor.following
+            ? (focusPoint.y - current.y) / size.height
+            : anchor.fy
+          const ax = anchor.following ? focusPoint.x : anchor.x
+          const ay = anchor.following ? focusPoint.y : anchor.y
+          next = clamp({ x: ax - fx * newSize.width, y: ay - fy * newSize.height }, limits, newSize)
+          cameraRef.current = next
+          current = next
+        }
+        size.width = newSize.width
+        size.height = newSize.height
+      }
+
       const edge = edgeRef.current
       const edgeActive = !draggingRef.current && (edge.x !== 0 || edge.y !== 0)
       if (dx || dy) {
@@ -312,7 +383,7 @@ export default function useCamera(
         } else {
           endFreePan()
         }
-      } else if (followRef.current.follow || targetRef.current) {
+      } else if (!zoomingRef.current && (followRef.current.follow || targetRef.current)) {
         velocityRef.current = { x: 0, y: 0 }
         // While following, chase the live focus point every frame — don't drop the target on arrival
         // or the camera freezes between React position updates.
@@ -330,21 +401,28 @@ export default function useCamera(
           returningRef.current = false
         }
       }
-      if (next && (next.x !== current.x || next.y !== current.y)) {
+      if (next && (next.x !== cameraRef.current.x || next.y !== cameraRef.current.y || zoomChanged)) {
         cameraRef.current = next
         movingRef.current = true
-        svgRef.current?.setAttribute('viewBox', `${next.x} ${next.y} ${size.width} ${size.height}`)
-      } else if (movingRef.current) {
+        writeViewBox(next, size)
+      } else if (zoomChanged) {
+        movingRef.current = true
+        writeViewBox(cameraRef.current, size)
+      } else if (movingRef.current && !zoomingRef.current) {
         // Settled: one render to put the element's viewBox and React's idea of the camera back in step.
         if (freePanRef.current) endFreePan()
         movingRef.current = false
+        setCamera(cameraRef.current)
+      }
+      if (zoomSettled) {
+        setZoom(zoomRef.current)
         setCamera(cameraRef.current)
       }
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [minX, maxX, minY, maxY, width, height])
+  }, [minX, maxX, minY, maxY])
 
   // Right-button drag (mouse) or one-finger drag (touch): the world follows the pointer. Screen pixels are converted to
   // world pixels using the element's on-screen size, because the whole stage is scaled to fit the window.
@@ -356,7 +434,11 @@ export default function useCamera(
     if (!isTouch && event.button === 1) event.preventDefault()
     if (isTouch ? !event.isPrimary : !(event.button === 1 || (rightPans && event.button === 2))) return
     if (!isTouch) event.preventDefault()
-    const scale = event.currentTarget.getBoundingClientRect().width / width
+    const liveSize = {
+      width: viewSizeRef.current.width / zoomRef.current,
+      height: viewSizeRef.current.height / zoomRef.current,
+    }
+    const scale = event.currentTarget.getBoundingClientRect().width / liveSize.width
     const start = { x: event.clientX, y: event.clientY, camera: cameraRef.current }
     let panning = !isTouch
     let dragged = false
@@ -383,7 +465,7 @@ export default function useCamera(
       const next = clamp(
         { x: start.camera.x - (moveEvent.clientX - start.x) / scale, y: start.camera.y - (moveEvent.clientY - start.y) / scale },
         { minX, maxX, minY, maxY },
-        { width, height },
+        liveSize,
       )
       const now = performance.now()
       const dt = Math.max(1, now - lastSample.at) / 1000

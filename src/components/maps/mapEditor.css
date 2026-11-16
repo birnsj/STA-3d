@@ -501,6 +501,51 @@
 .me-ambient input { width: 90px; accent-color: #f2a33a; }
 .me-ambient-value { min-width: 3.2em; font-variant-numeric: tabular-nums; }
 
+/* Top-down sun orbit under the Sun slider (Map / World Generation). */
+.ed-sun-dial {
+  display: flex;
+  justify-content: center;
+  margin: 2px 0 8px;
+  user-select: none;
+}
+.ed-sun-dial.is-interactive {
+  cursor: crosshair;
+}
+.ed-sun-dial-svg {
+  display: block;
+  touch-action: none;
+}
+.ed-sun-dial-disc {
+  fill: rgba(0, 0, 0, 0.22);
+}
+.ed-sun-dial-ring {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1.25;
+}
+.ed-sun-dial-ray {
+  stroke: rgba(255, 230, 170, 0.55);
+  stroke-width: 1.5;
+}
+.ed-sun-dial-cast {
+  stroke: #000;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.ed-sun-dial-subject {
+  fill: rgba(220, 230, 240, 0.9);
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.75;
+}
+.ed-sun-dial-sun {
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.75;
+}
+.ed-sun-dial-axis {
+  fill: rgba(255, 255, 255, 0.35);
+  font-size: 7px;
+  font-family: inherit;
+}
+
 /* Generate Map scale sliders — label | track | % fit the narrow properties rail. */
 .me-scale {
   display: grid;
