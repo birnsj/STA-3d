@@ -2,8 +2,11 @@
 // written to map files and never change gameplay data. Hazard regions keep their own runtime field named `layer`
 // ('floor' | 'air'); that is unrelated to these editor layers.
 // Optional catalogue fields tiles.json / templatePieces.json `layer` (one of LAYER_IDS) are authoring metadata.
+import { ambientMarkerKinds } from '../data/adaptation/exploration/ambientCreatures.js'
 import { getTile } from './mapFormat.js'
 import { getTemplatePiece } from './templatePieces.js'
+
+const AMBIENT_SPAWN_KINDS = new Set(ambientMarkerKinds())
 
 export const LAYER_IDS = ['ground', 'walls', 'furniture', 'characters', 'markers']
 
@@ -124,11 +127,13 @@ export function layerOfSelection(kind) {
     case 'playerStarts':
     case 'enemySpawns':
     case 'horseSpawns':
+      // Spawns edit with Characters (visibility/lock); Assets palette still opens Markers for these tools.
       return 'characters'
     case 'area':
     case 'objective':
       return 'markers'
     default:
+      if (AMBIENT_SPAWN_KINDS.has(kind)) return 'characters'
       return null
   }
 }

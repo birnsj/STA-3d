@@ -878,6 +878,130 @@ export function playItemDrop() {
   withRunningContext(playItemDropTone)
 }
 
+// ---------- Animation-clip sound events (Animation Viewer + chicken / body actions) ----------
+
+function playSoftChirp(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playTone(audio, audio.destination, { at: start, from: 920, to: 1180, length: 0.08, gain: 0.04, wave: 'sine' })
+}
+
+function playGetHit(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playNoiseBurst(audio, { start, length: 0.07, gain: 0.12, filterType: 'bandpass', frequency: 520, q: 1.1 })
+  playTone(audio, audio.destination, { at: start, from: 220, to: 90, length: 0.09, gain: 0.07, wave: 'sine', attack: 0.004 })
+}
+
+function playWhoosh(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playNoiseBurst(audio, { start, length: 0.11, gain: 0.08, filterType: 'highpass', frequency: 1200, q: 0.7 })
+  playTone(audio, audio.destination, { at: start, from: 480, to: 180, length: 0.1, gain: 0.035, wave: 'triangle', attack: 0.01 })
+}
+
+function playClothRustle(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playNoiseBurst(audio, { start, length: 0.09, gain: 0.055, filterType: 'bandpass', frequency: 900, q: 0.9 })
+  playNoiseBurst(audio, { start: start + 0.04, length: 0.07, gain: 0.04, filterType: 'bandpass', frequency: 1400, q: 1.1 })
+}
+
+function playChickenPeck(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playNoiseBurst(audio, { start, length: 0.045, gain: 0.1, filterType: 'bandpass', frequency: 1400, q: 2.2 })
+  playTone(audio, audio.destination, { at: start + 0.02, from: 480, to: 220, length: 0.05, gain: 0.05, wave: 'triangle', attack: 0.004 })
+}
+
+function playChickenCluck(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playTone(audio, audio.destination, { at: start, from: 620, to: 480, length: 0.07, gain: 0.055, wave: 'triangle' })
+  playTone(audio, audio.destination, { at: start + 0.08, from: 540, to: 700, length: 0.06, gain: 0.04, wave: 'triangle' })
+}
+
+function playChickenFlap(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playNoiseBurst(audio, { start, length: 0.09, gain: 0.11, filterType: 'highpass', frequency: 900, q: 0.8 })
+  playNoiseBurst(audio, { start: start + 0.07, length: 0.08, gain: 0.09, filterType: 'highpass', frequency: 1100, q: 0.8 })
+  playTone(audio, audio.destination, { at: start + 0.02, from: 780, to: 420, length: 0.12, gain: 0.045, wave: 'sawtooth', attack: 0.008 })
+}
+
+function playChickenScratch(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  for (let i = 0; i < 3; i++) {
+    playNoiseBurst(audio, {
+      start: start + i * 0.05,
+      length: 0.04,
+      gain: 0.07,
+      filterType: 'bandpass',
+      frequency: 700 + i * 120,
+      q: 1.4,
+    })
+  }
+}
+
+function playHorseHoof(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playNoiseBurst(audio, { start, length: 0.06, gain: 0.1, filterType: 'lowpass', frequency: 380, q: 1 })
+  playTone(audio, audio.destination, { at: start, from: 140, to: 90, length: 0.07, gain: 0.06, wave: 'sine', attack: 0.004 })
+}
+
+function playCatMeow(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playTone(audio, audio.destination, { at: start, from: 720, to: 480, length: 0.16, gain: 0.06, wave: 'triangle', attack: 0.01 })
+  playTone(audio, audio.destination, { at: start + 0.05, from: 540, to: 380, length: 0.12, gain: 0.035, wave: 'sine' })
+}
+
+function playCatPurr(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  for (let i = 0; i < 4; i++) {
+    playNoiseBurst(audio, {
+      start: start + i * 0.07,
+      length: 0.06,
+      gain: 0.045,
+      filterType: 'bandpass',
+      frequency: 160 + i * 20,
+      q: 2.4,
+    })
+  }
+}
+
+function playCatMew(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playTone(audio, audio.destination, { at: start, from: 880, to: 640, length: 0.09, gain: 0.045, wave: 'triangle', attack: 0.006 })
+}
+
+function playSoftPad(audio) {
+  const start = audio.currentTime + LOOKAHEAD_S
+  playNoiseBurst(audio, { start, length: 0.04, gain: 0.055, filterType: 'lowpass', frequency: 520, q: 0.9 })
+  playTone(audio, audio.destination, { at: start, from: 110, to: 70, length: 0.05, gain: 0.03, wave: 'sine', attack: 0.003 })
+}
+
+const ANIMATION_SOUND_EVENTS = {
+  footstep: () => playFootstep(0, 0.85),
+  punch: () => playWeaponSound('punch'),
+  getHit: () => withRunningContext(playGetHit),
+  whoosh: () => withRunningContext(playWhoosh),
+  clothRustle: () => withRunningContext(playClothRustle),
+  phaser: () => playWeaponSound('phaser'),
+  disruptor: () => playWeaponSound('disruptor'),
+  bodyFall: () =>
+    withRunningContext((audio) => playBodyFall(audio, audio.currentTime + LOOKAHEAD_S, 0.7)),
+  chickenPeck: () => withRunningContext(playChickenPeck),
+  chickenCluck: () => withRunningContext(playChickenCluck),
+  chickenFlap: () => withRunningContext(playChickenFlap),
+  chickenScratch: () => withRunningContext(playChickenScratch),
+  catMeow: () => withRunningContext(playCatMeow),
+  catPurr: () => withRunningContext(playCatPurr),
+  catMew: () => withRunningContext(playCatMew),
+  softPad: () => withRunningContext(playSoftPad),
+  horseHoof: () => withRunningContext(playHorseHoof),
+  softChirp: () => withRunningContext(playSoftChirp),
+}
+
+/** Play a named animation sound event (ids from animationSounds.json). */
+export function playSoundEvent(eventId) {
+  if (!eventId || level === 0) return
+  const play = ANIMATION_SOUND_EVENTS[eventId]
+  if (play) play()
+}
+
 // For a board drawn without an element under the pointer (the Pixi combat board): the hover blip and press beep a
 // data-ui-sound (or, press only, data-ui-press) element gets from the listeners below.
 export function playBoardHover() {

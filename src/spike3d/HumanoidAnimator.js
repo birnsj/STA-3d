@@ -1,6 +1,7 @@
 // Full procedural clip tree. Clip names/timings from characterSprites.json (clips.js).
 // Locomotion (idle/walk/run) uses travel-locked gait; one-shots/holds use clip phase u∈[0,1].
 
+import { playClipSound } from '../audio/animationSounds.js'
 import {
   CLIP_META,
   IDLE_FIDGETS,
@@ -12,6 +13,22 @@ import {
   lerp,
   resolveClipName,
 } from './clips.js'
+
+// Locomotion already has board footstep SFX — clip sounds cover attacks, fidgets, falls, etc.
+const CLIP_SOUND_SKIP = new Set([
+  'idle',
+  'walk',
+  'run',
+  'sneakWalk',
+  'sneakIdle',
+  'ride',
+  'rideIdle',
+  'mount',
+  'dismount',
+  'stepBack',
+  'hazardPanicWalk',
+  'hazardPanicRun',
+])
 
 const SPEED_WALK = 0.55
 const SPEED_RUN = 1
@@ -1099,6 +1116,7 @@ export class HumanoidAnimator {
     this._targetSpeed = LOCO_SPEED[clip] ?? 0
     this._actionT = 0
     this._actionDone = false
+    if (!CLIP_SOUND_SKIP.has(clip)) playClipSound(clip, { minGapMs: 90 })
     const leavingFall = String(prev).startsWith('fall') || prev === 'getUp'
     const coverClip = clip === 'cover' || clip === 'cover-attack' || clip === 'cover-enter'
     // cover / cover-attack begin kneeling — keep hipDrop. cover-enter begins standing.

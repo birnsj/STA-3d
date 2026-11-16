@@ -1,3 +1,4 @@
+import { playClipSound } from '../audio/animationSounds.js'
 import { HORSE_HEIGHT, HorseModel } from './HorseModel.js'
 
 /** Clip lengths for viewer scrub / progress (match clips.js CLIP_META). */
@@ -303,6 +304,8 @@ export class HorseBody {
       this._weight += (targetWeight - this._weight) * (1 - Math.exp(-(moving ? 14 : 12) * dt))
       if (this._weight > 0.02 && moving) {
         this._gaitPhase = (this._gaitPhase + dt / this._stridePeriod()) % 1
+        const gap = this._isRunPace() ? 160 : this._isTrotPace() ? 220 : 300
+        playClipSound(this._clip, { minGapMs: gap })
       }
       this._idleT += dt
       this._progress = moving ? this._gaitPhase : (this._progress + dt / this._seconds()) % 1

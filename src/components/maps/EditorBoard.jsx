@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { AMBIENT_CREATURES } from '../../data/adaptation/exploration/ambientCreatures.js'
 import { diamond, footprintDiamond, mapBounds, project, pts, unproject } from '../../maps/iso.js'
 import { isHostile } from '../../exploration/awareness.js'
 import { challengeDefinitionsFor, objectivePosition } from '../../exploration/challengeObjects.js'
@@ -472,6 +473,7 @@ export default function EditorBoard({
       ...map.markers.playerStarts,
       ...map.markers.enemySpawns,
       ...(map.markers.horseSpawns ?? []),
+      ...AMBIENT_CREATURES.flatMap((creature) => map.markers[creature.markerKind] ?? []),
       ...map.areas.map((area) => area.position),
       ...(map.npcs ?? []).map((npc) => npc.position),
     ].some(doomed)
@@ -533,6 +535,21 @@ export default function EditorBoard({
             selected: isSelected('horseSpawns', spawn),
             doomed: doomed(spawn),
           }))
+      : []),
+    ...(layerShown('characters')
+      ? AMBIENT_CREATURES.flatMap((creature) =>
+          (map.markers[creature.markerKind] ?? [])
+            .filter((spawn) => !hideCarriedMarkers(spawn))
+            .map((spawn, index) => ({
+              id: `a${creature.id}:${spawn.x},${spawn.y}`,
+              position: spawn,
+              kind: 'npc',
+              label: `${(creature.id?.[0] ?? 'A').toUpperCase()}${index + 1}`,
+              facing: spawnFacingAt(spawn),
+              selected: isSelected(creature.markerKind, spawn),
+              doomed: doomed(spawn),
+            })),
+        )
       : []),
     ...(layerShown('characters')
       ? (map.npcs ?? [])

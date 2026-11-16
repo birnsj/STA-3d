@@ -5,6 +5,8 @@ import { facingToYaw, makeIsoCamera, syncIsoCamera } from './isoProjection.js'
 import { resolveSpike3dAppearance } from './appearance.js'
 import { clipSeconds, IDLE_FIDGET_GAP, IDLE_FIDGETS } from './clips.js'
 import { ProceduralBody, PROCEDURAL_HEIGHT } from './ProceduralBody.js'
+import { CatActor } from './CatActor.js'
+import { ChickenActor } from './ChickenActor.js'
 import { HorseActor } from './HorseActor.js'
 import { HumanoidRagdoll } from './HumanoidRagdoll.js'
 import {
@@ -498,6 +500,7 @@ export class Spike3dScene {
     this.map = map
     this.actors = new Map()
     this.horses = new Map()
+    this.ambientAnimals = new Map()
     this.physics = null
     this._physicsPromise = null
     this._ready = false
@@ -643,6 +646,7 @@ export class Spike3dScene {
     }
     for (const actor of this.actors.values()) visit(actor.root)
     for (const horse of this.horses.values()) visit(horse.root)
+    for (const animal of this.ambientAnimals.values()) visit(animal.root)
   }
 
   async init() {
@@ -751,6 +755,7 @@ export class Spike3dScene {
   _syncActors() {
     const seen = new Set()
     const seenHorses = new Set()
+    const seenAmbient = new Set()
     const now = performance.now()
     for (const pose of this._poses) {
       if (!pose?.id) continue
@@ -762,6 +767,17 @@ export class Spike3dScene {
           this.horses.set(pose.id, horse)
         }
         horse.setPose(pose)
+        continue
+      }
+      if (pose.kind === 'chicken' || pose.kind === 'cat' || pose.kind === 'ambient') {
+        seenAmbient.add(pose.id)
+        let animal = this.ambientAnimals.get(pose.id)
+        if (!animal) {
+          animal =
+            pose.kind === 'cat' ? new CatActor(pose.id, this) : new ChickenActor(pose.id, this)
+          this.ambientAnimals.set(pose.id, animal)
+        }
+        animal.setPose(pose)
         continue
       }
       seen.add(pose.id)
@@ -790,6 +806,12 @@ export class Spike3dScene {
       horse.dispose()
       this.horses.delete(id)
     }
+    for (const [id, animal] of this.ambientAnimals) {
+      if (seenAmbient.has(id)) continue
+      if (now - (animal._lastSeen ?? 0) < LINGER_MS) continue
+      animal.dispose()
+      this.ambientAnimals.delete(id)
+    }
   }
 
   _anyRagdoll() {
@@ -802,6 +824,7 @@ export class Spike3dScene {
   _paint(dt) {
     this._syncActors()
     for (const horse of this.horses.values()) horse.update(dt)
+    for (const animal of this.ambientAnimals.values()) animal.update(dt)
     for (const actor of this.actors.values()) actor.update(dt)
     // Seat riders on saddles after both horse and actor have advanced this frame.
     // Prefer clock mountBlend; fall back to animator progress only if the sim did not publish one.
@@ -872,6 +895,9 @@ export class Spike3dScene {
       if (ridden.has(actor.id)) continue
       groups.push({ id: actor.id, paint: actor.paintKey(), lead: actor, items: [actor] })
     }
+    for (const animal of this.ambientAnimals.values()) {
+      groups.push({ id: animal.id, paint: animal.paintKey(), lead: animal, items: [animal] })
+    }
     groups.sort((a, b) => {
       const d = a.paint - b.paint
       return d !== 0 ? d : String(a.id).localeCompare(String(b.id))
@@ -908,6 +934,8 @@ export class Spike3dScene {
     this.actors.clear()
     for (const horse of this.horses.values()) horse.dispose()
     this.horses.clear()
+    for (const animal of this.ambientAnimals.values()) animal.dispose()
+    this.ambientAnimals.clear()
     this.physics?.dispose()
     this.physics = null
     this._physicsPromise = null

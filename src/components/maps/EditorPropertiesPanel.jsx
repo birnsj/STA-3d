@@ -25,18 +25,17 @@ export default function EditorPropertiesPanel({
 }) {
   const boardSelected = hasBoardSelection(selection)
   const assetSelected = hasAssetSelection(tool)
-  // Catalogue tile / Template Piece brush wins over a leftover board pick so Layer stays reachable.
-  const showAssetProps = assetSelected && Boolean(tool?.startsWith('tile:') || tool?.startsWith('template:'))
+  // Tile / Template Piece brush can keep catalogue props only when nothing on the board is selected
+  // (selectTool clears board picks). A selected spawn/NPC/etc. always wins so marker properties show.
+  const showAssetProps = !boardSelected && assetSelected
   const canShowSelection = boardSelected || assetSelected
   const showMap = !canShowSelection || showMapTab
   // Remount sections when the tab or selection changes so collapse state resets cleanly.
   const sectionsKey = showMap
     ? 'map'
-    : showAssetProps
-      ? `asset:${tool ?? ''}`
-      : boardSelected
-        ? `board:${selection?.npc?.id ?? ''}:${selection?.object?.id ?? ''}:${selection?.destructible?.id ?? ''}:${selection?.hazard?.id ?? ''}:${selection?.groundItem?.id ?? ''}:${selection?.templatePiece?.id ?? ''}:${selection?.marker?.kind ?? ''}:${selection?.marker?.label ?? ''}`
-        : `asset:${tool ?? ''}`
+    : boardSelected
+      ? `board:${selection?.npc?.id ?? ''}:${selection?.object?.id ?? ''}:${selection?.destructible?.id ?? ''}:${selection?.hazard?.id ?? ''}:${selection?.groundItem?.id ?? ''}:${selection?.templatePiece?.id ?? ''}:${selection?.marker?.kind ?? ''}:${selection?.marker?.x ?? ''},${selection?.marker?.y ?? ''}`
+      : `asset:${tool ?? ''}`
 
   return (
     <aside className="ed-properties me-side">
@@ -61,15 +60,7 @@ export default function EditorPropertiesPanel({
         <div className="ed-properties-body">
           {showMap ? (
             <MapProperties {...mapProps} map={map} edit={edit} />
-          ) : showAssetProps || !boardSelected ? (
-            <AssetProperties
-              tool={tool}
-              onStatus={onStatus}
-              hazardIntensity={hazardIntensity}
-              onHazardIntensity={onHazardIntensity}
-              animateTiles={animateTiles}
-            />
-          ) : (
+          ) : boardSelected ? (
             <EditorInspectors
               map={map}
               edit={edit}
@@ -81,6 +72,16 @@ export default function EditorPropertiesPanel({
               onStatus={onStatus}
               animateTiles={animateTiles}
             />
+          ) : showAssetProps ? (
+            <AssetProperties
+              tool={tool}
+              onStatus={onStatus}
+              hazardIntensity={hazardIntensity}
+              onHazardIntensity={onHazardIntensity}
+              animateTiles={animateTiles}
+            />
+          ) : (
+            <p className="me-text">Select a thumbnail in the Palette, or click something on the map.</p>
           )}
         </div>
       </PropertySectionsProvider>

@@ -2,10 +2,19 @@
 // Lives outside the components so they can share it without breaking fast refresh.
 
 // Help text for the marker tools (shown in Selection when one is the active tool).
+import { AMBIENT_CREATURES } from '../../data/adaptation/exploration/ambientCreatures.js'
+
 export const MARKER_HELP = {
-  playerStarts: 'Click a floor tile to place or remove a player start.',
-  enemySpawns: 'Click a floor tile to place or remove an enemy spawn.',
-  horseSpawns: 'Click a floor tile to place or remove a horse spawn. Play only mounts where these are placed.',
+  playerStarts: 'Click a floor tile to place a player start, or click an existing one to edit it in Properties.',
+  enemySpawns: 'Click a floor tile to place an enemy spawn, or click an existing one to edit it in Properties.',
+  horseSpawns:
+    'Click a floor tile to place a horse spawn, or click an existing one to edit facing and roam. Play only mounts where these are placed. Roam defaults to Idle.',
+  ...Object.fromEntries(
+    AMBIENT_CREATURES.map((creature) => [
+      creature.markerKind,
+      `Click a floor tile to place a ${creature.label.toLowerCase()}, or click an existing one to edit it in Properties.`,
+    ]),
+  ),
   npcs: 'Click a floor tile to place an NPC, or click an NPC to edit it in Properties.',
   area: 'Click a floor tile to set or clear a room label.',
   erase: 'Click a tile to erase markers on it.',

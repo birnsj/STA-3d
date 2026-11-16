@@ -44,6 +44,26 @@ export const HORSE_VIEWER_CLIPS = Object.freeze([
   { name: 'stop', seconds: 0.7, play: 'hold' },
 ])
 
+/** Chicken ambient set clips (procedural only). Viewer names map to gait / idlePose. */
+export const CHICKEN_VIEWER_CLIPS = Object.freeze([
+  { name: 'chickenIdle', seconds: 2, play: 'loop' },
+  { name: 'chickenWalk', seconds: 0.7, play: 'loop' },
+  { name: 'chickenRun', seconds: 0.45, play: 'loop' },
+  { name: 'peck', seconds: 1.35, play: 'once' },
+  { name: 'scratch', seconds: 1.1, play: 'once' },
+  { name: 'scatter', seconds: 0.9, play: 'once' },
+])
+
+/** Cat ambient set clips (procedural only). Viewer names map to gait / idlePose. */
+export const CAT_VIEWER_CLIPS = Object.freeze([
+  { name: 'catIdle', seconds: 2.4, play: 'loop' },
+  { name: 'catWalk', seconds: 0.75, play: 'loop' },
+  { name: 'catRun', seconds: 0.42, play: 'loop' },
+  { name: 'sit', seconds: 2.2, play: 'once' },
+  { name: 'lick', seconds: 1.4, play: 'once' },
+  { name: 'stretch', seconds: 1.2, play: 'once' },
+])
+
 /** Old ranged-fire clip id → catalogue name. */
 export const CLIP_ALIASES = Object.freeze({
   attack: 'phaser-attack01',
@@ -72,6 +92,14 @@ export function clipSeconds(name, setId = null) {
     const horse = HORSE_VIEWER_CLIPS.find((clip) => clip.name === name)
     if (horse) return horse.seconds
   }
+  if (setId === 'chicken') {
+    const chicken = CHICKEN_VIEWER_CLIPS.find((clip) => clip.name === name)
+    if (chicken) return chicken.seconds
+  }
+  if (setId === 'cat') {
+    const cat = CAT_VIEWER_CLIPS.find((clip) => clip.name === name)
+    if (cat) return cat.seconds
+  }
   return CLIP_META[resolveClipName(name)]?.seconds ?? 1
 }
 
@@ -79,6 +107,14 @@ export function clipPlayMode(name, setId = null) {
   if (setId === 'horse') {
     const horse = HORSE_VIEWER_CLIPS.find((clip) => clip.name === name)
     if (horse) return horse.play
+  }
+  if (setId === 'chicken') {
+    const chicken = CHICKEN_VIEWER_CLIPS.find((clip) => clip.name === name)
+    if (chicken) return chicken.play
+  }
+  if (setId === 'cat') {
+    const cat = CAT_VIEWER_CLIPS.find((clip) => clip.name === name)
+    if (cat) return cat.play
   }
   return CLIP_META[resolveClipName(name)]?.play ?? 'loop'
 }
@@ -155,6 +191,12 @@ export function animationViewerGroups(setId = defaultAnimationSetId()) {
   if (setId === 'horse' || set?.id === 'horse') {
     return [{ id: 'horse', label: 'Horse', clips: [...HORSE_VIEWER_CLIPS] }]
   }
+  if (setId === 'chicken' || set?.id === 'chicken') {
+    return [{ id: 'chicken', label: 'Chicken', clips: [...CHICKEN_VIEWER_CLIPS] }]
+  }
+  if (setId === 'cat' || set?.id === 'cat') {
+    return [{ id: 'cat', label: 'Cat', clips: [...CAT_VIEWER_CLIPS] }]
+  }
   const allowedList = set?.sheetIds
   const allowed = allowedList ? new Set(allowedList) : null
 
@@ -200,9 +242,12 @@ export function animationViewerGroups(setId = defaultAnimationSetId()) {
   return groups
 }
 
-/** Preview body for an animation set (`humanoid` | `horse`). */
+/** Preview body for an animation set (`humanoid` | `horse` | `chicken` | `cat`). */
 export function previewBodyKindForSet(setId) {
-  return setId === 'horse' ? 'horse' : 'humanoid'
+  if (setId === 'horse') return 'horse'
+  if (setId === 'chicken') return 'chicken'
+  if (setId === 'cat') return 'cat'
+  return 'humanoid'
 }
 
 export const deg = (d) => d * DEG

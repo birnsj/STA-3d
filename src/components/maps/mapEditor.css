@@ -427,6 +427,8 @@
 
 .me-swatch.is-player { background: #3fb6e8; }
 .me-swatch.is-horse { background: #b8894a; }
+.me-swatch.is-chicken { background: #e8c96a; }
+.me-swatch.is-cat { background: #c48a3a; }
 /* A hazard's swatch: the first frame of its flipbook (environmentArt.js) over its colour. */
 .me-swatch.is-hazard {
   width: 28px;

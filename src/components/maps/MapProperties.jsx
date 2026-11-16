@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AMBIENT_CREATURES } from '../../data/adaptation/exploration/ambientCreatures.js'
 import missionLogData from '../../data/adaptation/exploration/missionLog.json'
 import { MAX_AWAY_TEAM } from '../../exploration/awayTeam.js'
 import { authoredDefinitionsFor } from '../../exploration/challengeObjects.js'
@@ -444,6 +445,11 @@ export default function MapProperties({
           Player starts: {map.markers.playerStarts.length} / {MAX_AWAY_TEAM}
         </p>
         <p className="me-text">Horse spawns: {(map.markers.horseSpawns ?? []).length}</p>
+        {AMBIENT_CREATURES.map((creature) => (
+          <p key={creature.markerKind} className="me-text">
+            {creature.label.replace(/ Spawn$/, '')} spawns: {(map.markers[creature.markerKind] ?? []).length}
+          </p>
+        ))}
       </PropertySection>
 
       <PropertySection

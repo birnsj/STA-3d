@@ -37,6 +37,16 @@
       "id": "horse",
       "label": "Horse",
       "sheetIds": ["horse"]
+    },
+    {
+      "id": "chicken",
+      "label": "Chicken",
+      "sheetIds": ["chicken"]
+    },
+    {
+      "id": "cat",
+      "label": "Cat",
+      "sheetIds": ["cat"]
     }
   ],
   "speciesToSet": {

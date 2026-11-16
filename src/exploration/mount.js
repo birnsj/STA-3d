@@ -4,6 +4,7 @@
 import challengeData from '../data/adaptation/exploration/challenges.json'
 import { canAct } from './partyControl.js'
 import { isClear, nearestWalkableTile, planRoute, RADIUS } from './navigation.js'
+import { resolveAuthoredRoam, tickRoam } from './roam.js'
 import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from './mountConstants.js'
 import { MOUNT_LEFT_AFT, MOUNT_LEFT_REACH } from '../spike3d/HorseModel.js'
 import { horseCoatForSpawnIndex, horseCoatLabel } from '../spike3d/horseTexture.js'
@@ -47,10 +48,16 @@ function horsesFromMap(map) {
         ? entry.heading
         : headingFromFacingDegrees(entry.facing ?? 0)
     const coat = horseCoatForSpawnIndex(index)
+    // Default idle when roam omitted (legacy maps stand at spawn).
+    const roam = resolveAuthoredRoam(entry.roam ?? { mode: 'idle' })
     return {
       id: index === 0 ? HORSE_ID : `${HORSE_ID}-${index + 1}`,
       position,
       heading,
+      home: { position: { ...position }, heading },
+      roam,
+      roamRuntime: null,
+      gait: 'idle',
       riderId: null,
       coat,
       label: horseCoatLabel(coat),
@@ -426,6 +433,45 @@ export function finishDismount(state, memberId) {
 /** UI / ring: begin the climb-off animation. */
 export function dismountHorse(state, memberId) {
   return beginDismount(state, memberId)
+}
+
+/**
+ * Unmounted horses with authored roam (wander / waypoint). Mounted horses skip this —
+ * Ride / syncMountAfterParty owns their motion.
+ */
+export function tickUnmountedHorseRoam(state, map, seconds) {
+  const horses = getHorses(state)
+  if (!horses.length || !map || !(seconds > 0)) return state
+  let changed = false
+  const next = horses.map((horse) => {
+    if (horse.riderId) return horse
+    const roam = resolveAuthoredRoam(horse.roam ?? { mode: 'idle' })
+    if (roam.mode === 'idle') {
+      if (horse.gait === 'idle' && !horse.roamRuntime) return horse
+      changed = true
+      return { ...horse, gait: 'idle', roamRuntime: null, moving: false }
+    }
+    const result = tickRoam({
+      home: horse.home ?? { position: horse.position, heading: horse.heading },
+      map,
+      profileId: 'horse',
+      roam,
+      runtime: horse.roamRuntime,
+      position: horse.position,
+      heading: horse.heading,
+      seconds,
+    })
+    changed = true
+    return {
+      ...horse,
+      position: result.position,
+      heading: result.heading,
+      gait: result.gait,
+      moving: result.moving,
+      roamRuntime: result.roamRuntime,
+    }
+  })
+  return changed ? withHorses(state, next) : state
 }
 
 /**

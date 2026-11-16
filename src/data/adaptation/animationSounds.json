@@ -1,0 +1,98 @@
+{
+  "note": [
+    "Sound events assignable to animation clips (Animation Viewer) and challenge-object actions (Object Editor).",
+    "Split: weapon fire (phaser / disruptor / punch as attackSound) lives on the weapon in weapons.json — not on fire clips.",
+    "Animation defaults are body / action only (footsteps, melee impact, get-hit, falls, dodges, cloth).",
+    "Chicken / cat actions use species-prefixed clip names so humanoid idle/walk are not overwritten.",
+    "defaultChances: clip → 0–100 play chance when triggered (100 = always). Chicken defaults are sparse.",
+    "Viewer overrides are saved as animation-sound-settings.json."
+  ],
+  "events": [
+    { "id": "", "label": "None" },
+    { "id": "footstep", "label": "Footstep" },
+    { "id": "punch", "label": "Melee impact" },
+    { "id": "getHit", "label": "Get hit" },
+    { "id": "whoosh", "label": "Dodge / whoosh" },
+    { "id": "clothRustle", "label": "Cloth rustle" },
+    { "id": "bodyFall", "label": "Body fall" },
+    { "id": "phaser", "label": "Phaser (weapon / object)" },
+    { "id": "disruptor", "label": "Disruptor (weapon / object)" },
+    { "id": "chickenPeck", "label": "Chicken peck" },
+    { "id": "chickenCluck", "label": "Chicken cluck" },
+    { "id": "chickenFlap", "label": "Chicken scatter / flap" },
+    { "id": "chickenScratch", "label": "Chicken scratch" },
+    { "id": "catMeow", "label": "Cat meow" },
+    { "id": "catPurr", "label": "Cat purr" },
+    { "id": "catMew", "label": "Cat mew" },
+    { "id": "softPad", "label": "Soft paw pad" },
+    { "id": "horseHoof", "label": "Horse hoof" },
+    { "id": "softChirp", "label": "Soft chirp" }
+  ],
+  "defaults": {
+    "walk": "footstep",
+    "run": "footstep",
+    "sneakWalk": "footstep",
+    "stepBack": "footstep",
+    "hazardPanicWalk": "footstep",
+    "hazardPanicRun": "footstep",
+
+    "punch": "punch",
+    "kick": "punch",
+    "melee": "punch",
+
+    "getHit": "getHit",
+    "getHit-left": "getHit",
+    "getHit-right": "getHit",
+
+    "dodge": "whoosh",
+    "dodge-left": "whoosh",
+    "dodge-right": "whoosh",
+
+    "fallForward": "bodyFall",
+    "fallBack": "bodyFall",
+    "fallBlastBack": "bodyFall",
+    "fallBlastFlat": "bodyFall",
+    "fallBlastSpin": "bodyFall",
+    "fallCrumple": "bodyFall",
+    "fallSpin": "bodyFall",
+
+    "getUp": "clothRustle",
+    "cover": "clothRustle",
+    "cover-enter": "clothRustle",
+    "cover-attack": "clothRustle",
+    "surrender": "clothRustle",
+    "hazardPanic": "clothRustle",
+
+    "peck": "chickenPeck",
+    "scratch": "chickenScratch",
+    "scatter": "chickenFlap",
+    "chickenIdle": "chickenCluck",
+    "chickenWalk": "softChirp",
+    "chickenRun": "chickenFlap",
+
+    "sit": "catPurr",
+    "lick": "catMew",
+    "stretch": "clothRustle",
+    "catIdle": "catMeow",
+    "catWalk": "softPad",
+    "catRun": "softPad",
+
+    "trot": "horseHoof",
+    "stop": "horseHoof"
+  },
+  "defaultChances": {
+    "chickenIdle": 12,
+    "chickenWalk": 8,
+    "chickenRun": 18,
+    "peck": 40,
+    "scratch": 35,
+    "scatter": 100,
+
+    "catIdle": 10,
+    "catWalk": 6,
+    "catRun": 12,
+    "sit": 45,
+    "lick": 40,
+    "stretch": 35
+  }
+}

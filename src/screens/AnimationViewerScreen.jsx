@@ -4,6 +4,7 @@ import EditorTips from '../components/maps/EditorTips.jsx'
 import EditorViewScale from '../components/maps/EditorViewScale.jsx'
 import { downloadJson } from '../export/downloadJson.js'
 import { resolveSpike3dAppearance } from '../spike3d/appearance.js'
+import { playClipSound } from '../audio/animationSounds.js'
 import {
   animationSetIdForSpecies,
   animationViewerGroups,
@@ -13,6 +14,21 @@ import {
   previewBodyKindForSet,
 } from '../spike3d/clips.js'
 import AnimationPreview from '../spike3d/AnimationPreview.jsx'
+import {
+  defaultAnimationSoundBindings,
+  defaultAnimationSoundChances,
+  getAnimationSoundChanceOverrides,
+  getAnimationSoundOverrides,
+  listAnimationSoundEvents,
+  parseAnimationSoundSettingsFile,
+  replaceAnimationSoundChanceOverrides,
+  replaceAnimationSoundOverrides,
+  serializeAnimationSoundSettings,
+  setAnimationSoundChanceOverride,
+  setAnimationSoundOverride,
+  soundChanceForClip,
+  soundEventForClip,
+} from '../spike3d/animationSoundSettings.js'
 import {
   ATTACHMENT_FLAG_HELPS,
   ATTACHMENT_SETTING_FIELDS,
@@ -48,6 +64,7 @@ const PROP_TABS = [
   { id: 'ragdoll', label: 'Ragdoll' },
   { id: 'attachments', label: 'Attachments' },
   { id: 'light', label: 'Light' },
+  { id: 'sounds', label: 'Sounds' },
 ]
 
 const SPECIES = [...new Set(['human', ...Object.keys(appearanceData.raceMeshes ?? {})])]
@@ -64,6 +81,8 @@ const CLIP_TABS = [
 ]
 
 const HORSE_CLIP_TABS = [{ id: 'move', label: 'Move', groupIds: ['horse'] }]
+const CHICKEN_CLIP_TABS = [{ id: 'move', label: 'Move', groupIds: ['chicken'] }]
+const CAT_CLIP_TABS = [{ id: 'move', label: 'Move', groupIds: ['cat'] }]
 
 const ANIMATION_MENUS = [
   {
@@ -77,6 +96,10 @@ const ANIMATION_MENUS = [
       { id: 'saveAttachments', label: 'Save Attachment Settings…' },
       { id: 'loadAttachments', label: 'Load Attachment Settings…' },
       { id: 'defaultsAttachments', label: 'Reset Attachment Defaults' },
+      { sep: true },
+      { id: 'saveSounds', label: 'Save Animation Sounds…' },
+      { id: 'loadSounds', label: 'Load Animation Sounds…' },
+      { id: 'defaultsSounds', label: 'Reset Animation Sounds' },
       { sep: true },
       { id: 'back', label: 'Back to Menu' },
     ],
@@ -162,9 +185,29 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
   const groups = useMemo(() => animationViewerGroups(animSetId), [animSetId])
   const bodyKind = previewBodyKindForSet(animSetId)
   const isHorseSet = bodyKind === 'horse'
-  const clipTabs = isHorseSet ? HORSE_CLIP_TABS : CLIP_TABS
+  const isChickenSet = bodyKind === 'chicken'
+  const isCatSet = bodyKind === 'cat'
+  const isCreatureSet = isHorseSet || isChickenSet || isCatSet
+  const clipTabs = isHorseSet
+    ? HORSE_CLIP_TABS
+    : isChickenSet
+      ? CHICKEN_CLIP_TABS
+      : isCatSet
+        ? CAT_CLIP_TABS
+        : CLIP_TABS
   const allClips = useMemo(() => groups.flatMap((g) => g.clips.map((c) => c.name)), [groups])
   const [selected, setSelected] = useState(() => keptOrDefaultClip('idle', allClips))
+  const soundEvents = useMemo(() => listAnimationSoundEvents(), [])
+  const [soundBindings, setSoundBindings] = useState(() => ({
+    ...defaultAnimationSoundBindings(),
+    ...getAnimationSoundOverrides(),
+  }))
+  const [soundChances, setSoundChances] = useState(() => ({
+    ...defaultAnimationSoundChances(),
+    ...getAnimationSoundChanceOverrides(),
+  }))
+  const [soundLoadError, setSoundLoadError] = useState('')
+  const soundFileRef = useRef(null)
   const [open, setOpen] = useState(() => new Set(groups.map((g) => g.id)))
   const [clipTab, setClipTab] = useState('move')
   const [query, setQuery] = useState('')
@@ -221,7 +264,8 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
     setProgress(0)
     setPlaying(allClips.length > 0)
     setClipTab('move')
-    if (previewBodyKindForSet(animSetId) === 'horse') setShowSkeleton(false)
+    const kind = previewBodyKindForSet(animSetId)
+    if (kind === 'horse' || kind === 'chicken' || kind === 'cat') setShowSkeleton(false)
   }
 
   const appearance = useMemo(() => {
@@ -276,6 +320,66 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
     setSelected(name)
     setProgress(0)
     setPlaying(true)
+    playClipSound(name, { minGapMs: 40, settings: soundBindings, chances: soundChances })
+  }
+
+  const selectedSound = soundEventForClip(selected, soundBindings)
+  const selectedChance = soundChanceForClip(selected, soundChances)
+
+  const setClipSound = (eventId) => {
+    setAnimationSoundOverride(selected, eventId)
+    const next = {
+      ...defaultAnimationSoundBindings(),
+      ...getAnimationSoundOverrides(),
+    }
+    setSoundBindings(next)
+    if (eventId) playClipSound(selected, { minGapMs: 0, settings: next, chances: soundChances, force: true })
+  }
+
+  const setClipChance = (percent) => {
+    setAnimationSoundChanceOverride(selected, percent)
+    const next = {
+      ...defaultAnimationSoundChances(),
+      ...getAnimationSoundChanceOverrides(),
+    }
+    setSoundChances(next)
+  }
+
+  const resetSoundSettings = () => {
+    setSoundLoadError('')
+    replaceAnimationSoundOverrides({})
+    replaceAnimationSoundChanceOverrides({})
+    setSoundBindings(defaultAnimationSoundBindings())
+    setSoundChances(defaultAnimationSoundChances())
+  }
+
+  const saveSoundSettings = () => {
+    setSoundLoadError('')
+    downloadJson(
+      serializeAnimationSoundSettings(getAnimationSoundOverrides(), getAnimationSoundChanceOverrides()),
+      'animation-sound-settings.json',
+    )
+  }
+
+  const loadSoundSettingsFile = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    try {
+      const text = await file.text()
+      const parsed = parseAnimationSoundSettingsFile(JSON.parse(text))
+      if (parsed.error) {
+        setSoundLoadError(parsed.error)
+        return
+      }
+      setSoundLoadError('')
+      replaceAnimationSoundOverrides(parsed.settings)
+      replaceAnimationSoundChanceOverrides(parsed.chances ?? {})
+      setSoundBindings({ ...defaultAnimationSoundBindings(), ...parsed.settings })
+      setSoundChances({ ...defaultAnimationSoundChances(), ...parsed.chances })
+    } catch {
+      setSoundLoadError('Could not read that JSON file.')
+    }
   }
 
   const onProgress = useCallback((u) => {
@@ -443,6 +547,9 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
     else if (id === 'saveAttachments') saveAttachmentSettings()
     else if (id === 'loadAttachments') attachmentFileRef.current?.click()
     else if (id === 'defaultsAttachments') resetAttachmentSettings()
+    else if (id === 'saveSounds') saveSoundSettings()
+    else if (id === 'loadSounds') soundFileRef.current?.click()
+    else if (id === 'defaultsSounds') resetSoundSettings()
     else if (id === 'lockedIso') setLockedIso((v) => !v)
     else if (id === 'loopOnce') setLoopOnce((v) => !v)
     else if (id === 'showSkeleton') setShowSkeleton((v) => !v)
@@ -637,9 +744,9 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                     type="button"
                     className={`me-button${ragdollActive ? ' is-on' : ''}`}
                     onClick={toggleRagdoll}
-                    disabled={isHorseSet || ragdollBusy || !selected}
+                    disabled={isCreatureSet || ragdollBusy || !selected}
                     title={
-                      isHorseSet
+                      isCreatureSet
                         ? 'Ragdoll is humanoid-only'
                         : ragdollActive
                           ? 'Restore idle pose'
@@ -654,6 +761,10 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                 <p className="ed-dock-title">Model</p>
                 {isHorseSet ? (
                   <p className="me-text">Procedural horse · idle / walk / trot / run / stop</p>
+                ) : isChickenSet ? (
+                  <p className="me-text">Procedural chicken · idle / walk / run / peck / scratch / scatter</p>
+                ) : isCatSet ? (
+                  <p className="me-text">Procedural cat · idle / walk / run / sit / lick / stretch</p>
                 ) : (
                   <div className="av-dock-model-fields">
                     <select className="me-select" value={species} aria-label="Species" onChange={(e) => setSpecies(e.target.value)}>
@@ -709,8 +820,8 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   type="button"
                   className="me-button is-primary"
                   onClick={toggleRagdoll}
-                  disabled={isHorseSet || ragdollBusy}
-                  title={isHorseSet ? 'Ragdoll is humanoid-only' : undefined}
+                  disabled={isCreatureSet || ragdollBusy}
+                  title={isCreatureSet ? 'Ragdoll is humanoid-only' : undefined}
                 >
                   {ragdollBusy ? 'Ragdoll…' : ragdollActive ? 'Reset pose' : 'Apply & flop'}
                 </button>
@@ -768,7 +879,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   Collapse all
                 </button>
               </>
-            ) : (
+            ) : propTab === 'light' ? (
               <>
                 <button
                   type="button"
@@ -782,6 +893,8 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   Collapse all
                 </button>
               </>
+            ) : (
+              <span className="me-text av-ragdoll-note">Per-clip sound for the selected action</span>
             )}
           </div>
           <input
@@ -797,6 +910,13 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
             accept=".json,application/json"
             hidden
             onChange={loadAttachmentSettingsFile}
+          />
+          <input
+            ref={soundFileRef}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            onChange={loadSoundSettingsFile}
           />
           <div className="ed-properties-body">
             {propTab === 'ragdoll' ? (
@@ -969,7 +1089,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   )
                 })}
               </>
-            ) : (
+            ) : propTab === 'light' ? (
               <>
                 <div className="av-ragdoll-actions">
                   <button type="button" className="me-button" onClick={resetLightSettings}>
@@ -1021,6 +1141,83 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                     </div>
                   )
                 })}
+              </>
+            ) : (
+              <>
+                <div className="av-ragdoll-actions">
+                  <button type="button" className="me-button" onClick={saveSoundSettings}>
+                    Save
+                  </button>
+                  <button type="button" className="me-button" onClick={() => soundFileRef.current?.click()}>
+                    Load
+                  </button>
+                  <button type="button" className="me-button" onClick={resetSoundSettings}>
+                    Defaults
+                  </button>
+                </div>
+                <p className="me-text av-ragdoll-note">
+                  Body and action SFX for the selected clip. Random % is the chance each trigger plays (chicken
+                  defaults are sparse). Preview always plays. Weapon fire stays on the weapon; object sounds in the
+                  Object Editor.
+                </p>
+                {soundLoadError ? <p className="me-text av-ragdoll-error">{soundLoadError}</p> : null}
+                <div className="av-ragdoll-field" title="Sound played when this clip starts (and on looping gait ticks)">
+                  <div className="av-ragdoll-field-label">
+                    <span>Clip</span>
+                    <span className="av-ragdoll-field-value">{selected || '—'}</span>
+                  </div>
+                </div>
+                <label className="av-ragdoll-field">
+                  <div className="av-ragdoll-field-label">
+                    <span>Sound event</span>
+                  </div>
+                  <select
+                    className="me-select"
+                    value={selectedSound}
+                    disabled={!selected}
+                    aria-label="Sound event for selected clip"
+                    onChange={(e) => setClipSound(e.target.value)}
+                  >
+                    {soundEvents.map((ev) => (
+                      <option key={ev.id || 'none'} value={ev.id}>
+                        {ev.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="av-ragdoll-field" title="Chance this sound plays each time the clip triggers (0 = never, 100 = always)">
+                  <div className="av-ragdoll-field-label">
+                    <span>Random %</span>
+                    <span className="av-ragdoll-field-value">{selected ? `${selectedChance}%` : '—'}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={selected ? selectedChance : 100}
+                    disabled={!selected || !selectedSound}
+                    aria-label="Random play chance percent"
+                    onChange={(e) => setClipChance(Number(e.target.value))}
+                  />
+                </div>
+                <div className="av-ragdoll-actions">
+                  <button
+                    type="button"
+                    className="me-button"
+                    disabled={!selected || !selectedSound}
+                    onClick={() =>
+                      playClipSound(selected, {
+                        minGapMs: 0,
+                        settings: soundBindings,
+                        chances: soundChances,
+                        force: true,
+                      })
+                    }
+                  >
+                    Preview sound
+                  </button>
+                </div>
               </>
             )}
           </div>

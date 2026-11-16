@@ -1,0 +1,42 @@
+{
+  "profiles": {
+    "human": {
+      "walkSpeed": 1.8,
+      "waitMin": 2.5,
+      "waitMax": 6,
+      "goalMinDist": 1.5,
+      "preferFar": true,
+      "idlePoses": ["idleLookAround", "idleShiftWeight"]
+    },
+    "horse": {
+      "walkSpeed": 1.1,
+      "waitMin": 3,
+      "waitMax": 8,
+      "goalMinDist": 1.2,
+      "preferFar": true,
+      "idlePoses": ["graze"]
+    },
+    "chicken": {
+      "walkSpeed": 2.4,
+      "waitMin": 0.4,
+      "waitMax": 1.6,
+      "goalMinDist": 0.6,
+      "preferFar": false,
+      "idlePoses": ["peck", "peck", "peck", "scratch"],
+      "scatter": {
+        "scareRadius": 2.6,
+        "burstSpeed": 5.4,
+        "fleeDistance": 3.2,
+        "settleSeconds": 0.35
+      }
+    },
+    "cat": {
+      "walkSpeed": 1.9,
+      "waitMin": 1.8,
+      "waitMax": 5.5,
+      "goalMinDist": 1.0,
+      "preferFar": false,
+      "idlePoses": ["sit", "sit", "lick", "stretch"]
+    }
+  }
+}

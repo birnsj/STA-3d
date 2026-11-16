@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import useResettableState from '../useResettableState.js'
+import { AMBIENT_CREATURES } from '../../data/adaptation/exploration/ambientCreatures.js'
 import { canEditEffects, setOverlayEmissive, setOverlayEmitColour } from '../../maps/effectsFiles.js'
 import { DEFAULT_AMBIENT_COLOUR, getTile, imageSize } from '../../maps/mapFormat.js'
 import {
@@ -801,9 +802,18 @@ export default function AssetProperties({
                   ? 'NPC'
                   : asset.id === 'area'
                     ? 'Area Label'
-                    : 'Erase Marker'}
+                    : asset.id === 'erase'
+                      ? 'Erase Marker'
+                      : MARKER_HELP[asset.id]
+                        ? AMBIENT_CREATURES.find((creature) => creature.markerKind === asset.id)?.label ?? asset.id
+                        : 'Erase Marker'}
         </p>
         <p className="me-text">{MARKER_HELP[asset.id]}</p>
+        {asset.kind === 'marker' && asset.id !== 'erase' && asset.id !== 'area' && asset.id !== 'npcs' && (
+          <p className="me-text">
+            Click a placed marker on the map to open its Properties (facing, roam). Erase Marker removes it.
+          </p>
+        )}
       </PropertySection>
     </div>
   )

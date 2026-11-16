@@ -16,8 +16,10 @@ import awareness from '../../data/adaptation/exploration/awareness.json'
 import factionData from '../../data/adaptation/factions.json'
 import { FACINGS, snapFacing } from '../../maps/facing.js'
 import { PERCEPTION_DEFAULTS, PERCEPTION_KEYS, RESPONSE_TYPES } from '../../maps/mapFormat.js'
+import { resolveAuthoredRoam } from '../../exploration/roam.js'
 import { listWaypointAnimations, waypointAnimationsForCharacter } from '../../maps/waypointAnimations.js'
 import { PropertySection } from './PropertySections.jsx'
+import RoamFields from './RoamFields.jsx'
 import WaypointAnimPreview from './WaypointAnimPreview.jsx'
 
 // The map editor's inspector for the selected NPC (mapFormat.js npcs): who it is (an authored character, never a copy),
@@ -172,11 +174,11 @@ function PatrolFields({
     ? (allAnims.find((entry) => entry.id === selected.animation)?.seconds ?? '')
     : ''
   return (
-    <PropertySection id="patrol" title="Patrol" defaultOpen={false}>
+    <PropertySection id="patrol" title="Waypoints" defaultOpen={false}>
       <p className="me-text">
         {patrol.length
           ? `${patrol.length} waypoint${patrol.length === 1 ? '' : 's'} (loops).`
-          : 'No patrol — stands at its post.'}
+          : 'No waypoints yet — use Edit Patrol to add a route.'}
       </p>
       <div className="me-inspector-actions">
         <button type="button" className={`me-button${editing ? ' is-primary' : ''}`} aria-pressed={editing} onClick={onToggleEdit}>
@@ -518,19 +520,26 @@ export default function NpcInspector({
         </div>
       </PropertySection>
       <PerceptionFields npc={npc} onChange={onChange} />
-      <PatrolFields
-        npc={npc}
-        editing={editingPatrol}
-        movingWaypoint={movingWaypoint}
-        selectedIndex={selectedWaypointIndex}
-        onToggleEdit={onTogglePatrolEdit}
-        onToggleMoveWaypoint={onToggleMoveWaypoint}
-        onSelectWaypoint={onSelectWaypoint}
-        onChangeWaypoint={onChangeWaypoint}
-        onReorderWaypoint={onReorderWaypoint}
-        onDeleteWaypoint={onDeleteWaypoint}
-        onClearPatrol={onClearPatrol}
+      <RoamFields
+        roam={resolveAuthoredRoam(npc.roam, { patrol: npc.patrol })}
+        profileId="human"
+        onChange={(roam) => onChange({ roam })}
       />
+      {resolveAuthoredRoam(npc.roam, { patrol: npc.patrol }).mode === 'waypointPatrol' && (
+        <PatrolFields
+          npc={npc}
+          editing={editingPatrol}
+          movingWaypoint={movingWaypoint}
+          selectedIndex={selectedWaypointIndex}
+          onToggleEdit={onTogglePatrolEdit}
+          onToggleMoveWaypoint={onToggleMoveWaypoint}
+          onSelectWaypoint={onSelectWaypoint}
+          onChangeWaypoint={onChangeWaypoint}
+          onReorderWaypoint={onReorderWaypoint}
+          onDeleteWaypoint={onDeleteWaypoint}
+          onClearPatrol={onClearPatrol}
+        />
+      )}
     </div>
   )
 }

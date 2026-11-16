@@ -1,4 +1,6 @@
 // Pure edits for the dev map editor; each returns a new map (or the same one when nothing changed).
+import { AMBIENT_CREATURES, ambientMarkerKinds } from '../data/adaptation/exploration/ambientCreatures.js'
+import { defaultRoamForCreature } from '../exploration/roam.js'
 import { getItemById } from '../rules/equipment.js'
 import { snapToGuideGrid } from '../components/maps/editorGrid.js'
 import { ITEM_CELL_PX, itemGridKey, snapItemPosition } from '../rules/itemGrid.js'
@@ -64,6 +66,11 @@ export function dependentsAt(map, position, objectDefinitions = []) {
   if (map.markers.playerStarts.some((marker) => same(marker, position))) found.push({ kind: 'playerStarts', label: 'player start' })
   if (map.markers.enemySpawns.some((marker) => same(marker, position))) found.push({ kind: 'enemySpawns', label: 'enemy spawn' })
   if ((map.markers.horseSpawns ?? []).some((marker) => same(marker, position))) found.push({ kind: 'horseSpawns', label: 'horse spawn' })
+  for (const creature of AMBIENT_CREATURES) {
+    if ((map.markers[creature.markerKind] ?? []).some((marker) => same(marker, position))) {
+      found.push({ kind: creature.markerKind, label: creature.label.toLowerCase() })
+    }
+  }
   if (destructibleAt(map, position)) found.push({ kind: 'destructible', label: 'destructible' })
   if (hazardRegionAt(map, position)) found.push({ kind: 'hazard', label: 'hazard' })
   if (objectDefinitions.some((definition) => definition.position[0] === position.x && definition.position[1] === position.y)) {
@@ -332,11 +339,21 @@ export function swapTilesWithObjects(map, a, b, objectDefinitions) {
   return { map: { ...swapped, objectPlacements: { ...(map.objectPlacements ?? {}), ...Object.fromEntries(carried) } }, carried }
 }
 
-// What stands on a tile that the editor can open an inspector for: { npc, markerKind ('playerStarts' | 'enemySpawns' | 'horseSpawns' | null),
+const CHARACTER_MARKER_KINDS = ['playerStarts', 'enemySpawns', 'horseSpawns', ...ambientMarkerKinds()]
+
+function characterMarkersWithout(map, position) {
+  return Object.fromEntries(CHARACTER_MARKER_KINDS.map((kind) => [kind, without(map.markers[kind] ?? [], position)]))
+}
+
+function mapCharacterMarkers(map, mapFn) {
+  return Object.fromEntries(CHARACTER_MARKER_KINDS.map((kind) => [kind, (map.markers[kind] ?? []).map(mapFn)]))
+}
+
+// What stands on a tile that the editor can open an inspector for: { npc, markerKind ('playerStarts' | 'enemySpawns' | 'horseSpawns' | ambient | null),
 // object }. An NPC standing on a start or spawn gives both.
 export function selectionAt(map, objectDefinitions, position) {
   const markerKind =
-    ['playerStarts', 'enemySpawns', 'horseSpawns'].find((kind) => (map.markers[kind] ?? []).some((marker) => same(marker, position))) ?? null
+    CHARACTER_MARKER_KINDS.find((kind) => (map.markers[kind] ?? []).some((marker) => same(marker, position))) ?? null
   const object = objectDefinitions.find((definition) => definition.position[0] === position.x && definition.position[1] === position.y) ?? null
   return { npc: npcAt(map, position), markerKind, object }
 }
@@ -383,11 +400,7 @@ export function selectionCandidates(map, objectDefinitions, position, { cellPx =
 
 // Whether anything the Move tool carries instead of the tile stands here: a player start, enemy spawn, NPC, area label
 // or objective marker.
-const characterMarkerLists = (map) => [
-  ...(map.markers.playerStarts ?? []),
-  ...(map.markers.enemySpawns ?? []),
-  ...(map.markers.horseSpawns ?? []),
-]
+const characterMarkerLists = (map) => CHARACTER_MARKER_KINDS.flatMap((kind) => map.markers[kind] ?? [])
 
 const standsAt = (map, position) =>
   [...characterMarkerLists(map), ...(map.npcs ?? []).map((npc) => npc.position)].some((other) => same(other, position))
@@ -399,20 +412,20 @@ export const hasMarkers = (map, position) =>
 export function moveMarkers(map, from, to) {
   if (same(from, to)) return { map }
   const standing = standsAt(map, from)
-  if (standing && getTile(map.tiles[to.y][to.x]).solid) return { error: 'Player starts, enemy spawns, horse spawns and NPCs stand on floor tiles.' }
-  if (standing && standsAt(map, to)) return { error: 'That tile already has a player start, enemy spawn, horse spawn or NPC.' }
+  if (standing && getTile(map.tiles[to.y][to.x]).solid) {
+    return { error: 'Player starts, enemy spawns, animal spawns and NPCs stand on floor tiles.' }
+  }
+  if (standing && standsAt(map, to)) {
+    return { error: 'That tile already has a player start, enemy spawn, animal spawn or NPC.' }
+  }
   if (areaAt(map, from) && areaAt(map, to)) return { error: 'That tile already has an area label.' }
   const shift = (position) => (same(position, from) ? to : position)
-  // A start or spawn keeps its facing when it moves.
+  // A start or spawn keeps its facing (and roam) when it moves.
   const shiftSpawn = (spawn) => (same(spawn, from) ? { ...spawn, x: to.x, y: to.y } : spawn)
   return {
     map: {
       ...map,
-      markers: {
-        playerStarts: map.markers.playerStarts.map(shiftSpawn),
-        enemySpawns: map.markers.enemySpawns.map(shiftSpawn),
-        horseSpawns: (map.markers.horseSpawns ?? []).map(shiftSpawn),
-      },
+      markers: mapCharacterMarkers(map, shiftSpawn),
       npcs: (map.npcs ?? []).map((npc) => ({ ...npc, position: shift(npc.position) })),
       areas: map.areas.map((area) => ({ ...area, position: shift(area.position) })),
       objectives: (map.objectives ?? []).map((objective) => (objective.position ? { ...objective, position: shift(objective.position) } : objective)),
@@ -439,42 +452,58 @@ export function setFacing(map, position, facing) {
     list.map((marker) => {
       if (!same(marker, position)) return marker
       if (facing !== null) return { ...marker, facing }
-      return { x: marker.x, y: marker.y }
+      const { facing: _drop, ...rest } = marker
+      return rest
     })
   return {
     ...withNpc,
-    markers: {
-      playerStarts: align(withNpc.markers.playerStarts),
-      enemySpawns: align(withNpc.markers.enemySpawns),
-      horseSpawns: align(withNpc.markers.horseSpawns ?? []),
-    },
+    markers: Object.fromEntries(
+      CHARACTER_MARKER_KINDS.map((kind) => [kind, align(withNpc.markers[kind] ?? [])]),
+    ),
   }
 }
 
-// kind: 'playerStarts' | 'enemySpawns' | 'horseSpawns'. Clicking a marker removes it; a tile holds one character marker.
+function defaultSpawnForKind(kind, position) {
+  const creature = AMBIENT_CREATURES.find((entry) => entry.markerKind === kind)
+  if (creature) return { ...position, roam: defaultRoamForCreature(creature) }
+  // Horses default idle (no roam field).
+  return { ...position }
+}
+
+// kind: 'playerStarts' | 'enemySpawns' | 'horseSpawns' | ambient marker kinds.
+// Clicking a marker removes it; a tile holds one character marker.
 export function toggleMarker(map, kind, position) {
   if (getTile(map.tiles[position.y][position.x]).solid) return map
   const current = map.markers[kind] ?? []
-  if (current.some((other) => same(other, position))) return { ...map, markers: { ...map.markers, [kind]: without(current, position) } }
-  const markers = {
-    playerStarts: without(map.markers.playerStarts, position),
-    enemySpawns: without(map.markers.enemySpawns, position),
-    horseSpawns: without(map.markers.horseSpawns ?? [], position),
+  if (current.some((other) => same(other, position))) {
+    return { ...map, markers: { ...map.markers, [kind]: without(current, position) } }
   }
-  return { ...map, markers: { ...markers, [kind]: [...(markers[kind] ?? []), position] } }
+  const markers = characterMarkersWithout(map, position)
+  return {
+    ...map,
+    markers: { ...map.markers, ...markers, [kind]: [...(markers[kind] ?? []), defaultSpawnForKind(kind, position)] },
+  }
+}
+
+/** Update roam (or other fields) on a spawn marker at a tile. */
+export function updateSpawnMarker(map, kind, position, changes) {
+  const list = map.markers[kind] ?? []
+  if (!list.some((marker) => same(marker, position))) return map
+  return {
+    ...map,
+    markers: {
+      ...map.markers,
+      [kind]: list.map((marker) => (same(marker, position) ? { ...marker, ...changes } : marker)),
+    },
+  }
 }
 
 export function eraseMarkers(map, position, { characters = true, markers = true } = {}) {
   return {
     ...map,
     areas: markers ? map.areas.filter((area) => !same(area.position, position)) : map.areas,
-    markers: characters
-      ? {
-          playerStarts: without(map.markers.playerStarts, position),
-          enemySpawns: without(map.markers.enemySpawns, position),
-          horseSpawns: without(map.markers.horseSpawns ?? [], position),
-        }
-      : map.markers,
+    // Spawn markers share the Characters layer lock with NPCs; areas use Markers.
+    markers: characters ? { ...map.markers, ...characterMarkersWithout(map, position) } : map.markers,
     npcs: characters ? (map.npcs ?? []).filter((npc) => !same(npc.position, position)) : (map.npcs ?? []),
   }
 }

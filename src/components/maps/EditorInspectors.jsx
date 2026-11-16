@@ -20,6 +20,7 @@ import {
   updateHazard,
   updateNpc,
   updatePatrolWaypoint,
+  updateSpawnMarker,
   updateTemplatePiece,
 } from '../../maps/mapEdits.js'
 import DestructibleInspector from './DestructibleInspector.jsx'
@@ -210,9 +211,26 @@ export default function EditorInspectors({
         <MarkerInspector
           marker={marker}
           defaultFacing={facingTowardCentre(map, marker)}
-          onFacing={(facing) => mutate('characters', () => setFacing(map, marker, facing))}
+          onFacing={(facing) => {
+            // Spawns live on the Characters visibility/lock layer (Markers is the Assets palette tab only).
+            if (!canEditLayer(layers, 'characters')) {
+              onStatus?.('NPCs / Characters layer is locked or hidden — unlock it to edit this marker.')
+              return
+            }
+            mutate('characters', () => setFacing(map, marker, facing))
+          }}
+          onRoam={(roam) => {
+            if (!canEditLayer(layers, 'characters')) {
+              onStatus?.('NPCs / Characters layer is locked or hidden — unlock it to edit this marker.')
+              return
+            }
+            mutate('characters', () => updateSpawnMarker(map, marker.kind, marker, { roam }))
+          }}
           onDelete={() => {
-            if (!canEditLayer(layers, 'characters')) return
+            if (!canEditLayer(layers, 'characters')) {
+              onStatus?.('NPCs / Characters layer is locked or hidden — unlock it to delete this marker.')
+              return
+            }
             edit(toggleMarker(map, marker.kind, marker))
             onMarkerCleared()
           }}

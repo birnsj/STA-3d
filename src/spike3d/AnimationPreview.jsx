@@ -2,6 +2,11 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { createContactShadow } from './contactShadow.js'
 import { makeIsoCamera, syncIsoCamera, syncIsoCameraFill } from './isoProjection.js'
+import { playClipSound } from '../audio/animationSounds.js'
+import { CatPreviewBody } from './CatPreviewBody.js'
+import { CAT_HEIGHT } from './CatModel.js'
+import { ChickenPreviewBody } from './ChickenPreviewBody.js'
+import { CHICKEN_HEIGHT } from './ChickenModel.js'
 import { HorseBody, HORSE_HEIGHT } from './HorseBody.js'
 import { ProceduralBody, PROCEDURAL_HEIGHT } from './ProceduralBody.js'
 import { resolveSpike3dAppearance } from './appearance.js'
@@ -90,7 +95,7 @@ export default function AnimationPreview({
   playing = true,
   progress = 0,
   appearance = null,
-  /** `humanoid` (default) or `horse` — remount via React key when this changes. */
+  /** `humanoid` (default), `horse`, `chicken`, or `cat` — remount via React key when this changes. */
   bodyKind = 'humanoid',
   lockedIso = false,
   loopOnce = false,
@@ -155,7 +160,10 @@ export default function AnimationPreview({
     scene.add(lightMarker)
 
     const isHorse = bodyKind === 'horse'
-    const HEIGHT = isHorse ? HORSE_HEIGHT : HUMANOID_HEIGHT
+    const isChicken = bodyKind === 'chicken'
+    const isCat = bodyKind === 'cat'
+    const isAmbientCreature = isChicken || isCat
+    const HEIGHT = isHorse ? HORSE_HEIGHT : isChicken ? CHICKEN_HEIGHT : isCat ? CAT_HEIGHT : HUMANOID_HEIGHT
     const PIVOT_Y = HEIGHT * 0.5
 
     const applyLightSettings = (next) => {
@@ -189,18 +197,24 @@ export default function AnimationPreview({
     const resolved = resolveSpike3dAppearance(appearance ?? {})
     const body = isHorse
       ? new HorseBody({ height: HEIGHT })
-      : new ProceduralBody({ height: HEIGHT, uniform: resolved.uniform, appearance: resolved })
+      : isChicken
+        ? new ChickenPreviewBody({ height: HEIGHT })
+        : isCat
+          ? new CatPreviewBody({ height: HEIGHT })
+          : new ProceduralBody({ height: HEIGHT, uniform: resolved.uniform, appearance: resolved })
     body.setViewerHoldOnce?.(true)
     body.setViewerLoopOnce?.(loopOnce)
     figure.add(body.root)
 
     const shadow = createContactShadow({
-      width: isHorse ? HEIGHT * 1.15 : HEIGHT * 0.55,
-      depth: isHorse ? HEIGHT * 0.65 : HEIGHT * 0.32,
+      width: isHorse ? HEIGHT * 1.15 : isAmbientCreature ? HEIGHT * 1.1 : HEIGHT * 0.55,
+      depth: isHorse ? HEIGHT * 0.65 : isAmbientCreature ? HEIGHT * 0.7 : HEIGHT * 0.32,
     })
     figure.add(shadow)
 
-    const skeleton = createSkeletonOverlay(body.model, { jointRadius: HEIGHT * 0.018 })
+    const skeleton = isAmbientCreature
+      ? { root: new THREE.Group(), setVisible() {}, dispose() {} }
+      : createSkeletonOverlay(body.model, { jointRadius: HEIGHT * 0.018 })
     scene.add(skeleton.root)
     skeleton.setVisible(showSkeleton)
 
@@ -387,11 +401,16 @@ export default function AnimationPreview({
 
     const api = {
       setClip(name) {
-        const next = name || 'idle'
+        const next = name || (isChicken ? 'chickenIdle' : isCat ? 'catIdle' : 'idle')
         if (ragdollActive) clearRagdoll()
-        if (next === currentClip) return
+        if (next === currentClip) {
+          playClipSound(next, { minGapMs: 40 })
+          return
+        }
         currentClip = next
         body.play(next, { force: true })
+        // Chicken / cat preview bodies play their own clip sounds inside play().
+        if (!isAmbientCreature) playClipSound(next, { minGapMs: 40 })
         lastSeek = -1
       },
       setPlaying(on) {
@@ -407,7 +426,7 @@ export default function AnimationPreview({
         body.seek(t)
       },
       setAppearance(next) {
-        if (isHorse) return
+        if (isHorse || isAmbientCreature) return
         // Viewer may pass a fully resolved appearance (incl. hair override); otherwise resolve from ids.
         const resolvedNext =
           next?.species && next?.gender && next?.hairStyle
@@ -457,7 +476,7 @@ export default function AnimationPreview({
         applyLightSettings(next)
       },
       async triggerRagdoll() {
-        if (isHorse) return
+        if (isHorse || isAmbientCreature) return
         if (ragdollActive && ragdoll && !ragdoll.settled) return
         if (ragdollActive) clearRagdoll()
         const world = await ensurePhysics()

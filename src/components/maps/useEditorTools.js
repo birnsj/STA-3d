@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ambientMarkerKinds, isAmbientMarkerKind } from '../../data/adaptation/exploration/ambientCreatures.js'
 import { MAX_AWAY_TEAM } from '../../exploration/awayTeam.js'
 import { challengeDefinitionsFor } from '../../exploration/challengeObjects.js'
 import { listAuthoredCharacters } from '../../character/authoredCharacters.js'
+
+const CHARACTER_SPAWN_KINDS = ['playerStarts', 'enemySpawns', 'horseSpawns', ...ambientMarkerKinds()]
+const isCharacterSpawnKind = (kind) => CHARACTER_SPAWN_KINDS.includes(kind)
 import {
   addPatrolWaypoint,
   areaAt,
@@ -113,11 +117,9 @@ function markerLayersAt(map, position) {
   const layers = new Set()
   if (
     (map.npcs ?? []).some((npc) => npc.position.x === position.x && npc.position.y === position.y) ||
-    [
-      ...(map.markers?.playerStarts ?? []),
-      ...(map.markers?.enemySpawns ?? []),
-      ...(map.markers?.horseSpawns ?? []),
-    ].some((marker) => marker.x === position.x && marker.y === position.y)
+    CHARACTER_SPAWN_KINDS.flatMap((kind) => map.markers?.[kind] ?? []).some(
+      (marker) => marker.x === position.x && marker.y === position.y,
+    )
   ) {
     layers.add('characters')
   }
@@ -258,7 +260,16 @@ export default function useEditorTools({
     const list = map.markers[selectedMarker.kind] ?? []
     const index = list.findIndex((marker) => marker.x === selectedMarker.x && marker.y === selectedMarker.y)
     if (index < 0) return null
-    const prefix = selectedMarker.kind === 'playerStarts' ? 'P' : selectedMarker.kind === 'enemySpawns' ? 'E' : 'H'
+    const prefix =
+      selectedMarker.kind === 'playerStarts'
+        ? 'P'
+        : selectedMarker.kind === 'enemySpawns'
+          ? 'E'
+          : selectedMarker.kind === 'horseSpawns'
+            ? 'H'
+            : isAmbientMarkerKind(selectedMarker.kind)
+              ? 'A'
+              : 'M'
     return { ...list[index], kind: selectedMarker.kind, label: `${prefix}${index + 1}` }
   }, [map, selectedMarker])
   const objectDefinitions = useMemo(() => challengeDefinitionsFor(map), [map])
@@ -542,9 +553,7 @@ export default function useEditorTools({
   const applyCandidate = (candidate, position) => {
     setSelectedNpcId(candidate?.kind === 'npc' ? candidate.npc.id : null)
     setSelectedMarker(
-      candidate?.kind === 'playerStarts' || candidate?.kind === 'enemySpawns' || candidate?.kind === 'horseSpawns'
-        ? { kind: candidate.kind, x: position.x, y: position.y }
-        : null,
+      isCharacterSpawnKind(candidate?.kind) ? { kind: candidate.kind, x: position.x, y: position.y } : null,
     )
     setSelectedObjectId(candidate?.kind === 'object' ? candidate.object.id : null)
     setSelectedDestructibleId(candidate?.kind === 'destructible' ? candidate.destructible.id : null)
@@ -557,11 +566,16 @@ export default function useEditorTools({
       setMovingWaypoint(false)
     }
     // Board pick / Delete target: flip Assets + Layers to the content's layer.
-    const pickLayer =
-      candidate?.layer ||
-      (candidate?.kind === 'templatePiece' ? layerOfTemplatePiece(candidate.templatePiece?.pieceId) : null) ||
-      layerOfSelection(candidate?.kind)
-    if (pickLayer) ensureActiveLayer(pickLayer)
+    // Spawn markers stay on the Markers palette (not Characters / NPC tool).
+    if (isCharacterSpawnKind(candidate?.kind)) {
+      ensureActiveLayer('markers')
+    } else {
+      const pickLayer =
+        candidate?.layer ||
+        (candidate?.kind === 'templatePiece' ? layerOfTemplatePiece(candidate.templatePiece?.pieceId) : null) ||
+        layerOfSelection(candidate?.kind)
+      if (pickLayer) ensureActiveLayer(pickLayer)
+    }
   }
 
   // A click with no marker tool held (Place Tiles and Move off): select what stands on the tile for editing.
@@ -580,16 +594,29 @@ export default function useEditorTools({
       applyCandidate(null, position)
       return
     }
-    // A click on a drawn item selects that item. The floor tile or crate under the same pointer is a different layer
-    // entry and used to win when Ground was active, or tie with the item when Furniture was, so the box behind the
-    // pointer was selected instead. Lock and hide still apply: a locked furniture layer has already dropped the item.
+    // Spawns / NPCs share a cell with the floor tile (and often furniture). First click always takes the spawn/NPC;
+    // further clicks cycle (Move already prefers markers the same way).
+    const characterCandidates = editable.filter(
+      (candidate) => candidate.kind === 'npc' || isCharacterSpawnKind(candidate.kind),
+    )
+    const isCharacterSelected = characterCandidates.some((candidate) => {
+      if (candidate.kind === 'npc') return candidate.npc.id === selectedNpcId
+      return selectedMarker?.kind === candidate.kind && selectedMarker.x === position.x && selectedMarker.y === position.y
+    })
+    if (characterCandidates.length && !isCharacterSelected) {
+      applyCandidate(characterCandidates[0], position)
+      return
+    }
     const drawnItem = editable.find((candidate) => candidate.kind === 'groundItem' || candidate.kind === 'templatePiece')
-    if (boardPoint && drawnItem) {
+    if (boardPoint && drawnItem && !characterCandidates.length) {
       applyCandidate(drawnItem, position)
       return
     }
     const priority = selectionPriority(layers?.active)
     const ranked = [...editable].sort((a, b) => {
+      const aChar = a.kind === 'npc' || isCharacterSpawnKind(a.kind)
+      const bChar = b.kind === 'npc' || isCharacterSpawnKind(b.kind)
+      if (aChar !== bChar) return aChar ? -1 : 1
       const ai = priority.indexOf(a.layer)
       const bi = priority.indexOf(b.layer)
       return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi)
@@ -602,7 +629,7 @@ export default function useEditorTools({
       if (candidate.kind === 'hazard') return candidate.hazard.id === selectedHazardId
       if (candidate.kind === 'groundItem') return candidate.groundItem.id === selectedGroundItemId
       if (candidate.kind === 'templatePiece') return candidate.templatePiece.id === selectedTemplatePieceId
-      if (candidate.kind === 'playerStarts' || candidate.kind === 'enemySpawns' || candidate.kind === 'horseSpawns') {
+      if (isCharacterSpawnKind(candidate.kind)) {
         return selectedMarker?.kind === candidate.kind && selectedMarker.x === position.x && selectedMarker.y === position.y
       }
       return false
@@ -844,8 +871,12 @@ export default function useEditorTools({
             `${blocked === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`,
           )
         }
-        const markerLayer = markerLayers[0] ?? 'characters'
-        ensureActiveLayer(markerLayer)
+        // Spawn markers → Markers palette; area labels → Markers; NPCs alone → Characters.
+        const onlySpawns =
+          markerLayers.includes('characters') &&
+          !npcAt(map, position) &&
+          CHARACTER_SPAWN_KINDS.some((kind) => (map.markers[kind] ?? []).some((m) => m.x === position.x && m.y === position.y))
+        ensureActiveLayer(onlySpawns || markerLayers.includes('markers') ? 'markers' : markerLayers[0] ?? 'characters')
         selectAt(position, boardPoint)
         setMoveFrom({
           x: position.x,
@@ -1009,15 +1040,39 @@ export default function useEditorTools({
         placeholder: 'e.g. Tool Shed',
         removeLabel: current ? 'Remove' : null,
       }).then((name) => name !== null && edit(setAreaLabel(map, position, name)))
-    } else if (tool === 'playerStarts' || tool === 'enemySpawns' || tool === 'horseSpawns') {
+    } else if (isCharacterSpawnKind(tool)) {
       if (!layerAllowsTool('characters')) return setStatus('NPCs / Characters layer is locked or hidden.')
+      const standingKind = CHARACTER_SPAWN_KINDS.find((kind) =>
+        (map.markers[kind] ?? []).some((marker) => marker.x === position.x && marker.y === position.y),
+      )
+      if (standingKind) {
+        // Click any existing spawn to edit it (even if another spawn brush is held). Erase / Delete removes it.
+        setSelectedNpcId(null)
+        setSelectedObjectId(null)
+        setSelectedDestructibleId(null)
+        setSelectedHazardId(null)
+        setSelectedGroundItemId(null)
+        setSelectedTemplatePieceId(null)
+        setSelectedMarker({ kind: standingKind, x: position.x, y: position.y })
+        ensureActiveLayer('markers')
+        setStatus('Editing marker — Properties tab (facing, roam). Erase Marker or Delete removes it.')
+        return
+      }
       const list = map.markers[tool] ?? []
-      const exists = list.some((marker) => marker.x === position.x && marker.y === position.y)
-      if (tool === 'playerStarts' && !exists && list.length >= MAX_AWAY_TEAM) {
+      if (tool === 'playerStarts' && list.length >= MAX_AWAY_TEAM) {
         setStatus(`A map holds ${MAX_AWAY_TEAM} player starts.`)
         return
       }
       edit(toggleMarker(map, tool, position))
+      setSelectedNpcId(null)
+      setSelectedObjectId(null)
+      setSelectedDestructibleId(null)
+      setSelectedHazardId(null)
+      setSelectedGroundItemId(null)
+      setSelectedTemplatePieceId(null)
+      setSelectedMarker({ kind: tool, x: position.x, y: position.y })
+      ensureActiveLayer('markers')
+      setStatus('Placed marker — Properties tab (facing, roam).')
     } else {
       edit(toggleMarker(map, tool, position))
     }
@@ -1292,10 +1347,11 @@ export default function useEditorTools({
       if (at >= 0) paintTemplateCycleRef.current = at
     } else if (next?.startsWith('inventory:') || next?.startsWith('destructible:') || next === 'hazard' || next === 'eraseHazard') {
       ensureActiveLayer('furniture')
-    } else if (next === 'npcs' || next === 'playerStarts' || next === 'enemySpawns' || next === 'horseSpawns') {
+    } else if (next === 'npcs') {
       ensureActiveLayer('characters')
-    } else if (next === 'area' || next === 'erase') {
-      ensureActiveLayer(next === 'erase' ? 'characters' : 'markers')
+    } else if (isCharacterSpawnKind(next) || next === 'area' || next === 'erase') {
+      // Keep the Markers palette open when switching spawn / erase tools.
+      ensureActiveLayer('markers')
     } else if (next === 'eraseFloor') {
       ensureActiveLayer('ground')
     } else if (next === 'eraseStructure') {

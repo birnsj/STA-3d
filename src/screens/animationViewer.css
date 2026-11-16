@@ -235,6 +235,11 @@
   font-weight: 600;
 }
 
+.av-ragdoll-field .me-select {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
 .av-ragdoll-field input[type='range'] {
   width: 100%;
   margin: 0;

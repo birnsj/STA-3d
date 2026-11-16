@@ -25,6 +25,7 @@ import { HAZARD_FRAMES, hazardStrip } from './environmentArt.js'
 import { EDITOR_ITEM_DRAG_TYPE } from './editorItemDrag.js'
 import { tileThumbTitle, templatePieceThumbTitle } from './assetThumbTitle.js'
 import { loadThumbScale, saveThumbScale, THUMB_SCALES, thumbColsForScale } from './editorThumbScale.js'
+import { AMBIENT_CREATURES } from '../../data/adaptation/exploration/ambientCreatures.js'
 import TemplatePieceThumbnail from './TemplatePieceThumbnail.jsx'
 import TileThumbnail from './TileThumbnail.jsx'
 
@@ -39,6 +40,11 @@ const MARKER_TOOLS = [
   { id: 'playerStarts', label: 'Player Start', swatch: 'player' },
   { id: 'enemySpawns', label: 'Enemy Spawn', swatch: 'enemy' },
   { id: 'horseSpawns', label: 'Horse Spawn', swatch: 'horse' },
+  ...AMBIENT_CREATURES.map((creature) => ({
+    id: creature.markerKind,
+    label: creature.label,
+    swatch: creature.swatch ?? 'npc',
+  })),
   { id: 'npcs', label: 'NPC', swatch: 'npc' },
   { id: 'area', label: 'Area Label', swatch: 'area' },
   { id: 'erase', label: 'Erase Marker', swatch: 'erase' },

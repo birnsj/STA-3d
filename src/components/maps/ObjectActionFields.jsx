@@ -5,6 +5,7 @@ import attributeData from '../../data/source/attributes.json'
 import disciplineData from '../../data/source/disciplines.json'
 import { CHANGE_OPS, flagValueText, parseFlagValue } from '../../exploration/missionFlags.js'
 import { RESPONSE_TYPES } from '../../maps/mapFormat.js'
+import { listAnimationSoundEvents } from '../../spike3d/animationSoundSettings.js'
 import { EFFECT_TYPES, getEffectType, OUTCOME_LISTS } from '../../world/objectAuthoring.js'
 import IdInput from './IdInput.jsx'
 import EditorSelect from './EditorSelect.jsx'
@@ -464,6 +465,7 @@ const COMBAT_COSTS = [
   { id: 'major', label: 'Major action' },
   { id: 'minor', label: 'Minor action' },
 ]
+const SOUND_EVENTS = listAnimationSoundEvents().map((ev) => ({ id: ev.id, label: ev.label }))
 
 export default function ObjectActionFields({ action, object, onChange, onRename }) {
   const set = (changes) => onChange(withoutEmpty({ ...action, ...changes }))
@@ -507,7 +509,20 @@ export default function ObjectActionFields({ action, object, onChange, onRename 
           In combat
           <Choice label="In combat" value={action.actionCost?.combat} options={COMBAT_COSTS} blank={action.routine ? 'Minor (default)' : 'Major (default)'} onChange={(combat) => set({ actionCost: withoutEmpty({ ...action.actionCost, combat }) })} />
         </label>
+        <Field label="Sound (plays when attempted)">
+          <Choice
+            label="Sound"
+            value={action.sound}
+            options={SOUND_EVENTS.filter((ev) => ev.id)}
+            blank="None"
+            onChange={(sound) => set({ sound })}
+          />
+        </Field>
       </div>
+      <p className="ce-text">
+        Object / interaction SFX go here. Weapon fire (phaser, disruptor) stays on the weapon&apos;s attackSound; body
+        hits and falls are set per clip in the Animation Viewer.
+      </p>
 
       <span className="ce-heading">Offered when</span>
       <div className="ce-row">

@@ -1,0 +1,24 @@
+{
+  "creatures": [
+    {
+      "id": "chicken",
+      "label": "Chicken Spawn",
+      "markerKind": "chickenSpawns",
+      "profileId": "chicken",
+      "defaultRoam": { "mode": "radiusWander", "radius": 3 },
+      "actor": "chicken",
+      "mountable": false,
+      "swatch": "chicken"
+    },
+    {
+      "id": "cat",
+      "label": "Cat Spawn",
+      "markerKind": "catSpawns",
+      "profileId": "cat",
+      "defaultRoam": { "mode": "radiusWander", "radius": 4 },
+      "actor": "cat",
+      "mountable": false,
+      "swatch": "cat"
+    }
+  ]
+}

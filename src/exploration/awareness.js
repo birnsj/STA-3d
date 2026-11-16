@@ -146,6 +146,8 @@ export function createNpc(config, character = null) {
         waitLeft: null,
       }
     : null
+  // Authored roam (mapFormat); legacy patrol alone ⇒ waypointPatrol at runtime via resolveAuthoredRoam.
+  const roam = config.roam && typeof config.roam === 'object' ? { ...config.roam } : null
   return {
     id: config.id,
     name: config.name ?? character?.name ?? config.id,
@@ -168,6 +170,8 @@ export function createNpc(config, character = null) {
     heading,
     home: { position, heading },
     patrol,
+    roam,
+    roamRuntime: null,
     // Presentation: optional idle fidget while waiting at a patrol waypoint (NPCController / waypointAnimations.js).
     waypointAnim: null,
     moving: false,

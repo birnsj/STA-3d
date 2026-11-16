@@ -17,6 +17,7 @@ import {
   whileUnseen,
 } from '../exploration/awareness.js'
 import { distance, planRoute, RADIUS, slide } from '../exploration/navigation.js'
+import { resolveAuthoredRoam, tickRoam, walkSpeedFor } from '../exploration/roam.js'
 import { getSpriteAnimation } from '../rules/appearance.js'
 import { isDefeated } from '../rules/personalCondition.js'
 import { tickWaypointAnim } from '../maps/waypointAnimRuntime.js'
@@ -313,12 +314,67 @@ export class NPCController extends CharacterController {
       look = headingTo(npc.position, glance.position)
       glance = glance.timeLeft - seconds > 0 ? { ...glance, timeLeft: glance.timeLeft - seconds } : null
     }
+    const authoredRoam = resolveAuthoredRoam(npc.roam, {
+      patrol: patrol?.points?.length
+        ? patrol.points.map((point) => ({
+            at: point.position,
+            wait: point.wait,
+            facing: point.facing != null ? (point.facing * 180) / Math.PI : null,
+            animation: point.animation,
+            animationDuration: point.animationDuration,
+            animationLoop: point.animationLoop,
+          }))
+        : null,
+    })
+    const patrolWalkSpeed = walkSpeedFor('human', authoredRoam.speed)
+    let roamRuntime = npc.roamRuntime
+
     if (!look && !goal && !investigation) {
-      if (patrol) {
+      if (authoredRoam.mode === 'radiusWander') {
+        const result = tickRoam({
+          home: npc.home,
+          map,
+          profileId: 'human',
+          roam: authoredRoam,
+          runtime: roamRuntime,
+          position: npc.position,
+          heading: npc.heading,
+          seconds,
+        })
+        roamRuntime = result.roamRuntime
+        const clearedRoam = keepClear(map, result.position, [...members, ...others.filter((other) => !isDefeated(other.condition))])
+        let position = clearedRoam.position
+        let heading = result.heading
+        let moving = result.moving
+        const pushed = Boolean(clearedRoam.pushedFrom) && !result.moving
+        if (pushed) {
+          heading = turnToward(heading, headingTo(position, clearedRoam.pushedFrom), seconds)
+          moving = true
+        } else if (result.heading != null) {
+          heading = turnToward(npc.heading, result.heading, seconds)
+        }
+        return {
+          ...npc,
+          position,
+          heading,
+          moving,
+          pushed,
+          path: [],
+          pathGoal: null,
+          stuck: { best: Infinity, seconds: 0 },
+          patrol,
+          roamRuntime,
+          glance,
+          suspicion,
+          investigation,
+          waypointAnim: null,
+        }
+      }
+      if (patrol && authoredRoam.mode !== 'idle') {
         const point = patrol.points[patrol.index]
         if (distance(npc.position, point.position) > MOVE.arriveDistance) {
           goal = point.position
-          speed = MOVE.patrolSpeed
+          speed = patrolWalkSpeed
         } else {
           const starting = patrol.waitLeft == null
           const waitLeft = (starting ? point.wait : patrol.waitLeft) - seconds
@@ -328,7 +384,7 @@ export class NPCController extends CharacterController {
         }
       } else if (distance(npc.position, npc.home.position) > MOVE.arriveDistance) {
         goal = npc.home.position
-        speed = MOVE.patrolSpeed
+        speed = patrolWalkSpeed
       } else {
         look = npc.home.heading
       }
@@ -359,7 +415,22 @@ export class NPCController extends CharacterController {
     } else if (look !== null) {
       heading = turnToward(heading, look, seconds)
     }
-    return { ...npc, position, heading, moving, pushed, path, pathGoal, stuck, patrol, glance, suspicion, investigation, waypointAnim }
+    return {
+      ...npc,
+      position,
+      heading,
+      moving,
+      pushed,
+      path,
+      pathGoal,
+      stuck,
+      patrol,
+      roamRuntime: authoredRoam.mode === 'radiusWander' ? roamRuntime : null,
+      glance,
+      suspicion,
+      investigation,
+      waypointAnim,
+    }
   }
 
   // Exploration board: optional pose while a patrol waypoint animation is active (falls back to idle fidgets / gait).

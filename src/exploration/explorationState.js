@@ -13,6 +13,7 @@ import { clampSimulationDelta, createNpc, createWorld, emitNoise, getNpcs, isHos
 import { tickWorld } from './awarenessTick.js'
 import { applyScenarioTiles, attemptChallenge, challengeFor, createScenario, INTERACT_RANGE, withMap } from './challengeObjects.js'
 import { combatAction, endCombat, MODE, requestCombat, startCombat } from './combatLink.js'
+import { createAmbientState, tickAmbientAnimals } from './ambientAnimals.js'
 import {
   createMountState,
   dismountAll,
@@ -23,6 +24,7 @@ import {
   clearPendingMountClaims,
   syncMountAfterParty,
   tickRideAnims,
+  tickUnmountedHorseRoam,
   togglePartyMount,
 } from './mount.js'
 import { canAct, createPartyState, getMembers, partyReducer } from './partyControl.js'
@@ -91,6 +93,7 @@ export function npcConfigsFor(map) {
       name: npc.name || null,
       position: [npc.position.x, npc.position.y],
       ...(npc.patrol?.length ? { patrol: patrolForRuntime(npc.patrol) } : { patrol: undefined }),
+      ...(npc.roam ? { roam: npc.roam } : {}),
       ...(npc.perception ? { perception: npc.perception } : {}),
     }))
   }
@@ -155,6 +158,8 @@ export function createExplorationState(map, characters, seed = 0, { enemiesActiv
     ...seeded,
     // Prototype outdoor mount (mount.js): null on indoor maps.
     mount: createMountState(worldMap, seeded.party),
+    // Ambient creatures (chickens, …) from ambientCreatures registry markers.
+    ambient: createAmbientState(worldMap),
     hazardClock: 0,
     // The last challenge attempt, for the interaction panel (attemptChallenge).
     lastTask: null,
@@ -283,20 +288,21 @@ function reduceExploration(state, action) {
       const tick = { ...action, seconds }
       const party = partyReducer(state.party, tick)
       // The clock still runs (challenge-object locks expire on it); only the NPCs stand still.
+      const afterParty = (base) => {
+        const map = base.world?.map
+        return tickAmbientAnimals(
+          tickUnmountedHorseRoam(tickRideAnims(tickHazards(syncMountAfterParty(base), seconds)), map, seconds),
+          map,
+          seconds,
+        )
+      }
       if (state.enemiesActive === false) {
         return endConversationOutOfRange(
-          tickRideAnims(
-            tickHazards(
-              syncMountAfterParty(perceive({ ...state, party, world: { ...state.world, time: state.world.time + seconds } })),
-              seconds,
-            ),
-          ),
+          afterParty(perceive({ ...state, party, world: { ...state.world, time: state.world.time + seconds } })),
         )
       }
       const next = requestCombat(
-        tickRideAnims(
-          tickHazards(syncMountAfterParty(perceive({ ...state, party, world: tickWorld(state.world, party, seconds) })), seconds),
-        ),
+        afterParty(perceive({ ...state, party, world: tickWorld(state.world, party, seconds) })),
       )
       // A fight breaking out ends any conversation.
       return next.mode === MODE.COMBAT && next.conversation ? { ...next, conversation: null } : endConversationOutOfRange(next)

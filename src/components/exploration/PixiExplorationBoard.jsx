@@ -1,6 +1,7 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { controllerFor } from '../../actors/controllers.js'
 import { getNpcs, isHostile } from '../../exploration/awareness.js'
+import { getAmbientAnimals } from '../../exploration/ambientAnimals.js'
 import { getHorses, rideAttachBlend } from '../../exploration/mount.js'
 import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from '../../exploration/mountConstants.js'
 import { getMembers, isSelected } from '../../exploration/partyControl.js'
@@ -660,13 +661,16 @@ export default function PixiExplorationBoard(props) {
       rider?.moving ||
         rider?.running ||
         pace > 0.15 ||
-        (rider?.order?.type === 'point' && (rider.path?.length ?? 0) > 0),
+        (rider?.order?.type === 'point' && (rider.path?.length ?? 0) > 0) ||
+        (!rider && (horse.moving || horse.gait === 'walk')),
     )
     let gait = 'idle'
     if (moving) {
       if (rider?.running || pace >= rideRunAt) gait = 'run'
       else if (pace >= rideTrotAt) gait = 'trot'
       else gait = 'walk'
+    } else if (!rider && horse.gait === 'walk') {
+      gait = 'walk'
     }
     return {
       id: `horse:${horse.id}`,
@@ -678,6 +682,15 @@ export default function PixiExplorationBoard(props) {
       coat: horse.coat || 'bay',
     }
   })
+  const ambientList = exploreState?.mode === 'combat' ? [] : getAmbientAnimals(exploreState)
+  const ambientPoses = ambientList.map((animal) => ({
+    id: `ambient:${animal.id}`,
+    kind: animal.actor || 'chicken',
+    position: animal.position,
+    facing: { x: Math.cos(animal.heading), y: Math.sin(animal.heading) },
+    gait: animal.gait === 'run' ? 'run' : animal.gait === 'walk' || animal.moving ? 'walk' : 'idle',
+    idlePose: animal.idlePose ?? null,
+  }))
   // X clip overlay: people + horses (mount ring figures use a different id; skip them).
   figuresDebugRef.current = [
     ...figures.filter((figure) => !figure.mount),
@@ -736,6 +749,7 @@ export default function PixiExplorationBoard(props) {
         }
       }),
     ...horsePoses,
+    ...ambientPoses,
   ]
   const targetsRef = useRef(targets)
   const lootRef = useRef(groundLoot)

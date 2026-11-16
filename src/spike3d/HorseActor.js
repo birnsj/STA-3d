@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { playClipSound } from '../audio/animationSounds.js'
 import { clearLiveClip, reportLiveClip } from '../dev/animClipDebug.js'
 import { getBoardSunSettings } from './boardSunSettings.js'
 import { HORSE_CONTACT_SHADOW_FILL_OPACITY, createContactShadow } from './contactShadow.js'
@@ -262,6 +263,7 @@ export class HorseActor {
       if (!bothPace || fromStopOrIdle || this._gaitHold >= 0.28) {
         this._gait = wantClip
         this._gaitHold = 0
+        playClipSound(wantClip, { minGapMs: 80 })
       }
     } else {
       this._gaitHold = 0

@@ -198,7 +198,16 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
 
   // Properties opens on Selection whenever something is selected or an Assets tool is active, and on Map otherwise; the
   // Map tab can still be picked by hand until the selection or tool changes. Worked out while rendering.
-  const selectionNow = [selection.npc, selection.object, selection.marker, selection.destructible, selection.hazard, selection.groundItem, tool]
+  const selectionNow = [
+    selection.npc,
+    selection.object,
+    selection.marker,
+    selection.destructible,
+    selection.hazard,
+    selection.groundItem,
+    selection.templatePiece,
+    tool,
+  ]
   const wantsMapTab = !(hasBoardSelection(selection) || hasAssetSelection(tool))
   const [showMapTab, setShowMapTab] = useState(wantsMapTab)
   const [selectionSeen, setSelectionSeen] = useState(selectionNow)
@@ -208,6 +217,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     setSelectionSeen(selectionNow)
     setShowMapTab(wantsMapTab)
   }
+  // Board marker/NPC picks must leave the Map tab even when the Assets tool was already keeping Properties open.
+  if (selection.marker && showMapTab) setShowMapTab(false)
 
   const onGenerateCard = () => {
     setShowMapTab(true)

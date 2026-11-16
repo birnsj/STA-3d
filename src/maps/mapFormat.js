@@ -47,9 +47,13 @@
 // Fractional x/y are allowed for the 32×32 drop grid. name overrides the hover label; pickable/visible default true and
 // are left out on disk when true. on: { tile: [x, y] } or { placement: id } when elevated on a support surface; omitted
 // on the floor. Entries missing id get one on parse. Runtime drops never write back into the map file.
-// markers.horseSpawns: [x, y] or [x, y, facing] — Horse Spawn markers (Markers palette). Play only spawns
-// mounts from these (exploration/mount.js); empty means no horse. Facing is
-// degrees (0 = +x), same as player starts. Legacy top-level `horses: [{ id, position, facing? }]` is migrated on load.
+// markers.horseSpawns: [x, y], [x, y, facing], or { position:[x,y]|x,y, facing?, roam? } — Horse Spawn markers.
+// Play only spawns mounts from these (exploration/mount.js); empty means no horse. Facing degrees (0 = +x).
+// roam: optional { mode: idle|radiusWander|waypointPatrol, radius?, speed? }; omitted/idle = stand at spawn.
+// Legacy top-level `horses: [{ id, position, facing? }]` is migrated on load.
+// markers.chickenSpawns (and later ambientCreatures marker kinds): same spawn shapes; default roam is species-specific
+// (chickens wander). See data/adaptation/exploration/ambientCreatures.json.
+// npcs[].roam: optional { mode, radius?, speed? }; when omitted, non-empty patrol ⇒ waypointPatrol, else idle.
 // templatePiecePlacements: [{ id, pieceId (templatePieces.json), position: [x, y], rotation?, scale?, order, autoPaint? }] —
 // modular Starship-look overlays (not tiles). Sit on the deck underlay; pathing/sight use underlay tiles. Pieces snap to
 // the editor guide grid. rotation degrees in 90° steps (omit when 0); scale (omit when 1, UI locks to 1); order (lower
@@ -66,6 +70,8 @@
 // on disk the tiles are rows of catalogue symbols, rotated lists the rotated tiles, and positions are [x, y].
 import { emptyMusic, normalizeMusic, serializeMusic } from '../audio/musicCues.js'
 import awareness from '../data/adaptation/exploration/awareness.json'
+import { ambientMarkerKinds } from '../data/adaptation/exploration/ambientCreatures.js'
+import { parseRoam, serializeRoam } from '../exploration/roam.js'
 import catalogue from '../data/adaptation/maps/tiles.json'
 import destructibleData from '../data/adaptation/world/destructibles.json'
 import hazardData from '../data/adaptation/world/hazards.json'
@@ -250,9 +256,52 @@ export function schemaVersionFor(map) {
 const toPosition = ([x, y]) => ({ x, y })
 const fromPosition = ({ x, y }) => [x, y]
 // A player start or enemy spawn is [x, y] on disk, or [x, y, facing] once the editor has turned it (degrees, 0 = +x).
+// Horse / ambient creature spawns may also be objects with optional roam: { position:[x,y] or x,y, facing?, roam? }.
 const toSpawn = ([x, y, facing]) => (facing == null ? { x, y } : { x, y, facing: Number(facing) })
 const fromSpawn = ({ x, y, facing }) => (facing == null ? [x, y] : [x, y, Math.round(facing)])
+
+function toRoamSpawn(raw) {
+  if (Array.isArray(raw)) return toSpawn(raw)
+  if (!raw || typeof raw !== 'object') return null
+  let x
+  let y
+  if (Array.isArray(raw.position) && raw.position.length >= 2) {
+    x = raw.position[0]
+    y = raw.position[1]
+  } else if (Number.isFinite(raw.x) && Number.isFinite(raw.y)) {
+    x = raw.x
+    y = raw.y
+  } else return null
+  const spawn = { x, y }
+  const facing = raw.facing != null ? Number(raw.facing) : Array.isArray(raw.position) ? raw.position[2] : null
+  if (facing != null && Number.isFinite(facing)) spawn.facing = facing
+  const roam = parseRoam(raw.roam)
+  if (roam) spawn.roam = roam
+  return spawn
+}
+
+function fromRoamSpawn(spawn, { omitIdleRoam = true } = {}) {
+  const roam = serializeRoam(spawn.roam, { omitIdle: omitIdleRoam })
+  if (!roam) return fromSpawn(spawn)
+  const record = { position: fromPosition({ x: spawn.x, y: spawn.y }), roam }
+  if (spawn.facing != null && Number.isFinite(spawn.facing)) record.facing = Math.round(spawn.facing)
+  return record
+}
+
+function assertSpawnEntry(value, path) {
+  if (Array.isArray(value)) {
+    assertTuple(value, path, [2, 3])
+    return
+  }
+  if (!value || typeof value !== 'object') invalidMap(path, 'expected a position tuple or spawn object')
+  if (Array.isArray(value.position)) assertTuple(value.position, `${path}.position`, [2, 3])
+  else if (!(Number.isFinite(value.x) && Number.isFinite(value.y))) {
+    invalidMap(path, 'expected position tuple or x,y on spawn object')
+  }
+}
+
 const isInside = (width, height, { x, y }) => x >= 0 && y >= 0 && x < width && y < height
+const AMBIENT_MARKER_KINDS = ambientMarkerKinds()
 
 function invalidMap(path, message) {
   throw new Error(`Invalid map ${path}: ${message}`)
@@ -295,8 +344,11 @@ function assertMapFileStructure(file) {
     })
   })
   ;(file.rotated ?? []).forEach((position, index) => assertTuple(position, `rotated[${index}]`, [2], { integers: true }))
-  ;['playerStarts', 'enemySpawns', 'horseSpawns'].forEach((kind) => {
+  ;['playerStarts', 'enemySpawns'].forEach((kind) => {
     ;(file.markers?.[kind] ?? []).forEach((position, index) => assertTuple(position, `markers.${kind}[${index}]`, [2, 3]))
+  })
+  ;['horseSpawns', ...AMBIENT_MARKER_KINDS].forEach((kind) => {
+    ;(file.markers?.[kind] ?? []).forEach((entry, index) => assertSpawnEntry(entry, `markers.${kind}[${index}]`))
   })
   ;(file.areas ?? []).forEach((area, index) => assertTuple(area?.position, `areas[${index}].position`))
   ;(file.npcs ?? []).forEach((npc, index) => {
@@ -355,7 +407,7 @@ function assertMapFileStructure(file) {
 
 /** Legacy file.horses → marker spawns (same facing rules as player starts). */
 function horseSpawnsFromFile(file, inside) {
-  const fromMarkers = (file.markers?.horseSpawns ?? []).map(toSpawn).filter(inside)
+  const fromMarkers = (file.markers?.horseSpawns ?? []).map(toRoamSpawn).filter((spawn) => spawn && inside(spawn))
   if (fromMarkers.length) return fromMarkers
   return (file.horses ?? [])
     .map((raw) => {
@@ -366,6 +418,10 @@ function horseSpawnsFromFile(file, inside) {
       return spawn
     })
     .filter(Boolean)
+}
+
+function ambientSpawnsFromFile(file, kind, inside) {
+  return (file.markers?.[kind] ?? []).map(toRoamSpawn).filter((spawn) => spawn && inside(spawn))
 }
 
 export const isRotated = (map, { x, y }) => Boolean(map.rotated?.[y]?.[x])
@@ -405,7 +461,12 @@ function blankFields(name, width, height, tiles) {
     floorUnder: {},
     stackOver: {},
     areas: [],
-    markers: { playerStarts: [], enemySpawns: [], horseSpawns: [] },
+    markers: {
+      playerStarts: [],
+      enemySpawns: [],
+      horseSpawns: [],
+      ...Object.fromEntries(AMBIENT_MARKER_KINDS.map((kind) => [kind, []])),
+    },
     npcs: [],
     objectives: [],
     objects: null,
@@ -728,6 +789,8 @@ function parseNpc(raw, inside) {
   })
   const patrol = parsePatrol(raw.patrol, inside)
   if (patrol) npc.patrol = patrol
+  const roam = parseRoam(raw.roam)
+  if (roam) npc.roam = roam
   const perception = parsePerception(raw.perception)
   if (perception) npc.perception = perception
   return npc
@@ -740,9 +803,20 @@ function serializeNpc(npc) {
   if (npc.mustSurvive) record.mustSurvive = true
   if (npc.influenceRadius > 0) record.influenceRadius = npc.influenceRadius
   if (npc.patrol?.length) record.patrol = serializePatrol(npc.patrol)
+  // Omit roam when legacy patrol alone implies waypointPatrol with no speed/radius extras.
+  const roamRecord = serializeNpcRoam(npc)
+  if (roamRecord) record.roam = roamRecord
   const perception = npc.perception ? serializePerception(npc.perception) : null
   if (perception) record.perception = perception
   return record
+}
+
+function serializeNpcRoam(npc) {
+  const roam = npc.roam
+  if (!roam) return null
+  if (roam.mode === 'waypointPatrol' && npc.patrol?.length && roam.speed == null && roam.radius == null) return null
+  if (roam.mode === 'idle' && !npc.patrol?.length && roam.speed == null) return null
+  return serializeRoam(roam, { omitIdle: false })
 }
 const conditionList = (raw) => (Array.isArray(raw) ? raw.filter((condition) => condition?.flag) : [])
 const parseObjective = (raw, inside) => {
@@ -962,6 +1036,7 @@ export function parseMapFile(file, id) {
       playerStarts: (file.markers?.playerStarts ?? []).map(toSpawn).filter(inside),
       enemySpawns: (file.markers?.enemySpawns ?? []).map(toSpawn).filter(inside),
       horseSpawns: horseSpawnsFromFile(file, inside),
+      ...Object.fromEntries(AMBIENT_MARKER_KINDS.map((kind) => [kind, ambientSpawnsFromFile(file, kind, inside)])),
     },
     npcs: (file.npcs ?? []).filter((raw) => raw?.id != null).map((raw) => parseNpc(raw, inside)).filter((npc) => inside(npc.position)),
     objectives: (file.objectives ?? []).filter((raw) => raw?.id != null).map((raw) => parseObjective(raw, inside)),
@@ -1028,7 +1103,15 @@ export function serializeMap(map) {
     markers: {
       playerStarts: map.markers.playerStarts.map(fromSpawn),
       enemySpawns: map.markers.enemySpawns.map(fromSpawn),
-      ...(map.markers.horseSpawns?.length ? { horseSpawns: map.markers.horseSpawns.map(fromSpawn) } : {}),
+      ...(map.markers.horseSpawns?.length
+        ? { horseSpawns: map.markers.horseSpawns.map((spawn) => fromRoamSpawn(spawn, { omitIdleRoam: true })) }
+        : {}),
+      ...Object.fromEntries(
+        AMBIENT_MARKER_KINDS.filter((kind) => map.markers?.[kind]?.length).map((kind) => [
+          kind,
+          map.markers[kind].map((spawn) => fromRoamSpawn(spawn, { omitIdleRoam: false })),
+        ]),
+      ),
     },
     ...(map.npcs?.length ? { npcs: map.npcs.map(serializeNpc) } : {}),
     ...(map.objectives?.length ? { objectives: map.objectives.map(serializeObjective) } : {}),
@@ -1076,6 +1159,9 @@ export function resizeMap(map, width, height, { fill } = {}) {
       playerStarts: map.markers.playerStarts.filter(inside),
       enemySpawns: map.markers.enemySpawns.filter(inside),
       horseSpawns: (map.markers.horseSpawns ?? []).filter(inside),
+      ...Object.fromEntries(
+        AMBIENT_MARKER_KINDS.map((kind) => [kind, (map.markers?.[kind] ?? []).filter(inside)]),
+      ),
     },
     npcs: (map.npcs ?? [])
       .filter((npc) => inside(npc.position))

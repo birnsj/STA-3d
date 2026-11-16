@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { playSoundEvent } from '../../audio/uiSounds.js'
 import { getAttributeName, getDisciplineName } from '../../character/runtimeCharacter.js'
 import { getMembers } from '../../exploration/partyControl.js'
 import { MAX_MOMENTUM } from '../../rules/missionResources.js'
@@ -226,6 +227,7 @@ export default function ChallengePanel({
     dispatch({ type: 'challenge', objectId, actionId, performerId: performer.id, assistantId, assistIndex, purchase })
   }
   const attempt = () => {
+    if (action?.sound) playSoundEvent(action.sound)
     if (action.routine) roll({ assistantId: null, assistIndex: 0, purchase: { bonusDice: 0, momentum: 0 } })
     else setRolling(true)
   }

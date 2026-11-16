@@ -114,6 +114,68 @@
         32,
         7
       ]
+    ],
+    "chickenSpawns": [
+      {
+        "position": [
+          38,
+          21
+        ],
+        "roam": {
+          "mode": "radiusWander",
+          "radius": 3
+        }
+      },
+      {
+        "position": [
+          35,
+          19
+        ],
+        "roam": {
+          "mode": "radiusWander",
+          "radius": 3
+        }
+      },
+      {
+        "position": [
+          38,
+          19
+        ],
+        "roam": {
+          "mode": "radiusWander",
+          "radius": 3
+        }
+      },
+      {
+        "position": [
+          41,
+          23
+        ],
+        "roam": {
+          "mode": "radiusWander",
+          "radius": 3
+        }
+      },
+      {
+        "position": [
+          37,
+          23
+        ],
+        "roam": {
+          "mode": "radiusWander",
+          "radius": 3
+        }
+      },
+      {
+        "position": [
+          39,
+          22
+        ],
+        "roam": {
+          "mode": "radiusWander",
+          "radius": 3
+        }
+      }
     ]
   },
   "autoPaint": {
