@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
+import { PlayerController } from '../src/actors/PlayerController.js'
 import {
   canDismount,
   canMount,
+  clearPendingMountClaims,
   createMountState,
   dismountAll,
   finishDismount,
@@ -12,6 +14,7 @@ import {
   mountHorse,
   planMountAssignments,
   removeHorse,
+  RIDE_RUN_SPEED_MULT,
   RIDE_SPEED_MULT,
   syncMountAfterParty,
   tickRideAnims,
@@ -81,7 +84,8 @@ describe('exploration mount', () => {
     assert.equal(state.party.members[lead].mounted, true)
     assert.equal(state.party.members[lead].rideAnim?.clip, 'mount')
     assert.equal(canDismount(state, lead), false)
-    assert.ok(RIDE_SPEED_MULT > 1)
+    assert.ok(RIDE_SPEED_MULT > 0 && RIDE_SPEED_MULT <= 1.2)
+    assert.ok(RIDE_RUN_SPEED_MULT > RIDE_SPEED_MULT)
 
     state = tickRideAnims({ ...state, world: { time: 2 } })
     assert.equal(state.party.members[lead].rideAnim, null)
@@ -221,5 +225,173 @@ describe('exploration mount', () => {
     )
     assert.equal(claimed.length, 3)
     assert.equal(next.party.members[party.leaderId].pendingMountHorseId, farId)
+  })
+
+  it('assigns horses leader-first even when followers are nearer', () => {
+    const map = outdoorMap([
+      { x: 5, y: 4, facing: 0 },
+      { x: 6, y: 4, facing: 0 },
+    ])
+    const party = createPartyState(map, [testCharacter('c1'), testCharacter('c2'), testCharacter('c3')])
+    const mount = createMountState(map, party)
+    const [lead, near, other] = party.memberIds
+    // Lead stands far; both followers stand on the horses. Global nearest-pair would skip the lead.
+    const members = {
+      ...party.members,
+      [lead]: { ...party.members[lead], position: { x: 14, y: 14 } },
+      [near]: { ...party.members[near], position: { x: 5, y: 4 } },
+      [other]: { ...party.members[other], position: { x: 6, y: 4 } },
+    }
+    const state = { mode: 'EXPLORATION', party: { ...party, members }, mount, world: { time: 0 } }
+    const assignments = planMountAssignments(state, party.memberIds)
+    assert.equal(assignments.length, 2)
+    assert.equal(assignments[0].memberId, lead)
+    assert.ok(assignments.some((entry) => entry.memberId === near))
+    assert.equal(
+      assignments.some((entry) => entry.memberId === other),
+      false,
+      'third member stays on foot when horses are short',
+    )
+  })
+
+  it('dismountAll and combat exit clear pending walk-to-mount claims', () => {
+    const map = outdoorMap()
+    const party = createPartyState(map, [testCharacter()])
+    const mount = createMountState(map, party)
+    const lead = party.leaderId
+    const horseId = mount.horses[0].id
+    let state = {
+      mode: 'EXPLORATION',
+      party: {
+        ...party,
+        members: {
+          ...party.members,
+          [lead]: {
+            ...party.members[lead],
+            position: { x: 2, y: 2 },
+            pendingMountHorseId: horseId,
+            order: { type: 'point', target: { x: 5, y: 4 }, run: false },
+            path: [{ x: 3, y: 2 }, { x: 5, y: 4 }],
+            moving: true,
+          },
+        },
+      },
+      mount,
+      world: { time: 0 },
+    }
+    state = dismountAll(state)
+    assert.equal(state.party.members[lead].pendingMountHorseId, null)
+    assert.equal(state.party.members[lead].order, null)
+    assert.deepEqual(state.party.members[lead].path, [])
+
+    // Belt-and-suspenders: fromCombatant must not restore a stale claim.
+    const restored = new PlayerController().fromCombatant(
+      {
+        ...state.party.members[lead],
+        pendingMountHorseId: horseId,
+        order: { type: 'point', target: { x: 5, y: 4 }, run: false },
+        path: [{ x: 5, y: 4 }],
+        mounted: true,
+      },
+      {
+        position: { x: 2, y: 2 },
+        facing: { x: 1, y: 0 },
+        condition: state.party.members[lead].condition,
+      },
+    )
+    assert.equal(restored.pendingMountHorseId, null)
+    assert.equal(restored.mounted, false)
+    assert.equal(restored.order, null)
+  })
+
+  it('does not reserve a horse when walk-to-mount cannot reach the stand', () => {
+    const map = outdoorMap([{ x: 12, y: 8, facing: 0 }])
+    // Solid wall between the party and the horse so planRoute stops short of the mount side.
+    for (let y = 0; y < 16; y++) map.tiles[y][8] = 'cliff'
+    const party = createPartyState(map, [testCharacter()])
+    const mount = createMountState(map, party)
+    const lead = party.leaderId
+    const state = {
+      mode: 'EXPLORATION',
+      party: {
+        ...party,
+        members: {
+          ...party.members,
+          [lead]: { ...party.members[lead], position: { x: 2, y: 8 } },
+        },
+      },
+      mount,
+      world: { time: 0 },
+    }
+    const next = togglePartyMount(state, [lead])
+    assert.ok(!next.party.members[lead].pendingMountHorseId)
+    assert.ok(!next.party.members[lead].mounted)
+    assert.equal(getHorses(next)[0].riderId, null)
+  })
+
+  it('tickRideAnims drops a stalled walk-to-mount claim that never reached the horse', () => {
+    const map = outdoorMap()
+    const party = createPartyState(map, [testCharacter()])
+    const mount = createMountState(map, party)
+    const lead = party.leaderId
+    const horseId = mount.horses[0].id
+    const state = {
+      mode: 'EXPLORATION',
+      party: {
+        ...party,
+        members: {
+          ...party.members,
+          [lead]: {
+            ...party.members[lead],
+            position: { x: 1, y: 1 },
+            pendingMountHorseId: horseId,
+            order: null,
+            path: [],
+          },
+        },
+      },
+      mount,
+      world: { time: 0 },
+    }
+    const next = tickRideAnims(state)
+    assert.equal(next.party.members[lead].pendingMountHorseId, null)
+  })
+
+  it('clearPendingMountClaims cancels only walk-to-mount orders', () => {
+    const map = outdoorMap([
+      { x: 5, y: 4, facing: 0 },
+      { x: 10, y: 4, facing: 0 },
+    ])
+    const party = createPartyState(map, [testCharacter('c1'), testCharacter('c2')])
+    const mount = createMountState(map, party)
+    const [a, b] = party.memberIds
+    const state = {
+      mode: 'EXPLORATION',
+      party: {
+        ...party,
+        members: {
+          ...party.members,
+          [a]: {
+            ...party.members[a],
+            pendingMountHorseId: mount.horses[0].id,
+            order: { type: 'point', target: { x: 5, y: 4 }, run: false },
+            path: [{ x: 5, y: 4 }],
+          },
+          [b]: {
+            ...party.members[b],
+            order: { type: 'point', target: { x: 3, y: 3 }, run: true },
+            path: [{ x: 3, y: 3 }],
+          },
+        },
+      },
+      mount,
+      world: { time: 0 },
+    }
+    const next = clearPendingMountClaims(state)
+    assert.equal(next.party.members[a].pendingMountHorseId, null)
+    assert.equal(next.party.members[a].order, null)
+    assert.deepEqual(next.party.members[a].path, [])
+    assert.deepEqual(next.party.members[b].order, { type: 'point', target: { x: 3, y: 3 }, run: true })
+    assert.deepEqual(next.party.members[b].path, [{ x: 3, y: 3 }])
   })
 })

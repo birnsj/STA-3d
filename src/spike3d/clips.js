@@ -27,21 +27,21 @@ if (!CLIP_META.hazardPanicRun) CLIP_META.hazardPanicRun = { seconds: 0.6, play: 
 // Prototype mount — seated astride (HorseActor saddle).
 // Slow seated look-around (one L→R→L scan per loop), same idea as horse graze idle.
 if (!CLIP_META.rideIdle) CLIP_META.rideIdle = { seconds: 8, play: 'loop' }
-if (!CLIP_META.ride) CLIP_META.ride = { seconds: 0.7, play: 'loop' }
+if (!CLIP_META.ride) CLIP_META.ride = { seconds: 1.05, play: 'loop' }
 if (!CLIP_META.mount) CLIP_META.mount = { seconds: 1.15, play: 'hold' }
 if (!CLIP_META.dismount) CLIP_META.dismount = { seconds: 1.0, play: 'hold' }
 // Procedural horse gaits (walk/idle already exist on humanoid sheets; horse uses HORSE_VIEWER_CLIPS lengths).
-if (!CLIP_META.trot) CLIP_META.trot = { seconds: 0.45, play: 'loop' }
-if (!CLIP_META.run) CLIP_META.run = { seconds: 0.32, play: 'loop' }
-if (!CLIP_META.stop) CLIP_META.stop = { seconds: 0.55, play: 'hold' }
+if (!CLIP_META.trot) CLIP_META.trot = { seconds: 0.65, play: 'loop' }
+if (!CLIP_META.run) CLIP_META.run = { seconds: 0.42, play: 'loop' }
+if (!CLIP_META.stop) CLIP_META.stop = { seconds: 0.7, play: 'hold' }
 
 /** Horse animation set clips (procedural only). */
 export const HORSE_VIEWER_CLIPS = Object.freeze([
   { name: 'idle', seconds: 10, play: 'loop' },
-  { name: 'walk', seconds: 0.7, play: 'loop' },
-  { name: 'trot', seconds: 0.45, play: 'loop' },
-  { name: 'run', seconds: 0.32, play: 'loop' },
-  { name: 'stop', seconds: 0.55, play: 'hold' },
+  { name: 'walk', seconds: 1.05, play: 'loop' },
+  { name: 'trot', seconds: 0.65, play: 'loop' },
+  { name: 'run', seconds: 0.42, play: 'loop' },
+  { name: 'stop', seconds: 0.7, play: 'hold' },
 ])
 
 /** Old ranged-fire clip id → catalogue name. */

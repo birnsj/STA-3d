@@ -606,10 +606,12 @@ export class FigureView {
   }
 
   applySunCast() {
-    const cast = figureCastForAzimuth(getBoardSunSettings().azimuthDeg) ?? FIGURE_CAST
+    const sun = getBoardSunSettings()
+    const cast = figureCastForAzimuth(sun.azimuthDeg) ?? FIGURE_CAST
     this.shadow.position.set(cast.x, cast.y)
     this.shadow.scale.set(cast.scaleX / SHADOW_RES, cast.scaleY / SHADOW_RES)
     this.shadow.skew.x = cast.skewX
+    this.shadow.alpha = sun.shadowStrength ?? 1
   }
 
   // revealed: the map has faded in (MapRevealedContext).

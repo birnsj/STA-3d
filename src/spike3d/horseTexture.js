@@ -14,52 +14,57 @@
 import * as THREE from 'three'
 
 // Bump ?v= when coat tint recipes change so browsers drop a stale atlas cache.
-export const HORSE_TEXTURE_URL = '/art/models/creatures/horse.png?v=3'
+export const HORSE_TEXTURE_URL = '/art/models/creatures/horse.png?v=4'
 
 /** Fallback coat while the atlas loads (matches prior flat horse). */
-export const HORSE_FALLBACK_COLOUR = 0x6b4a2e
+export const HORSE_FALLBACK_COLOUR = 0xb89068
 
 /**
- * Spawn order cycles these ids (horse-1 = bay, then black, chestnut, grey, …).
- * `tint: null` = use the authored atlas as-is.
+ * Spawn order cycles these ids. Each coat gets its own tinted atlas from the base PNG
+ * (`tint: null` would keep the authored atlas as-is).
  */
 export const HORSE_COATS = Object.freeze({
+  white: Object.freeze({
+    id: 'white',
+    label: 'White',
+    fallback: 0xf4f1ea,
+    tint: Object.freeze({ coat: '#f8f5ef', coatDk: '#e4e0d8', mane: '#d0ccc4', sock: '#fffef9' }),
+  }),
   bay: Object.freeze({
     id: 'bay',
     label: 'Bay',
-    fallback: 0x9a6a42,
-    // Lighten the authored atlas slightly so bay matches the other coats' lift.
-    tint: Object.freeze({ coat: '#c48a58', coatDk: '#8a5a38', mane: '#2a2018', sock: '#f5f0e8' }),
-  }),
-  black: Object.freeze({
-    id: 'black',
-    label: 'Black',
-    fallback: 0x4a4440,
-    // Soft charcoal rather than near-black so fur grain still reads on the board.
-    tint: Object.freeze({ coat: '#6a6460', coatDk: '#3e3a38', mane: '#2a2826', sock: '#ece8e0' }),
+    fallback: 0xc49262,
+    tint: Object.freeze({ coat: '#d4a070', coatDk: '#a07048', mane: '#3a2c22', sock: '#faf6f0' }),
   }),
   chestnut: Object.freeze({
     id: 'chestnut',
     label: 'Chestnut',
-    fallback: 0xd07848,
-    tint: Object.freeze({ coat: '#e88858', coatDk: '#b05830', mane: '#5a3828', sock: '#faf6f0' }),
-  }),
-  grey: Object.freeze({
-    id: 'grey',
-    label: 'Grey',
-    fallback: 0xd8d4cc,
-    tint: Object.freeze({ coat: '#ece8e0', coatDk: '#b8b4ac', mane: '#6a6864', sock: '#faf8f4' }),
+    fallback: 0xe09060,
+    tint: Object.freeze({ coat: '#f09868', coatDk: '#c06838', mane: '#6a4030', sock: '#fffaf4' }),
   }),
   palomino: Object.freeze({
     id: 'palomino',
     label: 'Palomino',
-    fallback: 0xe8c878,
-    tint: Object.freeze({ coat: '#f0d090', coatDk: '#d0a858', mane: '#f8f0dc', sock: '#fffaf4' }),
+    fallback: 0xf0d898,
+    tint: Object.freeze({ coat: '#f8e0a8', coatDk: '#e0bc70', mane: '#fff8ec', sock: '#fffef8' }),
+  }),
+  grey: Object.freeze({
+    id: 'grey',
+    label: 'Grey',
+    fallback: 0xe8e4dc,
+    tint: Object.freeze({ coat: '#f2eee6', coatDk: '#c8c4bc', mane: '#7a7874', sock: '#faf8f4' }),
+  }),
+  black: Object.freeze({
+    id: 'black',
+    label: 'Black',
+    fallback: 0x5a5450,
+    // Soft charcoal rather than near-black so fur grain still reads on the board.
+    tint: Object.freeze({ coat: '#7a7470', coatDk: '#4a4644', mane: '#322e2c', sock: '#f0ece4' }),
   }),
 })
 
-/** First four spawns get distinct coats; further horses wrap. */
-export const HORSE_COAT_CYCLE = Object.freeze(['bay', 'black', 'chestnut', 'grey'])
+/** Each spawn index gets a different coat; further horses wrap. */
+export const HORSE_COAT_CYCLE = Object.freeze(['white', 'bay', 'chestnut', 'palomino', 'grey', 'black'])
 
 export function normalizeHorseCoatId(coatId) {
   if (coatId && HORSE_COATS[coatId]) return coatId
@@ -122,8 +127,8 @@ function paintFlat(mat, coatId) {
 function paintMapped(mat, map) {
   if (!mat) return
   mat.map = map
-  // Slight warm tint so coat reads under dim/rain lighting without washing out albedo.
-  mat.color.setHex(0xfff6ea)
+  // Slight warm lift so coats read under dim/rain lighting without washing out albedo.
+  mat.color.setHex(0xfffaf2)
   mat.roughness = 0.72
   mat.needsUpdate = true
 }
@@ -183,7 +188,7 @@ function tintRegion(data, width, height, region, hex, flipY) {
       const b = data[i + 2] / 255
       // Keep fur grain: replace chrominance, preserve luminance (biased bright for board readability).
       const lum = Math.min(1, Math.max(0, 0.299 * r + 0.587 * g + 0.114 * b))
-      const lift = 0.28 + lum * 0.95
+      const lift = 0.38 + lum * 1.05
       data[i] = Math.min(255, Math.round(tr * lift * 255))
       data[i + 1] = Math.min(255, Math.round(tg * lift * 255))
       data[i + 2] = Math.min(255, Math.round(tb * lift * 255))
@@ -228,7 +233,6 @@ function makeCoatTexture(base, coatId) {
 
 function textureForCoat(coatId) {
   const id = normalizeHorseCoatId(coatId)
-  if (id === 'bay') return baseTex
   if (coatTex.has(id)) return coatTex.get(id)
   if (!baseTex) return null
   const next = makeCoatTexture(baseTex, id)
@@ -261,7 +265,6 @@ function finishBaseLoad(tex) {
   tex.anisotropy = 4
   tex.needsUpdate = true
   baseTex = tex
-  coatTex.set('bay', tex)
   loading = false
   for (const coatId of [...pendingByCoat.keys()]) {
     const map = textureForCoat(coatId)
@@ -304,8 +307,8 @@ export function bindHorseTexture(mat, coatId = 'bay') {
 
 /** Dev helper: drop cached maps so a new atlas file can reload. */
 export function clearHorseTextureCache() {
-  for (const [id, tex] of coatTex) {
-    if (id !== 'bay' && tex && tex !== baseTex) tex.dispose?.()
+  for (const tex of coatTex.values()) {
+    if (tex && tex !== baseTex) tex.dispose?.()
   }
   coatTex.clear()
   baseTex = null

@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { clearLiveClip, reportLiveClip } from '../dev/animClipDebug.js'
+import { getBoardSunSettings } from './boardSunSettings.js'
 import { HORSE_CONTACT_SHADOW_FILL_OPACITY, createContactShadow } from './contactShadow.js'
 import { facingToYaw } from './isoProjection.js'
 import { HorseBody, HORSE_HEIGHT } from './HorseBody.js'
@@ -164,8 +165,8 @@ export class HorseActor {
     if (this._posReady && dt > 0) {
       const travelPerSec = this._pendingTravel / dt
       this._pendingTravel = 0
-      // Rise fast, fall slow — keeps walk/trot alive between sparse sim pose updates.
-      const k = travelPerSec >= this._speedEma ? 1 - Math.exp(-22 * dt) : 1 - Math.exp(-5 * dt)
+      // Rise fairly quick, fall slower — fewer gait flickers between sparse sim pose updates.
+      const k = travelPerSec >= this._speedEma ? 1 - Math.exp(-14 * dt) : 1 - Math.exp(-3.5 * dt)
       this._speedEma += (travelPerSec - this._speedEma) * k
       this.root.position.set(this._tx, 0, this._tz)
       yawErr = this._wrapYawDelta(this._yawTarget, this._yaw)
@@ -176,7 +177,7 @@ export class HorseActor {
         this._yaw = this._yawTarget
         yawErr = 0
       } else {
-        const yawK = 1 - Math.exp(-18 * dt)
+        const yawK = 1 - Math.exp(-12 * dt)
         this._yaw += yawErr * yawK
       }
       this.root.rotation.y = this._yaw
@@ -184,12 +185,12 @@ export class HorseActor {
     }
 
     const wantClip = this._resolveClip(this._speedEma, yawErr)
-    // Walk↔trot↔run: hold ~0.18s so pace flicker doesn't reset the stride. Stop/idle / new move: immediate.
+    // Walk↔trot↔run: hold longer so pace flicker doesn't reset the stride. Stop/idle / new move: immediate.
     if (wantClip !== this._gait) {
       const bothPace = this._isMovingGait(this._gait) && this._isMovingGait(wantClip)
       const fromStopOrIdle = this._gait === 'stop' || this._gait === 'idle'
       this._gaitHold += dt
-      if (!bothPace || fromStopOrIdle || this._gaitHold >= 0.18) {
+      if (!bothPace || fromStopOrIdle || this._gaitHold >= 0.28) {
         this._gait = wantClip
         this._gaitHold = 0
       }
@@ -204,7 +205,8 @@ export class HorseActor {
     reportLiveClip(this.id, this._gait)
     if (this.shadow) {
       this.shadow.rotation.y = -this._yaw
-      this.shadow.material.opacity = HORSE_CONTACT_SHADOW_FILL_OPACITY
+      this.shadow.material.opacity =
+        HORSE_CONTACT_SHADOW_FILL_OPACITY * (getBoardSunSettings().shadowStrength ?? 1)
     }
   }
 

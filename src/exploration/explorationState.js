@@ -313,6 +313,9 @@ function reduceExploration(state, action) {
         preferMemberId: action.preferMemberId ?? action.memberId ?? state.party.leaderId,
       })
     }
+    // Escape / UI: drop walk-to-mount claims and their walk orders only.
+    case 'clearPendingMount':
+      return state.mode === MODE.COMBAT ? state : clearPendingMountClaims(state)
     // { memberId, horseId }: climb onto a specific horse when in range.
     case 'mountHorse':
       return state.mode === MODE.COMBAT ? state : mountHorse(state, action.memberId ?? state.party.leaderId, action.horseId)
@@ -461,11 +464,10 @@ function reduceExploration(state, action) {
     default: {
       // Party orders are frozen while combat runs: the combat screen gives the orders then.
       if (state.mode === MODE.COMBAT) return state
-      const party = partyReducer(state.party, action)
-      let next = party === state.party ? state : { ...state, party }
-      // A fresh move cancels walk-to-mount claims so the team follows the new order on foot / ridden.
-      if (action.type === 'moveTo' && action.fresh) next = clearPendingMountClaims(next)
-      return next
+      // Clear walk-to-mount before applying a fresh move so new orders are not wiped with the claims.
+      const base = action.type === 'moveTo' && action.fresh ? clearPendingMountClaims(state) : state
+      const party = partyReducer(base.party, action)
+      return party === base.party ? base : { ...base, party }
     }
   }
 }

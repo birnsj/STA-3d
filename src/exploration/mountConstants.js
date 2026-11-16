@@ -1,7 +1,9 @@
 // Leaf constants for mount/ride — safe to import from actors (no exploration cycles).
 
-/** Ride speed multiplier vs walk/run (Map Properties pace still applies). */
-export const RIDE_SPEED_MULT = 1.15
+/** Mounted walk vs foot walk — calmer stride / less ground cover. */
+export const RIDE_SPEED_MULT = 0.92
+/** Mounted run / catch-up vs foot run — gallop should clearly outpace a walk. */
+export const RIDE_RUN_SPEED_MULT = 1.45
 
 /**
  * Mounted collision (tiles). Foot radius is 0.28 — the horse needs a bit more than that

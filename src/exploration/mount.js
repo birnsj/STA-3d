@@ -4,10 +4,10 @@
 import challengeData from '../data/adaptation/exploration/challenges.json'
 import { canAct } from './partyControl.js'
 import { isClear, nearestWalkableTile, planRoute, RADIUS } from './navigation.js'
-import { RIDE_SPEED_MULT } from './mountConstants.js'
+import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from './mountConstants.js'
 import { horseCoatForSpawnIndex, horseCoatLabel } from '../spike3d/horseTexture.js'
 
-export { RIDE_SPEED_MULT }
+export { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT }
 
 /** Same tile reach as challenge interact (challenges.json); keep local to avoid import cycles. */
 export const MOUNT_INTERACT_RANGE = challengeData.interactRange
@@ -194,7 +194,7 @@ function unavailableHorseIds(state) {
 }
 
 /**
- * Pair able members with free horses (nearest first; leader preferred).
+ * Pair able members with free horses: leader first, then party order; each gets nearest remaining horse.
  * Extra members get no horse and stay on foot.
  * opts.preferHorseId + opts.preferMemberId: lock that pair first (Ride on a specific horse).
  */
@@ -229,46 +229,54 @@ export function planMountAssignments(state, memberIds, opts = {}) {
     free = free.filter((horse) => horse.id !== preferHorseId)
   }
 
-  const pairs = []
+  // Leader-first: each remaining member claims their nearest still-free horse (not global pair matching).
   for (const memberId of order) {
+    if (assignments.length >= maxAssign) break
     if (usedMembers.has(memberId)) continue
     const member = state.party.members[memberId]
+    let best = null
     for (const horse of free) {
-      pairs.push({
-        memberId,
-        horseId: horse.id,
-        d: dist(member.position, horse.position),
-      })
+      if (usedHorses.has(horse.id)) continue
+      const d = dist(member.position, horse.position)
+      if (!best || d < best.d || (d === best.d && String(horse.id).localeCompare(String(best.horseId)) < 0)) {
+        best = { horseId: horse.id, d }
+      }
     }
-  }
-  pairs.sort((a, b) => a.d - b.d || String(a.memberId).localeCompare(String(b.memberId)))
-
-  for (const pair of pairs) {
-    if (usedMembers.has(pair.memberId) || usedHorses.has(pair.horseId)) continue
-    usedMembers.add(pair.memberId)
-    usedHorses.add(pair.horseId)
-    assignments.push({ memberId: pair.memberId, horseId: pair.horseId })
-    if (assignments.length >= maxAssign) break
+    if (!best) break
+    usedMembers.add(memberId)
+    usedHorses.add(best.horseId)
+    assignments.push({ memberId, horseId: best.horseId })
   }
   return assignments
 }
 
+/** planRoute may stop short of an unreachable stand; only claim when the path end is beside the horse. */
+const MOUNT_SIDE_PATH_REACH = 0.85
+
+function routeReachesMountSide(path, side, from) {
+  const end = path?.length ? path[path.length - 1] : from
+  return dist(end, side) <= MOUNT_SIDE_PATH_REACH
+}
+
+/** @returns {object|null} updated member, or null when the mount side is not reachable. */
 function walkToMountSide(state, memberId, horse) {
   const map = state.party.map
   const member = state.party.members[memberId]
   const side = mountSidePoint(map, horse)
+  const path = planRoute(map, member.position, side, RADIUS)
+  if (!routeReachesMountSide(path, side, member.position)) return null
   return {
     ...member,
     pendingMountHorseId: horse.id,
     sneaking: false,
     order: { type: 'point', target: side, run: false },
-    path: planRoute(map, member.position, side, RADIUS),
+    path,
     replanIn: 0.5,
     stall: { seconds: 0, best: Infinity },
   }
 }
 
-/** Drop walk-to-mount claims (fresh move order, Escape, etc.). */
+/** Drop walk-to-mount claims and their walk orders (fresh move, Escape, combat start). */
 export function clearPendingMountClaims(state) {
   const members = state.party?.members
   if (!members) return state
@@ -276,7 +284,15 @@ export function clearPendingMountClaims(state) {
   const next = { ...members }
   for (const id of Object.keys(next)) {
     if (!next[id]?.pendingMountHorseId) continue
-    next[id] = { ...next[id], pendingMountHorseId: null }
+    next[id] = {
+      ...next[id],
+      pendingMountHorseId: null,
+      order: null,
+      path: [],
+      moving: false,
+      running: false,
+      pace: null,
+    }
     changed = true
   }
   return changed ? { ...state, party: { ...state.party, members: next } } : state
@@ -350,20 +366,27 @@ export function tickRideAnims(state) {
   if (!members) return state
   const now = worldTime(state)
   let next = state
-  // Walk-to-mount: climb on when each claimant reaches their horse.
+  // Walk-to-mount: climb on when each claimant reaches their horse; drop stalled / unreachable claims.
   for (const id of Object.keys(next.party.members)) {
     const member = next.party.members[id]
     const horseId = member?.pendingMountHorseId
     if (!horseId) continue
     const horse = horseById(next, horseId)
-    if (!horse || horse.riderId) {
+    const walking = Boolean(member.order) || (member.path?.length ?? 0) > 0
+    if (!horse || horse.riderId || (!walking && !canMount(next, id, horseId))) {
       next = {
         ...next,
         party: {
           ...next.party,
           members: {
             ...next.party.members,
-            [id]: { ...member, pendingMountHorseId: null },
+            [id]: {
+              ...member,
+              pendingMountHorseId: null,
+              ...(walking
+                ? {}
+                : { order: null, path: [], moving: false, running: false, pace: null }),
+            },
           },
         },
       }
@@ -451,6 +474,7 @@ export function togglePartyMount(state, memberIds, opts = {}) {
       continue
     }
     const walked = walkToMountSide(next, memberId, horse)
+    if (!walked) continue
     next = {
       ...next,
       party: { ...next.party, members: { ...next.party.members, [memberId]: walked } },
@@ -527,14 +551,15 @@ export function syncMountAfterParty(state) {
 
 /**
  * Auto-dismount everyone when combat starts (skip climb-off anim).
- * Always clears riderIds + mounted / rideAnim flags so ride speed cannot stick through a fight.
+ * Clears pending walk-to-mount claims/orders, riderIds, and mounted / rideAnim so combat
+ * exit cannot remount or keep a horse reserved.
  */
 export function dismountAll(state) {
-  const horses = getHorses(state)
   const members = state.party?.members
   if (!members) return state
-  let next = state
-  for (const horse of horses) {
+  // Drop walk-to-mount reservations before forced climb-off so claims cannot survive the fight.
+  let next = clearPendingMountClaims(state)
+  for (const horse of getHorses(next)) {
     if (horse.riderId) next = finishDismount(next, horse.riderId)
   }
   const clearedHorses = getHorses(next).map((horse) => (horse.riderId ? { ...horse, riderId: null } : horse))
@@ -542,12 +567,17 @@ export function dismountAll(state) {
   let memberChanged = false
   for (const id of Object.keys(clearedMembers)) {
     const member = clearedMembers[id]
-    if (!member?.mounted && !member?.rideAnim) continue
+    if (!member?.mounted && !member?.rideAnim && !member?.pendingMountHorseId) continue
     if (!memberChanged) {
       clearedMembers = { ...clearedMembers }
       memberChanged = true
     }
-    clearedMembers[id] = { ...member, mounted: false, rideAnim: null }
+    clearedMembers[id] = {
+      ...member,
+      mounted: false,
+      rideAnim: null,
+      pendingMountHorseId: null,
+    }
   }
   const horsesChanged = clearedHorses.some((horse, i) => horse !== getHorses(next)[i])
   if (!memberChanged && !horsesChanged) return next

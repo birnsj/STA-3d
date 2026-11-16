@@ -4,11 +4,12 @@ import { HORSE_HEIGHT, HorseModel } from './HorseModel.js'
 const CLIP_SECONDS = {
   // One full graze look L→R→L (slow).
   idle: 10,
-  walk: 0.7,
-  trot: 0.45,
-  run: 0.32,
+  // Longer strides so mounted walk doesn't read as a frantic paddle.
+  walk: 1.05,
+  trot: 0.65,
+  run: 0.42,
   // Halt settle from walk/trot/run into idle (once).
-  stop: 0.55,
+  stop: 0.7,
 }
 
 const MOVING_CLIPS = new Set(['walk', 'trot', 'run'])
@@ -116,8 +117,8 @@ export class HorseBody {
 
   _moveWeight() {
     if (this._isRunPace()) return 1
-    if (this._isTrotPace()) return 1
-    return 0.7
+    if (this._isTrotPace()) return 0.92
+    return 0.58
   }
 
   _clearStamps() {
@@ -267,7 +268,7 @@ export class HorseBody {
       weight: this._weight,
       trot,
       run,
-      bounce: breathe + this._weight * (0.018 + trot * 0.055 + run * 0.09) * bobWave * (1 - stopPlant),
+      bounce: breathe + this._weight * (0.012 + walk * 0.01 + trot * 0.04 + run * 0.075) * bobWave * (1 - stopPlant),
       neckPitch,
       neckYaw,
       headPitch,

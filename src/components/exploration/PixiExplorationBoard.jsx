@@ -2,7 +2,7 @@ import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } fro
 import { controllerFor } from '../../actors/controllers.js'
 import { getNpcs, isHostile } from '../../exploration/awareness.js'
 import { getHorses } from '../../exploration/mount.js'
-import { RIDE_SPEED_MULT } from '../../exploration/mountConstants.js'
+import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from '../../exploration/mountConstants.js'
 import { getMembers, isSelected } from '../../exploration/partyControl.js'
 import partyControlData from '../../data/adaptation/exploration/partyControl.json'
 import { getEntityKnowledge, isVisibleToParty, KNOWLEDGE } from '../../exploration/partyKnowledge.js'
@@ -639,18 +639,26 @@ export default function PixiExplorationBoard(props) {
   const walkSpeed = partyControlData.movement.walkSpeed
   const runSpeed = partyControlData.movement.runSpeed
   const rideWalk = walkSpeed * RIDE_SPEED_MULT
-  const rideRun = runSpeed * RIDE_SPEED_MULT
-  const rideMid = (rideWalk + rideRun) * 0.5
+  const rideRun = runSpeed * RIDE_RUN_SPEED_MULT
+  // Keep casual mounted travel on walk; only lean into trot/run near true run pace.
+  const rideTrotAt = rideWalk + (rideRun - rideWalk) * 0.62
+  const rideRunAt = rideRun * 0.9
   const horsePoses = horseList.map((horse) => {
     const rider = horse.riderId ? state.members?.[horse.riderId] : null
-    // Order counts as moving so the walk clip starts on the click — waiting on smoothed pace skates the horse.
-    const moving = Boolean(rider?.moving || rider?.running || rider?.order)
     // Walk → trot → run by mounted pace; foot `running` always picks run.
     const pace = rider?.pace ? Math.hypot(rider.pace.x, rider.pace.y) : 0
+    // Use real travel (moving/pace), not a lingering follow order — that left walk/run looping while stood still.
+    // An active point path still counts so the walk clip starts on click before pace builds.
+    const moving = Boolean(
+      rider?.moving ||
+        rider?.running ||
+        pace > 0.15 ||
+        (rider?.order?.type === 'point' && (rider.path?.length ?? 0) > 0),
+    )
     let gait = 'idle'
     if (moving) {
-      if (rider?.running || pace >= rideRun * 0.82) gait = 'run'
-      else if (pace >= rideMid) gait = 'trot'
+      if (rider?.running || pace >= rideRunAt) gait = 'run'
+      else if (pace >= rideTrotAt) gait = 'trot'
       else gait = 'walk'
     }
     return {

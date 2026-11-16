@@ -217,6 +217,26 @@ export default function MapProperties({
             setBoardSunSettings({ colour })
           }}
         />
+        <label
+          className="me-ambient"
+          title="Cast shadow strength in Play. 100% is the previous full strength."
+        >
+          Shadow
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={Math.round((sun.shadowStrength ?? 1) * 100)}
+            aria-label="Shadow strength"
+            onChange={(event) => {
+              const shadowStrength = Number(event.target.value) / 100
+              setSun((prev) => ({ ...prev, shadowStrength }))
+              setBoardSunSettings({ shadowStrength })
+            }}
+          />
+          <span className="me-ambient-value">{Math.round((sun.shadowStrength ?? 1) * 100)}%</span>
+        </label>
       </PropertySection>
 
       <PropertySection

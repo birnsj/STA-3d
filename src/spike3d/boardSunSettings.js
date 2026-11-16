@@ -32,15 +32,21 @@ export const DEFAULT_BOARD_SUN_SETTINGS = Object.freeze({
   elevationDeg: 48,
   distance: 20,
   colour: DEFAULT_BOARD_SUN_COLOUR,
+  // 1 = current cast strength; 0 = no floor / contact shadows.
+  shadowStrength: 1,
 })
 
 export function cloneBoardSunSettings(src = DEFAULT_BOARD_SUN_SETTINGS) {
   const base = { ...DEFAULT_BOARD_SUN_SETTINGS, ...src }
+  const strength = Number(base.shadowStrength)
   return {
     azimuthDeg: ((Math.round(Number(base.azimuthDeg)) % 360) + 360) % 360,
     elevationDeg: Math.min(85, Math.max(5, Math.round(Number(base.elevationDeg)))),
     distance: Math.min(40, Math.max(8, Number(base.distance) || DEFAULT_BOARD_SUN_SETTINGS.distance)),
     colour: normalizeBoardSunColour(base.colour),
+    shadowStrength: Number.isFinite(strength)
+      ? Math.min(1, Math.max(0, strength))
+      : DEFAULT_BOARD_SUN_SETTINGS.shadowStrength,
   }
 }
 

@@ -405,7 +405,9 @@ class SpikeActor {
       // Plane lies in local XY; after rot.x = -π/2 that is the floor.
       this.shadow.scale.set(squash, 1 / squash, 1)
       // Soft fill only — cast silhouette comes from the scene shadow map.
-      this.shadow.material.opacity = CONTACT_SHADOW_FILL_OPACITY + Math.min(0.08, bounce * 0.5)
+      const strength = getBoardSunSettings().shadowStrength ?? 1
+      this.shadow.material.opacity =
+        (CONTACT_SHADOW_FILL_OPACITY + Math.min(0.08, bounce * 0.5)) * strength
     }
   }
 
@@ -514,6 +516,7 @@ export class Spike3dScene {
     const key = boardSunOffset(settings)
     const fill = boardSunFillOffset(settings)
     const sat = boardSunColourSaturation(settings)
+    const shadowStrength = settings.shadowStrength ?? 1
     this.sun.color.set(settings.colour)
     // Saturated keys outrank hemi so red/blue suns read on cloth; pale warm white stays soft.
     this.sun.intensity = SUN_INTENSITY * (1 + sat * 0.55)
@@ -524,6 +527,12 @@ export class Spike3dScene {
     this.sun.target.position.set(tx, 0, tz)
     this.sun.target.updateMatrixWorld()
     this.sun.position.set(tx + key.x, key.y, tz + key.z)
+    // Slider 1 = prior full cast; 0 fades the ShadowMaterial floor to nothing.
+    this.sun.castShadow = shadowStrength > 0.001
+    if (this.shadowFloor?.material) {
+      this.shadowFloor.material.opacity = SHADOW_FLOOR_OPACITY * shadowStrength
+      this.shadowFloor.visible = shadowStrength > 0.001
+    }
     if (this.fill) {
       this.fill.target.position.set(tx, 0, tz)
       this.fill.target.updateMatrixWorld()

@@ -584,6 +584,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       cancelPendingTalk()
       setPendingPickup(null)
       setPendingMount(null)
+      dispatch({ type: 'clearPendingMount' })
       setLogOpen(false)
       setInventoryOpen(false)
       if (talking) dispatch({ type: 'conversationLeave' })

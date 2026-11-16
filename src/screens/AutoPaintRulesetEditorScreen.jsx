@@ -876,6 +876,26 @@ export default function AutoPaintRulesetEditorScreen({
                 setBoardSunSettings({ colour })
               }}
             />
+            <label
+              className="me-scale"
+              title="Cast shadow strength in Play. 100% is the previous full strength."
+            >
+              <span className="me-scale-label">Shadow</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round((sun.shadowStrength ?? 1) * 100)}
+                aria-label="Shadow strength"
+                onChange={(event) => {
+                  const shadowStrength = Number(event.target.value) / 100
+                  setSun((prev) => ({ ...prev, shadowStrength }))
+                  setBoardSunSettings({ shadowStrength })
+                }}
+              />
+              <span className="me-ambient-value">{Math.round((sun.shadowStrength ?? 1) * 100)}%</span>
+            </label>
           </>
         )}
         <GeSourcePalette
