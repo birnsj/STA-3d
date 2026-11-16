@@ -4,13 +4,60 @@ import { getBoardSunSettings } from './boardSunSettings.js'
 import { HORSE_CONTACT_SHADOW_FILL_OPACITY, createContactShadow } from './contactShadow.js'
 import { facingToYaw } from './isoProjection.js'
 import { HorseBody, HORSE_HEIGHT } from './HorseBody.js'
+import { MOUNT_LEFT_X } from './HorseModel.js'
 import { PROCEDURAL_HEIGHT } from './ProceduralBody.js'
 import { SPRITE_BODY_UNITS } from './HumanoidModel.js'
 
 /** World Y from feet to hips on the procedural humanoid (body units 23 / 50 × height). */
 const RIDER_HIP_Y = (23 / SPRITE_BODY_UNITS) * PROCEDURAL_HEIGHT
-/** Sink hips slightly into the saddle pad. */
-const SADDLE_SEAT_BIAS = 0.06
+/** Seat height above hip-to-saddle math — positive lifts the rider on the pad. */
+const SADDLE_SEAT_BIAS = 0.16
+/** Fallback left pad X if mountLeft joint is missing. */
+const MOUNT_LEFT_FALLBACK = MOUNT_LEFT_X
+/** Planted approach ends; weight moves into the stirrup after this. Long plant = dismount sticks on the joint. */
+const CLIMB_PLANT_END = 0.4
+/** Stirrup push ends; swing-over into the saddle after this. */
+const CLIMB_STIRRUP_END = 0.58
+
+function smoothstep01(u) {
+  const t = Math.min(1, Math.max(0, u))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Left-side climb path that stays grounded as long as possible:
+ * plant near the pad (y=0) → step into stirrup → swing over to seat while holding outboard.
+ * (Single root = feet; pose sells the other foot / hands. Avoids a mid-air lerp.)
+ */
+function climbPosAlongLeftPath(blend, ground, stirrup, seat) {
+  const t = Math.min(1, Math.max(0, blend))
+  const approach = new THREE.Vector3(ground.x, 0, ground.z).lerp(
+    new THREE.Vector3(stirrup.x, 0, stirrup.z),
+    0.4,
+  )
+  approach.y = 0
+
+  if (t <= CLIMB_PLANT_END) {
+    const u = smoothstep01(t / CLIMB_PLANT_END)
+    const p = new THREE.Vector3().lerpVectors(new THREE.Vector3(ground.x, 0, ground.z), approach, u)
+    p.y = 0
+    return p
+  }
+  if (t <= CLIMB_STIRRUP_END) {
+    const u = smoothstep01((t - CLIMB_PLANT_END) / (CLIMB_STIRRUP_END - CLIMB_PLANT_END))
+    return new THREE.Vector3().lerpVectors(approach, stirrup, u)
+  }
+  const u = smoothstep01((t - CLIMB_STIRRUP_END) / (1 - CLIMB_STIRRUP_END))
+  const p = new THREE.Vector3().lerpVectors(stirrup, seat, u)
+  // Hold outside the barrel early in the swing so the chord does not cut through.
+  const out = new THREE.Vector3().subVectors(stirrup, seat)
+  out.y = 0
+  if (out.lengthSq() > 1e-6) {
+    out.normalize()
+    p.addScaledVector(out, (1 - u) * (1 - u) * 0.28)
+  }
+  return p
+}
 
 /**
  * World horse in Spike3dScene — position from exploration mount state; optional rider attach.
@@ -50,6 +97,14 @@ export class HorseActor {
 
   get saddle() {
     return this.body.saddle
+  }
+
+  get mountLeft() {
+    return this.body.mountLeft
+  }
+
+  get mountLeftUp() {
+    return this.body.mountLeftUp
   }
 
   paintKey() {
@@ -95,30 +150,41 @@ export class HorseActor {
 
   /**
    * Place a SpikeActor on / beside the horse.
-   * blend 0 = standing on the climb side (feet on the ground); 1 = hips in the saddle.
-   * Mount lerps 0→1; dismount lerps 1→0; riding stays at 1.
+   * blend 0 = standing on the left mount pad; 1 = hips in the saddle.
+   * Mount 0→1 / dismount 1→0: plant → left stirrup → swing to saddle (keeps feet low as long as possible).
    */
   attachRider(actor, blend = 1) {
     if (!actor?.root || !this.saddle) return
     const t = Math.min(1, Math.max(0, blend))
-    const ease = t * t * (3 - 2 * t)
     this.root.updateWorldMatrix(true, true)
     this.saddle.updateWorldMatrix(true, false)
+    this.mountLeft?.updateWorldMatrix(true, false)
+    this.mountLeftUp?.updateWorldMatrix(true, false)
+
+    const ground = new THREE.Vector3()
+    const stirrup = new THREE.Vector3()
     const saddle = new THREE.Vector3()
+    if (this.mountLeft) this.mountLeft.getWorldPosition(ground)
+    else {
+      ground.set(MOUNT_LEFT_FALLBACK, 0, 0)
+      this.root.localToWorld(ground)
+    }
+    ground.y = 0
+    if (this.mountLeftUp) this.mountLeftUp.getWorldPosition(stirrup)
+    else {
+      stirrup.set(ground.x, RIDER_HIP_Y * 0.35, ground.z)
+    }
     this.saddle.getWorldPosition(saddle)
-    // Left of the horse in local space (matches mountSidePoint: heading + π/2).
-    const side = new THREE.Vector3(1.05, 0, 0)
-    this.root.localToWorld(side)
-    const feetSide = new THREE.Vector3(side.x, 0, side.z)
-    const feetSaddle = new THREE.Vector3(saddle.x, saddle.y - RIDER_HIP_Y + SADDLE_SEAT_BIAS, saddle.z)
-    const pos = feetSide.lerp(feetSaddle, ease)
+    const seat = new THREE.Vector3(saddle.x, saddle.y - RIDER_HIP_Y + SADDLE_SEAT_BIAS, saddle.z)
+
+    const pos = climbPosAlongLeftPath(t, ground, stirrup, seat)
     actor.root.position.copy(pos)
     actor.root.rotation.y = this._yaw
     actor._paintX = pos.x
     actor._paintZ = pos.z
-    // Shadow under the feet while climbing; hide once seated.
+    // Shadow while feet are still near the ground / stirrup; hide once settling in the saddle.
     if (actor.shadow) {
-      actor.shadow.visible = actor.root.visible && ease < 0.55 && !actor.ragdollActive
+      actor.shadow.visible = actor.root.visible && t < 0.62 && !actor.ragdollActive
     }
   }
 
@@ -170,8 +236,11 @@ export class HorseActor {
       this._speedEma += (travelPerSec - this._speedEma) * k
       this.root.position.set(this._tx, 0, this._tz)
       yawErr = this._wrapYawDelta(this._yawTarget, this._yaw)
-      // Snap yaw when nearly aligned; ease only small corrections (big turns used to skate the body).
-      if (Math.abs(yawErr) < 0.02) {
+      // Riders / climb attach use mountLeft from this yaw — snap so the pad matches sim mountSidePoint.
+      if (this._riderId) {
+        this._yaw = this._yawTarget
+        yawErr = 0
+      } else if (Math.abs(yawErr) < 0.02) {
         this._yaw = this._yawTarget
       } else if (Math.abs(yawErr) > 0.9) {
         this._yaw = this._yawTarget

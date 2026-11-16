@@ -60,12 +60,20 @@ export function memberMenuButtons(state, member, actions) {
     },
   ]
   if (mounted) {
+    const allSelected =
+      state.party.memberIds.length > 0 &&
+      state.party.memberIds.every((id) => state.party.selectedIds.includes(id))
+    const teamOff = allSelected && member.id === state.party.leaderId
     buttons.splice(2, 0, {
       id: 'dismount',
       label: 'Dismount',
       icon: 'switch',
       enabled: Boolean(canGetOff && actions.dismount),
-      title: canGetOff ? `Dismount: ${name} climbs off beside the horse.` : 'Dismount: not riding.',
+      title: canGetOff
+        ? teamOff
+          ? 'Dismount: the whole selected team climbs off.'
+          : `Dismount: ${name} climbs off beside the horse.`
+        : 'Dismount: not riding.',
       onClick: actions.dismount,
     })
   }

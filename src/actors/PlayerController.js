@@ -119,6 +119,7 @@ export class PlayerController extends CharacterController {
       // Combat never rides; clear in case a pre-fight mount flag survived dismountAll.
       mounted: false,
       rideAnim: null,
+      rideAttachBlend: null,
       pendingMountHorseId: null,
       order: null,
       path: [],

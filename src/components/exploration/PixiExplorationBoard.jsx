@@ -1,7 +1,7 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { controllerFor } from '../../actors/controllers.js'
 import { getNpcs, isHostile } from '../../exploration/awareness.js'
-import { getHorses } from '../../exploration/mount.js'
+import { getHorses, rideAttachBlend } from '../../exploration/mount.js'
 import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from '../../exploration/mountConstants.js'
 import { getMembers, isSelected } from '../../exploration/partyControl.js'
 import partyControlData from '../../data/adaptation/exploration/partyControl.json'
@@ -343,6 +343,13 @@ export default function PixiExplorationBoard(props) {
       hideSprite: spike3d,
       position: member.position,
       mounted: Boolean(member.mounted),
+      mountBlend: member.rideAnim
+        ? rideAttachBlend(member.rideAnim, world?.time ?? 0)
+        : member.mounted
+          ? 1
+          : null,
+      rideEndsAt: member.rideAnim?.endsAt ?? null,
+      rideClip: member.rideAnim?.clip ?? null,
       // stepBack is procedural (Spike3d); sprites fall back to walk via gait.
       pose: animation.pose?.animation === 'stepBack' && !spike3d ? null : animation.pose ?? null,
     })
@@ -711,6 +718,16 @@ export default function PixiExplorationBoard(props) {
           colour: figure.colour ?? figure.bodyColour,
           enemy: Boolean(figure.enemy),
           mounted: Boolean(figure.mounted),
+          // 0 = mount pad, 1 = saddle; keeps climb attach on the same clock as rideAnim.endsAt.
+          mountBlend:
+            figure.mountBlend != null
+              ? figure.mountBlend
+              : figure.mounted
+                ? 1
+                : null,
+          rideEndsAt: figure.rideEndsAt ?? null,
+          rideClip: figure.rideClip ?? null,
+          worldTime: world?.time ?? 0,
           appearance: resolveSpike3dAppearance({
             portraitId,
             uniform: figure.colour,

@@ -106,6 +106,12 @@ class SpikeActor {
     this._yawTarget = this._yaw
     this._posReady = false
     this._pendingTravel = 0
+    this._mounted = false
+    this._mountBlend = null
+    this._rideEndsAt = null
+    this._rideClip = null
+    this._worldTimeAtPose = null
+    this._poseWallMs = 0
     // Idle fidgets (same catalogue / gap as sprite FigureView) — only while the resolved clip is idle.
     this._fidget = null
     this._nextFidgetAt = null
@@ -121,6 +127,21 @@ class SpikeActor {
   _clearFidget() {
     this._fidget = null
     this._nextFidgetAt = null
+  }
+
+  /**
+   * Attach blend 0 = mount pad, 1 = saddle. Advances with wall clock between sparse sim pose stamps
+   * so climb-off does not freeze then jump when React catches up.
+   */
+  _liveMountBlend() {
+    if (this._rideEndsAt != null && this._rideClip && this._worldTimeAtPose != null) {
+      const dur = clipSeconds(this._rideClip) || (this._rideClip === 'dismount' ? 1.3 : 1.45)
+      const now = this._worldTimeAtPose + Math.max(0, (performance.now() - (this._poseWallMs || 0)) / 1000)
+      const remaining = (this._rideEndsAt - now) / dur
+      if (this._rideClip === 'dismount') return Math.min(1, Math.max(0, remaining))
+      return Math.min(1, Math.max(0, 1 - remaining))
+    }
+    return this._mountBlend
   }
 
   /** Base idle, or a one-shot fidget when the gap elapses (never the same twice in a row). */
@@ -171,10 +192,32 @@ class SpikeActor {
     if (this.ragdoll?.root) this.ragdoll.root.visible = false
   }
 
-  setPose({ position, facing, gait, animation, down, beam, blastReact, onStaggerDone, colour, appearance, mounted }) {
+  setPose({
+    position,
+    facing,
+    gait,
+    animation,
+    down,
+    beam,
+    blastReact,
+    onStaggerDone,
+    colour,
+    appearance,
+    mounted,
+    mountBlend,
+    rideEndsAt,
+    rideClip,
+    worldTime,
+  }) {
     this._staggerCallback = onStaggerDone ?? null
     this._down = Boolean(down)
     this._beam = beam ?? null
+    // Shared with exploration rideAttachBlend (0 = mount pad, 1 = saddle). Null = not in a climb.
+    this._mountBlend = mountBlend == null || !Number.isFinite(Number(mountBlend)) ? null : Number(mountBlend)
+    this._rideEndsAt = Number.isFinite(rideEndsAt) ? rideEndsAt : null
+    this._rideClip = rideClip === 'mount' || rideClip === 'dismount' ? rideClip : null
+    this._worldTimeAtPose = Number.isFinite(worldTime) ? worldTime : null
+    this._poseWallMs = performance.now()
     const wasMounted = this._mounted
     this._mounted = Boolean(mounted)
     if (wasMounted && !this._mounted && this.shadow) {
@@ -197,17 +240,28 @@ class SpikeActor {
     // Always track the sim tile (landing tile during a blast) even while physics drives the mesh.
     this._yawTarget = facingToYaw(facing)
     if (!this.ragdollActive) {
-      if (this._posReady) {
-        this._pendingTravel = Math.hypot(position.x - this._tx, position.y - this._tz)
-      }
-      this._tx = position.x
-      this._tz = position.y
-      // Mounted riders are seated on the horse each frame — don't plant feet on the tile.
-      // Snap with the sim (same as LEAD / rings) so the label doesn't jitter against the mesh.
-      if (!this._mounted) {
-        this.root.position.set(this._tx, 0, this._tz)
+      // Climb attach was authoritative — keep feet on the mount joint instead of snapping from the saddle track.
+      if (wasMounted && !this._mounted) {
+        this._tx = this.root.position.x
+        this._tz = this.root.position.z
         this._paintX = this._tx
         this._paintZ = this._tz
+        this._yaw = this.root.rotation.y
+        this._yawTarget = this._yaw
+        this._pendingTravel = 0
+      } else {
+        if (this._posReady) {
+          this._pendingTravel = Math.hypot(position.x - this._tx, position.y - this._tz)
+        }
+        this._tx = position.x
+        this._tz = position.y
+        // Mounted riders are seated on the horse each frame — don't plant feet on the tile.
+        // Snap with the sim (same as LEAD / rings) so the label doesn't jitter against the mesh.
+        if (!this._mounted) {
+          this.root.position.set(this._tx, 0, this._tz)
+          this._paintX = this._tx
+          this._paintZ = this._tz
+        }
       }
       if (!this._posReady) {
         this._posReady = true
@@ -270,6 +324,12 @@ class SpikeActor {
       return
     }
     this.body.play(clip)
+    // Climb clips scrub from world-clock blend so attach + pose hit the mount joint together.
+    const climbBlend = this._liveMountBlend()
+    if ((clip === 'mount' || clip === 'dismount') && climbBlend != null) {
+      const u = clip === 'mount' ? climbBlend : 1 - climbBlend
+      this.body.seek?.(u)
+    }
     reportLiveClip(this.id, this.body.current || clip)
   }
 
@@ -385,7 +445,15 @@ class SpikeActor {
     }
     // Death-locked corpses keep their last applied rest — don't let the animator ease them.
     if (!(this._deathLocked && this._down)) {
-      this.body.update(dt, null)
+      const climbBlend = this._liveMountBlend()
+      const climbClip = this.body.current === 'mount' || this.body.current === 'dismount'
+      if (climbClip && climbBlend != null) {
+        // Don't let paint-dt race the sim clock — scrub to the shared blend every frame.
+        const u = this.body.current === 'mount' ? climbBlend : 1 - climbBlend
+        this.body.seek?.(u)
+      } else {
+        this.body.update(dt, null)
+      }
       // After a non-ragdoll defeat fall holds its last frame, lock the corpse on a death rest.
       if (this._down && !this.ragdollActive) {
         const clip = this.body.current
@@ -736,15 +804,20 @@ export class Spike3dScene {
     for (const horse of this.horses.values()) horse.update(dt)
     for (const actor of this.actors.values()) actor.update(dt)
     // Seat riders on saddles after both horse and actor have advanced this frame.
-    // Mount: lerp side→saddle with clip progress; dismount: reverse; ride: locked on.
+    // Prefer clock mountBlend; fall back to animator progress only if the sim did not publish one.
     for (const horse of this.horses.values()) {
       if (!horse._riderId) continue
       const rider = this.actors.get(horse._riderId)
       if (!rider) continue
-      const clip = rider.body?.current
       let blend = 1
-      if (clip === 'mount') blend = rider.body?.progress ?? 0
-      else if (clip === 'dismount') blend = 1 - (rider.body?.progress ?? 0)
+      const live = rider._liveMountBlend?.()
+      if (live != null) {
+        blend = live
+      } else {
+        const clip = rider.body?.current
+        if (clip === 'mount') blend = rider.body?.progress ?? 0
+        else if (clip === 'dismount') blend = 1 - (rider.body?.progress ?? 0)
+      }
       horse.attachRider(rider, blend)
     }
     // Step Rapier only while at least one body is tumbling.

@@ -20,6 +20,18 @@ const CAP = 6
 /** Approximate withers height in world units (human ~1.95). Riding scale, not pony. */
 export const HORSE_HEIGHT = 2.35
 
+/**
+ * Horse faces +Z; left is −X (right-handed). Positive reach matches exploration
+ * mountSidePoint (heading + π/2). Local joint X must be negative or climb/dismount
+ * land on the right and pop to the sim left pad.
+ */
+export const MOUNT_LEFT_REACH = 1.15
+export const MOUNT_LEFT_X = -MOUNT_LEFT_REACH
+/** Raised left climb waypoint X — still outside the barrel half-width (~0.33). */
+export const MOUNT_LEFT_UP_X = -1.05
+/** Local −Z of the stand pad (slightly aft of horse origin); mountSidePoint must match. */
+export const MOUNT_LEFT_AFT = (-0.4 * HORSE_HEIGHT) / 28
+
 /** Walk 4-beat offsets (radians on the gait cycle): hind→fore, left then right. */
 const WALK_PHASE = {
   HL: 0,
@@ -77,6 +89,19 @@ export class HorseModel {
     this.saddle.position.set(0, 19.0 * s, -0.6 * s)
     this.body.add(this.saddle)
     this.addEllipsoid(this.saddle, [0, 0.15 * s, 0], [3.0 * s, 0.5 * s, 3.4 * s], 'saddle')
+
+    // Left-side climb sockets on the root (tile units). −X = left of horse forward (+Z).
+    // Kept off `body` so the ground pad does not bob with gait bounce.
+    /** Stand pad the rider walks to before climbing (matches mountSidePoint offset). */
+    this.mountLeft = new THREE.Group()
+    this.mountLeft.name = 'mount_left'
+    this.mountLeft.position.set(MOUNT_LEFT_X, 0, MOUNT_LEFT_AFT)
+    this.root.add(this.mountLeft)
+    /** Left stirrup step — low enough that the climb reads as a step-up, not a hover. */
+    this.mountLeftUp = new THREE.Group()
+    this.mountLeftUp.name = 'mount_left_up'
+    this.mountLeftUp.position.set(MOUNT_LEFT_UP_X, 7.2 * s, MOUNT_LEFT_AFT)
+    this.root.add(this.mountLeftUp)
 
     // Neck root at the withers; mesh is tilted up-and-forward so the joint stays animatable.
     this.neck = new THREE.Group()

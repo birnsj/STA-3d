@@ -5,6 +5,7 @@ import challengeData from '../data/adaptation/exploration/challenges.json'
 import { canAct } from './partyControl.js'
 import { isClear, nearestWalkableTile, planRoute, RADIUS } from './navigation.js'
 import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from './mountConstants.js'
+import { MOUNT_LEFT_AFT, MOUNT_LEFT_REACH } from '../spike3d/HorseModel.js'
 import { horseCoatForSpawnIndex, horseCoatLabel } from '../spike3d/horseTexture.js'
 
 export { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT }
@@ -13,8 +14,8 @@ export { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT }
 export const MOUNT_INTERACT_RANGE = challengeData.interactRange
 
 /** Match HumanoidAnimator CLIP_META.mount / dismount lengths. */
-export const MOUNT_CLIP_SECONDS = 1.15
-export const DISMOUNT_CLIP_SECONDS = 1.0
+export const MOUNT_CLIP_SECONDS = 1.45
+export const DISMOUNT_CLIP_SECONDS = 1.3
 
 const HORSE_ID = 'horse-1'
 
@@ -84,19 +85,79 @@ export function isMounted(state, memberId) {
 
 /**
  * Climb-up / climb-off stand point beside the horse (left of facing).
- * Ride walks here first; mount/dismount visuals lerp from this side into the saddle.
+ * Exact continuous pad matching HorseModel mountLeft (no tile-centre snap — that caused dismount pops).
  */
 export function mountSidePoint(map, horse) {
   const heading = horse?.heading ?? 0
   const origin = horse?.position ?? { x: 0, y: 0 }
+  const reach = MOUNT_LEFT_REACH
+  const aft = MOUNT_LEFT_AFT
   const at = {
-    x: origin.x + Math.cos(heading + Math.PI / 2) * 1.15,
-    y: origin.y + Math.sin(heading + Math.PI / 2) * 1.15,
+    x: origin.x + Math.cos(heading + Math.PI / 2) * reach + Math.cos(heading) * aft,
+    y: origin.y + Math.sin(heading + Math.PI / 2) * reach + Math.sin(heading) * aft,
   }
   if (!map) return at
+  // Prefer the joint itself so climb-off lands where the mesh ended.
+  if (isClear(map, at, RADIUS)) return at
   const walk = nearestWalkableTile(map, { x: Math.round(at.x), y: Math.round(at.y) })
-  if (walk && isClear(map, { x: walk.x, y: walk.y })) return { x: walk.x, y: walk.y }
+  if (walk && isClear(map, { x: walk.x, y: walk.y }, RADIUS)) return { x: walk.x, y: walk.y }
   return at
+}
+
+function smooth01(u) {
+  const t = Math.min(1, Math.max(0, u))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Attach blend from world clock: mount 0→1, dismount 1→0.
+ * Keeps sim / Spike3d / animator on one clock so climb-off does not detach mid-air.
+ */
+export function rideAttachBlend(anim, now = worldTime({ world: { time: 0 } })) {
+  if (!anim?.endsAt || !anim.clip) return anim?.clip === 'dismount' ? 1 : anim?.clip === 'mount' ? 0 : 1
+  const dur = anim.clip === 'dismount' ? DISMOUNT_CLIP_SECONDS : MOUNT_CLIP_SECONDS
+  if (!(dur > 0)) return anim.clip === 'dismount' ? 0 : 1
+  const remaining = (anim.endsAt - now) / dur
+  if (anim.clip === 'dismount') return Math.min(1, Math.max(0, remaining))
+  return Math.min(1, Math.max(0, 1 - remaining))
+}
+
+/**
+ * Map-space climb path matching HorseActor attach (blend 0 = mount pad, 1 = saddle).
+ */
+export function mountClimbMapPos(horse, blend) {
+  const t = Math.min(1, Math.max(0, Number(blend) || 0))
+  const seat = { x: horse.position.x, y: horse.position.y }
+  const ground = mountSidePoint(null, horse)
+  const stirrup = {
+    x: seat.x + (ground.x - seat.x) * 0.88,
+    y: seat.y + (ground.y - seat.y) * 0.88,
+  }
+  const approach = {
+    x: ground.x + (stirrup.x - ground.x) * 0.4,
+    y: ground.y + (stirrup.y - ground.y) * 0.4,
+  }
+  // Keep in sync with HorseActor climb phases — long plant so dismount ends planted on the joint.
+  const plantEnd = 0.4
+  const stirrupEnd = 0.58
+  if (t <= plantEnd) {
+    const u = smooth01(t / plantEnd)
+    return { x: ground.x + (approach.x - ground.x) * u, y: ground.y + (approach.y - ground.y) * u }
+  }
+  if (t <= stirrupEnd) {
+    const u = smooth01((t - plantEnd) / (stirrupEnd - plantEnd))
+    return { x: approach.x + (stirrup.x - approach.x) * u, y: approach.y + (stirrup.y - approach.y) * u }
+  }
+  const u = smooth01((t - stirrupEnd) / (1 - stirrupEnd))
+  let x = stirrup.x + (seat.x - stirrup.x) * u
+  let y = stirrup.y + (seat.y - stirrup.y) * u
+  const ox = stirrup.x - seat.x
+  const oy = stirrup.y - seat.y
+  const len = Math.hypot(ox, oy) || 1
+  const keep = (1 - u) * (1 - u) * 0.28
+  x += (ox / len) * keep
+  y += (oy / len) * keep
+  return { x, y }
 }
 
 /** Close enough to climb: near the horse and near the side stand (or already beside it). */
@@ -171,6 +232,7 @@ export function mountHorse(state, memberId, horseId = null) {
       mounted: true,
       pendingMountHorseId: null,
       rideAnim: { clip: 'mount', endsAt: worldTime(state) + MOUNT_CLIP_SECONDS },
+      rideAttachBlend: 0,
       order: null,
       path: [],
       moving: false,
@@ -311,6 +373,7 @@ export function beginDismount(state, memberId) {
         [memberId]: {
           ...member,
           rideAnim: { clip: 'dismount', endsAt: worldTime(state) + DISMOUNT_CLIP_SECONDS },
+          rideAttachBlend: 1,
           order: null,
           path: [],
           moving: false,
@@ -328,9 +391,14 @@ export function finishDismount(state, memberId) {
   const member = state.party?.members?.[memberId]
   if (!member) return state
   if (!horse && !member.mounted && !member.rideAnim) return state
-  const position = horse
-    ? mountSidePoint(state.party.map, horse)
-    : { ...member.position }
+  // Prefer the climb foot already on the pad (tickRideAnims); else the continuous mountLeft joint.
+  const pad = horse ? mountSidePoint(null, horse) : null
+  const onPad =
+    pad &&
+    Number.isFinite(member.position?.x) &&
+    Math.hypot(member.position.x - pad.x, member.position.y - pad.y) <= 0.2
+  const position = onPad ? { ...member.position } : pad ? { ...pad } : { ...member.position }
+  const heading = horse?.heading ?? member.heading ?? 0
   const nextHorses = getHorses(state).map((entry) =>
     entry.riderId === memberId ? { ...entry, riderId: null, position: { ...entry.position } } : entry,
   )
@@ -339,12 +407,15 @@ export function finishDismount(state, memberId) {
     [memberId]: {
       ...member,
       position,
+      heading,
+      facing: { x: Math.cos(heading), y: Math.sin(heading) },
       moving: false,
       running: false,
       pace: null,
       mounted: false,
       pendingMountHorseId: null,
       rideAnim: null,
+      rideAttachBlend: null,
       order: null,
       path: [],
     },
@@ -360,6 +431,8 @@ export function dismountHorse(state, memberId) {
 /**
  * Advance mount / dismount hold clips. Called each exploration tick.
  * Mount: clear rideAnim → rideIdle. Dismount: land beside the horse.
+ * Attach blend is driven from world.time (same clock as endsAt) so Spike3d seek/attach
+ * cannot finish mid-air while the sim already cleared riderId.
  */
 export function tickRideAnims(state) {
   const members = state.party?.members
@@ -394,11 +467,43 @@ export function tickRideAnims(state) {
     }
     if (canMount(next, id, horseId)) next = mountHorse(next, id, horseId)
   }
+  // Clock blend + climb-foot position so LEAD / camera / plant match the mesh (no centre→pad snap).
+  for (const id of Object.keys(next.party.members)) {
+    const member = next.party.members[id]
+    const anim = member?.rideAnim
+    if (!anim) continue
+    const horse = horseForRider(next, id)
+    const blend = rideAttachBlend(anim, now)
+    const heading = horse?.heading ?? member.heading ?? 0
+    const climb = horse ? mountClimbMapPos(horse, blend) : member.position
+    const sameBlend = member.rideAttachBlend === blend
+    const samePos =
+      member.position?.x === climb.x && member.position?.y === climb.y && member.heading === heading
+    if (sameBlend && samePos) continue
+    next = {
+      ...next,
+      party: {
+        ...next.party,
+        members: {
+          ...next.party.members,
+          [id]: {
+            ...member,
+            rideAttachBlend: blend,
+            position: { x: climb.x, y: climb.y },
+            heading,
+            facing: { x: Math.cos(heading), y: Math.sin(heading) },
+          },
+        },
+      },
+    }
+  }
   for (const id of Object.keys(next.party.members)) {
     const member = next.party.members[id]
     const anim = member?.rideAnim
     if (!anim || !(anim.endsAt <= now)) continue
     if (anim.clip === 'dismount') {
+      // Only plant once the shared blend has reached the mount joint (not mid-stirrup).
+      if ((member.rideAttachBlend ?? rideAttachBlend(anim, now)) > 0.001) continue
       next = finishDismount(next, id)
     } else {
       next = {
@@ -407,7 +512,7 @@ export function tickRideAnims(state) {
           ...next.party,
           members: {
             ...next.party.members,
-            [id]: { ...next.party.members[id], rideAnim: null },
+            [id]: { ...next.party.members[id], rideAnim: null, rideAttachBlend: null },
           },
         },
       }
@@ -534,6 +639,14 @@ export function syncMountAfterParty(state) {
       rider.facing && (rider.facing.x || rider.facing.y)
         ? Math.atan2(rider.facing.y, rider.facing.x)
         : horse.heading
+    // Climb path moves the rider beside the horse — do not drag the horse onto the mount pad.
+    if (rider.rideAnim) {
+      if (horse.heading !== heading) {
+        changed = true
+        return { ...horse, heading }
+      }
+      return horse
+    }
     if (
       horse.position.x !== rider.position.x ||
       horse.position.y !== rider.position.y ||
@@ -576,6 +689,7 @@ export function dismountAll(state) {
       ...member,
       mounted: false,
       rideAnim: null,
+      rideAttachBlend: null,
       pendingMountHorseId: null,
     }
   }

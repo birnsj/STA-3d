@@ -769,71 +769,109 @@ function evalRidePose(u, moving, pace = 0) {
   }
 }
 
-/** Climb aboard: stand beside → step up → settle astride. */
+/**
+ * Climb aboard from the left (procedural — limited by a single foot root).
+ * Phases: plant + left foot to stirrup → push up → right leg swings over → settle.
+ * thigh[0]=R, thigh[1]=L.
+ */
 function evalMountPose(u) {
   const e = clamp01(u)
-  const ease = e * e * (3 - 2 * e)
   const stand = basePose()
   const seat = evalRidePose(1, false)
-  const lift = Math.sin(Math.PI * Math.min(1, e * 1.15))
+  // Envelope peaks for left-step, push, and right-leg swing.
+  const stepL = Math.sin(Math.PI * clamp01(e / 0.38))
+  const push = e < 0.28 ? 0 : Math.sin(Math.PI * clamp01((e - 0.28) / 0.35))
+  const swingR = e < 0.48 ? 0 : Math.sin(Math.PI * clamp01((e - 0.48) / 0.4))
+  const settle = clamp01((e - 0.72) / 0.28)
+  const toSeat = e * e * (3 - 2 * e)
   return {
     ...stand,
     thigh: [
-      lerp(stand.thigh[0], seat.thigh[0], ease) + deg(18) * lift * (1 - ease),
-      lerp(stand.thigh[1], seat.thigh[1], ease),
+      lerp(stand.thigh[0], seat.thigh[0], toSeat) + deg(-8) * stepL + deg(38) * swingR * (1 - settle),
+      lerp(stand.thigh[1], seat.thigh[1], toSeat) + deg(32) * stepL * (1 - push * 0.35) + deg(8) * push,
     ],
     knee: [
-      lerp(stand.knee[0], seat.knee[0], ease) + deg(25) * lift * (1 - ease),
-      lerp(stand.knee[1], seat.knee[1], ease),
+      lerp(stand.knee[0], seat.knee[0], toSeat) + deg(12) * stepL + deg(42) * swingR * (1 - settle),
+      lerp(stand.knee[1], seat.knee[1], toSeat) + deg(48) * stepL * (1 - settle * 0.5),
     ],
-    legSide: [lerp(0, seat.legSide[0], ease), lerp(0, seat.legSide[1], ease * ease)],
-    arm: [lerp(stand.arm[0], seat.arm[0], ease), lerp(stand.arm[1], seat.arm[1], ease)],
-    elbow: [lerp(stand.elbow[0], seat.elbow[0], ease), lerp(stand.elbow[1], seat.elbow[1], ease)],
-    shoulder: [lerp(stand.shoulder[0], seat.shoulder[0], ease), lerp(stand.shoulder[1], seat.shoulder[1], ease)],
-    armSide: [lerp(0, seat.armSide[0], ease), lerp(0, seat.armSide[1], ease)],
-    spineLean: lerp(0, seat.spineLean, ease),
-    chestLean: lerp(0, seat.chestLean, ease),
-    lean: lerp(0, seat.lean, ease),
-    hipDrop: lerp(0, seat.hipDrop, ease) + 1.8 * lift * (1 - ease),
-    bounce: 0.06 * lift * (1 - ease),
-    torsoYaw: deg(-12) * (1 - ease) + seat.torsoYaw * ease,
-    headPitch: lerp(stand.headPitch, seat.headPitch, ease),
-    headYaw: deg(8) * (1 - ease),
+    legSide: [
+      lerp(0, seat.legSide[0], toSeat) + deg(10) * swingR,
+      lerp(0, seat.legSide[1], Math.min(1, toSeat + 0.2)) + deg(6) * stepL,
+    ],
+    // Reach for mane / pommel, then rein hands.
+    arm: [
+      lerp(stand.arm[0], seat.arm[0], toSeat) + deg(-28) * stepL * (1 - settle) + deg(-10) * push,
+      lerp(stand.arm[1], seat.arm[1], toSeat) + deg(-22) * stepL * (1 - settle),
+    ],
+    elbow: [
+      lerp(stand.elbow[0], seat.elbow[0], toSeat) + deg(18) * stepL,
+      lerp(stand.elbow[1], seat.elbow[1], toSeat) + deg(14) * stepL,
+    ],
+    shoulder: [lerp(stand.shoulder[0], seat.shoulder[0], toSeat), lerp(stand.shoulder[1], seat.shoulder[1], toSeat)],
+    armSide: [lerp(0, seat.armSide[0], toSeat) + deg(-8) * stepL, lerp(0, seat.armSide[1], toSeat)],
+    spineLean: lerp(0, seat.spineLean, toSeat) + deg(14) * push * (1 - settle) + deg(8) * swingR,
+    chestLean: lerp(0, seat.chestLean, toSeat) + deg(6) * push,
+    lean: lerp(0, seat.lean, toSeat) + deg(10) * stepL * (1 - settle) + deg(12) * push,
+    // Crouch to load the stirrup, then rise into the seat — not a float.
+    hipDrop: lerp(0, seat.hipDrop, settle) + 3.2 * stepL * (1 - push) + 1.4 * push * (1 - settle),
+    bounce: 0.02 * push,
+    torsoYaw: deg(16) * (1 - toSeat) * (1 - settle * 0.5) + seat.torsoYaw * toSeat,
+    headPitch: lerp(stand.headPitch, seat.headPitch, toSeat) + deg(8) * stepL * (1 - settle),
+    headYaw: deg(-10) * (1 - settle),
     prop: false,
     aim: 0,
   }
 }
 
-/** Swing off: astride → plant a foot → stand clear. */
+/**
+ * Climb off to the left: free right leg → weight on left stirrup → step onto the mount pad.
+ * Standing pose is reached by ~0.82 so the last beats are planted on the joint (no late hop).
+ * thigh[0]=R, thigh[1]=L.
+ */
 function evalDismountPose(u) {
   const e = clamp01(u)
-  const ease = e * e * (3 - 2 * e)
   const seat = evalRidePose(0, false)
   const stand = basePose()
-  const swing = Math.sin(Math.PI * Math.min(1, e * 1.1))
+  const freeR = Math.sin(Math.PI * clamp01(e / 0.36))
+  const onStirrup = e < 0.18 ? 0 : Math.sin(Math.PI * clamp01((e - 0.18) / 0.36))
+  // Step-down peaks mid-clip and is fully off before the end so we don't bounce at land.
+  const drop = e < 0.38 ? 0 : Math.sin(Math.PI * clamp01((e - 0.38) / 0.36))
+  const standT = clamp01(e / 0.82)
+  const toStand = standT * standT * (3 - 2 * standT)
+  const planted = clamp01((e - 0.72) / 0.28)
   return {
     ...seat,
     thigh: [
-      lerp(seat.thigh[0], stand.thigh[0], ease),
-      lerp(seat.thigh[1], stand.thigh[1], ease) + deg(22) * swing * (1 - ease),
+      lerp(seat.thigh[0], stand.thigh[0], toStand) + deg(32) * freeR * (1 - drop) * (1 - planted),
+      lerp(seat.thigh[1], stand.thigh[1], toStand) + deg(18) * onStirrup * (1 - drop) * (1 - planted) + deg(8) * drop * (1 - planted),
     ],
     knee: [
-      lerp(seat.knee[0], stand.knee[0], ease),
-      lerp(seat.knee[1], stand.knee[1], ease) + deg(20) * swing * (1 - ease),
+      lerp(seat.knee[0], stand.knee[0], toStand) + deg(36) * freeR * (1 - drop) * (1 - planted),
+      lerp(seat.knee[1], stand.knee[1], toStand) + deg(32) * onStirrup * (1 - drop * 0.6) * (1 - planted),
     ],
-    legSide: [lerp(seat.legSide[0], 0, ease), lerp(seat.legSide[1], 0, ease * 0.85)],
-    arm: [lerp(seat.arm[0], stand.arm[0], ease), lerp(seat.arm[1], stand.arm[1], ease)],
-    elbow: [lerp(seat.elbow[0], stand.elbow[0], ease), lerp(seat.elbow[1], stand.elbow[1], ease)],
-    shoulder: [lerp(seat.shoulder[0], stand.shoulder[0], ease), lerp(seat.shoulder[1], stand.shoulder[1], ease)],
-    armSide: [lerp(seat.armSide[0], 0, ease), lerp(seat.armSide[1], 0, ease)],
-    spineLean: lerp(seat.spineLean, 0, ease),
-    chestLean: lerp(seat.chestLean, 0, ease),
-    lean: lerp(seat.lean, 0, ease),
-    hipDrop: lerp(seat.hipDrop, 0, ease) + 1.2 * swing * (1 - ease),
-    bounce: 0.05 * swing * (1 - ease),
-    torsoYaw: seat.torsoYaw * (1 - ease) + deg(14) * swing * (1 - ease),
-    headPitch: lerp(seat.headPitch, stand.headPitch, ease),
-    headYaw: deg(-6) * (1 - ease),
+    legSide: [
+      lerp(seat.legSide[0], 0, toStand) + deg(6) * freeR * (1 - planted),
+      lerp(seat.legSide[1], 0, toStand) + deg(3) * onStirrup * (1 - planted),
+    ],
+    arm: [
+      lerp(seat.arm[0], stand.arm[0], toStand) + deg(-14) * onStirrup * (1 - drop) * (1 - planted),
+      lerp(seat.arm[1], stand.arm[1], toStand) + deg(-10) * onStirrup * (1 - drop) * (1 - planted),
+    ],
+    elbow: [
+      lerp(seat.elbow[0], stand.elbow[0], toStand) + deg(8) * onStirrup * (1 - planted),
+      lerp(seat.elbow[1], stand.elbow[1], toStand) + deg(6) * onStirrup * (1 - planted),
+    ],
+    shoulder: [lerp(seat.shoulder[0], stand.shoulder[0], toStand), lerp(seat.shoulder[1], stand.shoulder[1], toStand)],
+    armSide: [lerp(seat.armSide[0], 0, toStand), lerp(seat.armSide[1], 0, toStand)],
+    spineLean: lerp(seat.spineLean, 0, toStand) + deg(8) * onStirrup * (1 - drop) * (1 - planted),
+    chestLean: lerp(seat.chestLean, 0, toStand),
+    lean: lerp(seat.lean, 0, toStand) + deg(6) * freeR * (1 - drop) * (1 - planted) + deg(-4) * drop * (1 - planted),
+    // Soft step-down only — no late hop that reads as a pop off the joint.
+    hipDrop: lerp(seat.hipDrop, 0, toStand) + 1.1 * onStirrup * (1 - drop) * (1 - planted) + 1.2 * drop * (1 - toStand),
+    bounce: 0.01 * drop * (1 - planted),
+    torsoYaw: seat.torsoYaw * (1 - toStand) + deg(-10) * freeR * (1 - drop) * (1 - planted),
+    headPitch: lerp(seat.headPitch, stand.headPitch, toStand) + deg(4) * drop * (1 - planted),
+    headYaw: deg(6) * (1 - toStand),
     prop: false,
     aim: 0,
   }

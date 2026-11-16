@@ -28,8 +28,8 @@ if (!CLIP_META.hazardPanicRun) CLIP_META.hazardPanicRun = { seconds: 0.6, play: 
 // Slow seated look-around (one L→R→L scan per loop), same idea as horse graze idle.
 if (!CLIP_META.rideIdle) CLIP_META.rideIdle = { seconds: 8, play: 'loop' }
 if (!CLIP_META.ride) CLIP_META.ride = { seconds: 1.05, play: 'loop' }
-if (!CLIP_META.mount) CLIP_META.mount = { seconds: 1.15, play: 'hold' }
-if (!CLIP_META.dismount) CLIP_META.dismount = { seconds: 1.0, play: 'hold' }
+if (!CLIP_META.mount) CLIP_META.mount = { seconds: 1.45, play: 'hold' }
+if (!CLIP_META.dismount) CLIP_META.dismount = { seconds: 1.3, play: 'hold' }
 // Procedural horse gaits (walk/idle already exist on humanoid sheets; horse uses HORSE_VIEWER_CLIPS lengths).
 if (!CLIP_META.trot) CLIP_META.trot = { seconds: 0.65, play: 'loop' }
 if (!CLIP_META.run) CLIP_META.run = { seconds: 0.42, play: 'loop' }
@@ -190,8 +190,8 @@ export function animationViewerGroups(setId = defaultAnimationSetId()) {
       ...VIEWER_3D_ONLY,
       { name: 'rideIdle', seconds: 8, play: 'loop' },
       { name: 'ride', seconds: 0.7, play: 'loop' },
-      { name: 'mount', seconds: 1.15, play: 'hold' },
-      { name: 'dismount', seconds: 1.0, play: 'hold' },
+      { name: 'mount', seconds: 1.45, play: 'hold' },
+      { name: 'dismount', seconds: 1.3, play: 'hold' },
     ].filter((clip) => !seen.has(clip.name))
     if (only3d.length) {
       groups.push({ id: '3dOnly', label: VIEWER_SHEET_LABELS['3dOnly'], clips: only3d })

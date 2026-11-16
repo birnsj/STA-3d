@@ -56,6 +56,14 @@ export class HorseBody {
     return this.model.saddle
   }
 
+  get mountLeft() {
+    return this.model.mountLeft
+  }
+
+  get mountLeftUp() {
+    return this.model.mountLeftUp
+  }
+
   get materials() {
     return null
   }
