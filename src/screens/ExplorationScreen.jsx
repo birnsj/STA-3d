@@ -719,11 +719,10 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       beamOut: () => ending.askBeamOut(menuMember.id),
       dismount: () => {
         setPendingMount(null)
-        // Leader ring + whole party selected → everyone climbs off (same team path as M).
-        const allSelected =
-          party.memberIds.length > 0 && party.memberIds.every((id) => party.selectedIds.includes(id))
-        if (menuMember.id === party.leaderId && allSelected) {
-          dispatch({ type: 'toggleMount', memberIds: [...party.memberIds] })
+        // Multi-select: Dismount on any selected rider's ring climbs off every selected rider (same as M).
+        const selected = party.selectedIds ?? []
+        if (selected.length > 1 && selected.includes(menuMember.id)) {
+          dispatch({ type: 'toggleMount', memberIds: [...selected] })
         } else {
           dispatch({ type: 'dismountHorse', memberId: menuMember.id })
         }

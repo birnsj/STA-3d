@@ -22,15 +22,16 @@ function wrapAngle(radians) {
  * Yaw follows travel so scatter pathing does not whip the mesh every frame.
  */
 export class ChickenActor {
-  constructor(id, host) {
+  constructor(id, host, { coat = 'yellow' } = {}) {
     this.id = id
     this.host = host
     this.scene = host.scene
     this._lastSeen = performance.now()
+    this._coat = coat
 
     this.root = new THREE.Group()
     this.root.name = `spike_chicken_${id}`
-    this.body = new ChickenModel({ height: CHICKEN_HEIGHT })
+    this.body = new ChickenModel({ height: CHICKEN_HEIGHT, coat })
     this.root.add(this.body.root)
     this.shadow = createContactShadow({ width: CHICKEN_HEIGHT * 1.1, depth: CHICKEN_HEIGHT * 0.7 })
     this.root.add(this.shadow)
@@ -76,8 +77,12 @@ export class ChickenActor {
     if (this.shadow) this.shadow.visible = Boolean(visible)
   }
 
-  setPose({ position, facing, gait, idlePose }) {
+  setPose({ position, facing, gait, idlePose, coat }) {
     this._lastSeen = performance.now()
+    if (coat != null && coat !== this._coat) {
+      this._coat = coat
+      this.body.setCoat?.(coat)
+    }
     const nextGait = gait === 'run' || gait === 'walk' ? gait : 'idle'
     const nextIdle = nextGait === 'idle' ? idlePose ?? null : null
     const soundClip = soundClipForPose(nextGait, nextIdle)

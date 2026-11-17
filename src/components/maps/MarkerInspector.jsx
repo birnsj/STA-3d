@@ -4,8 +4,10 @@ import { resolveAuthoredRoam } from '../../exploration/roam.js'
 import { FACINGS, snapFacing } from '../../maps/facing.js'
 import {
   CAT_COATS,
+  CHICKEN_COATS,
   HORSE_COATS,
   normalizeCatCoatId,
+  normalizeChickenCoatId,
   normalizeHorseCoatId,
 } from '../../data/adaptation/exploration/animalCoats.js'
 import { Field } from './NpcInspector.jsx'
@@ -13,16 +15,18 @@ import { PropertySection } from './PropertySections.jsx'
 import EditorSelect from './EditorSelect.jsx'
 import RoamFields from './RoamFields.jsx'
 
-/** Coat options for this marker kind (horse / cat); null when the animal has no texture variants yet. */
+/** Coat options for this marker kind (horse / cat / chicken); null when the animal has no texture variants yet. */
 function coatsForMarker(kind, creature) {
   if (kind === 'horseSpawns') return Object.values(HORSE_COATS)
   if (creature?.actor === 'cat') return Object.values(CAT_COATS)
+  if (creature?.actor === 'chicken') return Object.values(CHICKEN_COATS)
   return null
 }
 
 function normalizeCoatForMarker(kind, creature, coatId) {
   if (kind === 'horseSpawns') return normalizeHorseCoatId(coatId)
   if (creature?.actor === 'cat') return normalizeCatCoatId(coatId)
+  if (creature?.actor === 'chicken') return normalizeChickenCoatId(coatId)
   return null
 }
 

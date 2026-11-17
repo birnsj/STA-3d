@@ -17,8 +17,8 @@ function idlePoseForClip(name) {
  * Minimal HorseBody/ProceduralBody-shaped wrapper for the Animation Viewer chicken set.
  */
 export class ChickenPreviewBody {
-  constructor({ height = CHICKEN_HEIGHT } = {}) {
-    this.model = new ChickenModel({ height })
+  constructor({ height = CHICKEN_HEIGHT, coat = 'yellow' } = {}) {
+    this.model = new ChickenModel({ height, coat })
     this.root = this.model.root
     this.current = 'chickenIdle'
     this._paused = false

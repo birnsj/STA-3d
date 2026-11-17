@@ -93,7 +93,7 @@ export default function useMissionEnding({ state, dispatch, inCombat, talking })
   }
 }
 
-// The world runs in real time, capped at sixty React commits per second while running.
+// The world runs in real time, capped at WORLD_TICK_HZ (60) flushSync React commits per second while running.
 // flushSync: rendered and committed inside this frame's callback. Left to React's scheduler, the commit landed after the
 // frame was painted, so each frame showed the previous frame's step; with uneven frame times (a missed vsync) the
 // characters then moved in uneven jumps against the camera, which is updated inside the frame.

@@ -1,5 +1,6 @@
 // React state does not need to commit at a monitor's full refresh rate. Sixty simulation presentations per second keep
 // movement smooth while preventing 120/144/180 Hz displays from multiplying the full ExplorationScreen commit cost.
+// (A 30 Hz trial made player walk/run look stepped — Spike snaps mesh to each sim pose with no inter-tick lerp.)
 export const WORLD_TICK_HZ = 60
 export const WORLD_TICK_MS = 1000 / WORLD_TICK_HZ
 const FRAME_TOLERANCE_MS = 1

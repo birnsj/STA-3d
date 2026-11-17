@@ -1,8 +1,9 @@
 /**
- * Bake horse / cat coat albedo atlases under public/art/models/creatures/.
- * Layout matches spike3d horseTexture / catTexture (2×3, flipY):
- *   horse: coat | coatDk / mane | saddle / sock | hoof
- *   cat:   fur  | furDk  / belly | ear    / nose | pad
+ * Bake horse / cat / chicken coat albedo atlases under public/art/models/creatures/.
+ * Layout matches spike3d horseTexture / catTexture / chickenTexture (2×3, flipY):
+ *   horse:   coat | coatDk / mane | saddle / sock | hoof
+ *   cat:     fur  | furDk  / belly | ear    / nose | pad
+ *   chicken: feathers | feathersDk / comb | beak / leg | wattle
  *
  * Usage: node tools/bakeCreatureCoatAtlases.mjs
  */
@@ -344,6 +345,26 @@ const CATS = {
   ],
 }
 
+/** Chicken coats: feathers / feathersDk / comb / beak / leg / wattle */
+const CHICKENS = {
+  yellow: [
+    { base: 0xf0c832, dark: 0xd0a018, light: 0xffe060, grain: 0.14, seed: 131, soft: true },
+    { base: 0xd8a820, dark: 0xb08810, light: 0xf0c840, grain: 0.12, seed: 132, soft: true },
+    { base: 0xc43c2c, dark: 0x8a2018, light: 0xe06050, grain: 0.1, seed: 133 },
+    { base: 0xe8a020, dark: 0xc08010, light: 0xf8c040, grain: 0.1, seed: 134 },
+    { base: 0xd4a017, dark: 0xa87810, light: 0xe8c040, grain: 0.1, seed: 135 },
+    { base: 0xb03028, dark: 0x781810, light: 0xd05040, grain: 0.1, seed: 136 },
+  ],
+  white: [
+    { base: 0xf2eee6, dark: 0xd8d4cc, light: 0xfffcf8, grain: 0.1, seed: 141, soft: true },
+    { base: 0xe0dcd4, dark: 0xc8c4bc, light: 0xf4f0e8, grain: 0.1, seed: 142, soft: true },
+    { base: 0xc43c2c, dark: 0x8a2018, light: 0xe06050, grain: 0.1, seed: 143 },
+    { base: 0xe8a020, dark: 0xc08010, light: 0xf8c040, grain: 0.1, seed: 144 },
+    { base: 0xd4a017, dark: 0xa87810, light: 0xe8c040, grain: 0.1, seed: 145 },
+    { base: 0xb03028, dark: 0x781810, light: 0xd05040, grain: 0.1, seed: 146 },
+  ],
+}
+
 mkdirSync(OUT, { recursive: true })
 
 let written = 0
@@ -355,6 +376,12 @@ for (const [id, cells] of Object.entries(HORSES)) {
 }
 for (const [id, cells] of Object.entries(CATS)) {
   const path = join(OUT, `cat-${id}.png`)
+  writeFileSync(path, bakeAtlas(cells))
+  written += 1
+  console.log('wrote', path)
+}
+for (const [id, cells] of Object.entries(CHICKENS)) {
+  const path = join(OUT, `chicken-${id}.png`)
   writeFileSync(path, bakeAtlas(cells))
   written += 1
   console.log('wrote', path)

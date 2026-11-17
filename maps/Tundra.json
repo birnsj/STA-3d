@@ -134,7 +134,8 @@
         "roam": {
           "mode": "radiusWander",
           "radius": 3
-        }
+        },
+        "coat": "yellow"
       },
       {
         "position": [
@@ -174,7 +175,8 @@
         "roam": {
           "mode": "radiusWander",
           "radius": 3
-        }
+        },
+        "coat": "yellow"
       }
     ],
     "catSpawns": [
@@ -188,7 +190,7 @@
           "radius": 6
         },
         "disposition": "afraid",
-        "coat": "black"
+        "coat": "calico"
       }
     ]
   },

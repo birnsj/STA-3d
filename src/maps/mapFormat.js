@@ -50,7 +50,7 @@
 // markers.horseSpawns: [x, y], [x, y, facing], or { position:[x,y]|x,y, facing?, roam?, disposition?, coat? } — Horse Spawn markers.
 // Play only spawns mounts from these (exploration/mount.js); empty means no horse. Facing degrees (0 = +x).
 // roam: optional { mode: idle|radiusWander|waypointPatrol, radius?, speed? }; omitted/idle = stand at spawn.
-// disposition: friendly|neutral|afraid|enemy (same list as NPCs); coat: horse/cat texture id when authored.
+// disposition: friendly|neutral|afraid|enemy (same list as NPCs); coat: horse/cat/chicken texture id when authored.
 // Legacy top-level `horses: [{ id, position, facing? }]` is migrated on load.
 // markers.chickenSpawns (and later ambientCreatures marker kinds): same spawn shapes; default roam is species-specific
 // (chickens wander). See data/adaptation/exploration/ambientCreatures.json.

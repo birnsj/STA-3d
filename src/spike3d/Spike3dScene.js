@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { clearLiveClip, reportLiveClip } from '../dev/animClipDebug.js'
 import { blastReactionAnimation, blastStaggerAnimation, isExplosionInjury } from '../rules/appearance.js'
+import { project } from '../maps/iso.js'
 import { facingToYaw, makeIsoCamera, syncIsoCamera } from './isoProjection.js'
 import { resolveSpike3dAppearance } from './appearance.js'
 import { clipSeconds, IDLE_FIDGET_GAP, IDLE_FIDGETS } from './clips.js'
@@ -23,13 +24,20 @@ import { cloneRagdollSettings, DEFAULT_RAGDOLL_SETTINGS } from './ragdollSetting
 const HEIGHT = PROCEDURAL_HEIGHT
 
 // Soft enough that large horse meshes do not stamp opaque black slabs on the board.
-const SHADOW_FLOOR_OPACITY = 0.28
+// 100% Shadow slider: ~20% darker than the prior 0.28 floor umbra.
+const SHADOW_FLOOR_OPACITY = 0.336
 /** Key must outrank hemi/fill so the Sun slider’s orbit reads on mesh shading and cast direction. */
 const HEMI_INTENSITY = 0.55
 const SUN_INTENSITY = 1.35
 const FILL_INTENSITY = 0.22
 const RIM_INTENSITY = 0.16
 const TONE_EXPOSURE = 1.05
+/** Tile-area threshold: outdoor / open maps (Tundra 48×48). Single color pass (not per-figure). */
+const LARGE_MAP_TILES = 40 * 40
+/** Board-px padding beyond the SVG viewBox before an ambient/horse is culled from Spike draws. */
+const CULL_PAD_PX = 96
+/** Indoor maps: merge painter groups into at most this many full-scene redraws. */
+const MAX_PAINTER_PASSES = 4
 
 // Knock direction = damage source → victim (map x/y → world x/z). Strength from ragdollSettings.
 // Never treat the victim tile as the blast origin — that zeros the vector and used to flop everyone the same way.
@@ -515,9 +523,13 @@ export class Spike3dScene {
       // Explore↔combat freezes this canvas with drawImage/toDataURL; without it the buffer is often blank.
       preserveDrawingBuffer: true,
     })
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-    // Cast onto an invisible Three floor plane (Pixi still owns the art); bake once per frame
-    // before painter-order passes so every character keeps a silhouette.
+    // Large outdoor maps: single color pass (below). Keep soft shadows + stable per-frame bake — throttled
+    // BasicShadowMap made umbras vanish and uneven bake/no-bake frame times made walk clips hitch.
+    const mapTiles = (map?.width ?? 32) * (map?.height ?? 32)
+    this._largeMap = mapTiles >= LARGE_MAP_TILES
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this._largeMap ? 1.5 : 2))
+    // Cast onto an invisible Three floor plane (Pixi still owns the art). Bake once per frame before
+    // color pass(es); autoUpdate false so painter buckets do not rebuild the map each pass.
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.shadowMap.autoUpdate = false
@@ -556,6 +568,11 @@ export class Spike3dScene {
     this._placeSun(0, 0)
 
     this.shadowFloor = this._makeShadowFloor(map)
+    // Single-pass outdoor draws every occluder at once; their depth hid the ShadowMaterial plane.
+    // Painter-order (indoor) still hides most occluders per pass, so it can keep depthTest on.
+    if (this._largeMap && this.shadowFloor?.material) {
+      this.shadowFloor.material.depthTest = false
+    }
     this.scene.add(this.shadowFloor)
 
     this.colliders = buildMapColliders(map)
@@ -621,6 +638,9 @@ export class Spike3dScene {
       opacity: SHADOW_FLOOR_OPACITY,
       transparent: true,
       depthWrite: false,
+      // Large outdoor single-pass: set false in the constructor path below (occluders ate this plane).
+      // Indoor painter passes keep depthTest on so umbras are not stacked every clearDepth.
+      depthTest: true,
     })
     const mesh = new THREE.Mesh(geo, mat)
     mesh.name = 'shadow_floor'
@@ -774,7 +794,9 @@ export class Spike3dScene {
         let animal = this.ambientAnimals.get(pose.id)
         if (!animal) {
           animal =
-            pose.kind === 'cat' ? new CatActor(pose.id, this, { coat: pose.coat }) : new ChickenActor(pose.id, this)
+            pose.kind === 'cat'
+              ? new CatActor(pose.id, this, { coat: pose.coat })
+              : new ChickenActor(pose.id, this, { coat: pose.coat })
           this.ambientAnimals.set(pose.id, animal)
         }
         animal.setPose(pose)
@@ -821,10 +843,49 @@ export class Spike3dScene {
     return false
   }
 
+  /** True when the figure's tile centre is outside the SVG viewBox (plus pad) — skip Spike draw cost. */
+  _outsideView(tx, tz) {
+    const vb = this._viewBox
+    if (!vb?.width) return false
+    const p = project({ x: tx, y: tz })
+    const pad = CULL_PAD_PX
+    return p.x < vb.x - pad || p.x > vb.x + vb.width + pad || p.y < vb.y - pad || p.y > vb.y + vb.height + pad
+  }
+
+  /** Merge sorted painter groups into ≤ maxPasses full-scene redraws (indoor cost cap). */
+  _bucketPainterGroups(groups, maxPasses) {
+    if (groups.length <= maxPasses) return groups
+    const out = []
+    const size = Math.ceil(groups.length / maxPasses)
+    for (let i = 0; i < groups.length; i += size) {
+      const slice = groups.slice(i, i + size)
+      const lead = slice[slice.length - 1]
+      out.push({
+        id: lead.id,
+        paint: lead.paint,
+        lead: lead.lead,
+        items: slice.flatMap((g) => g.items),
+      })
+    }
+    return out
+  }
+
   _paint(dt) {
     this._syncActors()
-    for (const horse of this.horses.values()) horse.update(dt)
-    for (const animal of this.ambientAnimals.values()) animal.update(dt)
+    const vbReady = Boolean(this._viewBox?.width)
+    for (const horse of this.horses.values()) {
+      // Always update mounted horses (rider attach); cull only free-roaming ones off-screen.
+      const culled = vbReady && !horse._riderId && this._outsideView(horse._tx ?? 0, horse._tz ?? 0)
+      horse._culled = culled
+      if (!culled) horse.update(dt)
+      else horse.setVisible(false)
+    }
+    for (const animal of this.ambientAnimals.values()) {
+      const culled = vbReady && this._outsideView(animal._tx ?? 0, animal._tz ?? 0)
+      animal._culled = culled
+      if (!culled) animal.update(dt)
+      else animal.setVisible(false)
+    }
     for (const actor of this.actors.values()) actor.update(dt)
     // Seat riders on saddles after both horse and actor have advanced this frame.
     // Prefer clock mountBlend; fall back to animator progress only if the sim did not publish one.
@@ -853,29 +914,11 @@ export class Spike3dScene {
     syncIsoCamera(this.camera, this._viewBox, this.renderer)
     this._paintedOnce = true
 
-    {
-      let sx = 0
-      let sz = 0
-      const n = this._poses.length
-      if (n) {
-        for (const p of this._poses) {
-          sx += p.position?.x ?? 0
-          sz += p.position?.y ?? 0
-        }
-        sx /= n
-        sz /= n
-      } else {
-        sx = (this.map?.width ?? 0) / 2
-        sz = (this.map?.height ?? 0) / 2
-      }
-      this._placeSun(sx, sz)
-    }
-
-    // Painter order by tile x+z. Mounted horse+rider share one pass so depth sorts
-    // limbs against the barrel (clearDepth between them made every rider mesh win or lose as a slab).
+    // Collect visible casters. Mounted horse+rider stay one group (depth sorts limbs vs barrel).
     const ridden = new Set()
     const groups = []
     for (const horse of this.horses.values()) {
+      if (horse._culled) continue
       const rider = horse._riderId ? this.actors.get(horse._riderId) : null
       if (rider) {
         ridden.add(rider.id)
@@ -895,37 +938,89 @@ export class Spike3dScene {
       if (ridden.has(actor.id)) continue
       groups.push({ id: actor.id, paint: actor.paintKey(), lead: actor, items: [actor] })
     }
+    const ambientBatch = []
     for (const animal of this.ambientAnimals.values()) {
-      groups.push({ id: animal.id, paint: animal.paintKey(), lead: animal, items: [animal] })
+      if (animal._culled) continue
+      ambientBatch.push(animal)
     }
     groups.sort((a, b) => {
       const d = a.paint - b.paint
       return d !== 0 ? d : String(a.id).localeCompare(String(b.id))
     })
 
-    // Bake the shadow map with every caster visible, then painter-order color passes reuse it
-    // (autoUpdate is false — otherwise each pass would only cast the visible group).
-    if (groups.length === 0) {
-      this.renderer.shadowMap.needsUpdate = true
-      this.renderer.render(this.scene, this.camera)
-    } else {
-      for (const g of groups) for (const item of g.items) item.setVisible(true)
+    const allItems = []
+    for (const g of groups) for (const item of g.items) allItems.push(item)
+    for (const animal of ambientBatch) allItems.push(animal)
+
+    // Aim the key light at party/horses only — averaging chickens pulled the shadow frustum off the lead.
+    {
+      let sx = 0
+      let sz = 0
+      let n = 0
+      for (const g of groups) {
+        sx += g.lead._tx ?? g.lead._paintX ?? 0
+        sz += g.lead._tz ?? g.lead._paintZ ?? 0
+        n += 1
+      }
+      if (!n) {
+        sx = (this.map?.width ?? 0) / 2
+        sz = (this.map?.height ?? 0) / 2
+      } else {
+        sx /= n
+        sz /= n
+      }
+      this._placeSun(sx, sz)
+    }
+
+    // Bake soft shadows every frame (stable cost). ColorWrite off so this pass does not paint bodies.
+    // Keep the shadow floor visible so the bake pass can also stamp umbras into the color buffer.
+    if (this.shadowFloor) {
+      const strength = getBoardSunSettings().shadowStrength ?? 1
+      this.shadowFloor.visible = this.sun.castShadow && strength > 0.001
+    }
+    if (this.sun.castShadow && allItems.length) {
+      for (const item of allItems) item.setVisible(true)
       this._setCasterColorWrite(false)
       this.renderer.shadowMap.needsUpdate = true
       this.renderer.render(this.scene, this.camera)
       this._setCasterColorWrite(true)
-      for (const g of groups) for (const item of g.items) item.setVisible(false)
-      for (const g of groups) {
-        this.renderer.clearDepth()
-        this._syncOccludersForActor(g.lead)
-        for (const item of g.items) item.setVisible(true)
-        this.renderer.render(this.scene, this.camera)
-        for (const item of g.items) item.setVisible(false)
-      }
-      for (const g of groups) for (const item of g.items) item.setVisible(true)
-      // Restore fade-only visibility so debug collider toggle / next frame start clean.
-      this._syncFadedOccluders(this._fadedOccluders)
     }
+
+    // Large outdoor maps: one color pass. Painter-per-figure was ~N full WebGL redraws (Tundra horses).
+    // Depth buffer + sortObjects handles overlap; wall occluder punch is for deck corridors.
+    if (this._largeMap || allItems.length <= 1) {
+      this._syncFadedOccluders(this._fadedOccluders)
+      for (const item of allItems) item.setVisible(true)
+      // Stable back-to-front order without clearDepth-per-figure (reduces limb flicker vs random depth).
+      for (const item of allItems) {
+        const key = item.paintKey?.() ?? 0
+        if (item.root) item.root.renderOrder = Math.floor(key * 10)
+      }
+      // Bake wrote depth with colorWrite off — clear so the color pass is not blocked by it.
+      this.renderer.clearDepth()
+      this.renderer.render(this.scene, this.camera)
+      return
+    }
+
+    // Indoor / small maps: painter buckets (≤ MAX_PAINTER_PASSES) + one ambient batch.
+    const passes = this._bucketPainterGroups(groups, MAX_PAINTER_PASSES)
+    for (const item of allItems) item.setVisible(false)
+    for (const g of passes) {
+      this.renderer.clearDepth()
+      this._syncOccludersForActor(g.lead)
+      for (const item of g.items) item.setVisible(true)
+      this.renderer.render(this.scene, this.camera)
+      for (const item of g.items) item.setVisible(false)
+    }
+    if (ambientBatch.length) {
+      this.renderer.clearDepth()
+      this._syncFadedOccluders(this._fadedOccluders)
+      for (const animal of ambientBatch) animal.setVisible(true)
+      this.renderer.render(this.scene, this.camera)
+      for (const animal of ambientBatch) animal.setVisible(false)
+    }
+    for (const item of allItems) item.setVisible(true)
+    this._syncFadedOccluders(this._fadedOccluders)
   }
 
   dispose() {

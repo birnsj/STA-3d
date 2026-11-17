@@ -18,6 +18,15 @@ function catTexture(id, label) {
   })
 }
 
+function chickenTexture(id, label) {
+  return Object.freeze({
+    id,
+    label,
+    file: `chicken-${id}.png`,
+    url: `/art/models/creatures/chicken-${id}.png`,
+  })
+}
+
 export const HORSE_COATS = Object.freeze({
   white: horseTexture('white', 'White'),
   bay: horseTexture('bay', 'Bay'),
@@ -36,6 +45,11 @@ export const CAT_COATS = Object.freeze({
   calico: catTexture('calico', 'Calico'),
 })
 
+export const CHICKEN_COATS = Object.freeze({
+  yellow: chickenTexture('yellow', 'Yellow'),
+  white: chickenTexture('white', 'White'),
+})
+
 export function normalizeHorseCoatId(coatId) {
   if (coatId && HORSE_COATS[coatId]) return coatId
   return 'bay'
@@ -44,4 +58,9 @@ export function normalizeHorseCoatId(coatId) {
 export function normalizeCatCoatId(coatId) {
   if (coatId && CAT_COATS[coatId]) return coatId
   return 'orange'
+}
+
+export function normalizeChickenCoatId(coatId) {
+  if (coatId && CHICKEN_COATS[coatId]) return coatId
+  return 'yellow'
 }

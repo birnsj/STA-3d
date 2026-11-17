@@ -8,8 +8,9 @@ const PAN_SPEED = 700
 // Screen pixels at the map's edge that pan the camera (debug paints this band when Debug is on).
 // Kept narrow so it does not fight Camera Follow across half the board.
 export const EDGE_MARGIN = 48
-// Share of the remaining gap closed per 60 Hz frame.
-// Active follow sticks hard on the lead (~1–2 frames of lag). Soft return after a free pan.
+// Share of the remaining gap closed per 60 Hz frame (combat focus glides / return after free pan).
+// Active exploration follow hard-locks the viewBox to the lead in useLayoutEffect — easing after paint
+// made the mesh slip under the camera and read as walk jitter.
 const GLIDE = 0.45
 const RETURN_GLIDE = 0.16
 // After WASD / drag release: keep coasting, then slow each 60 Hz frame by this factor.
@@ -239,11 +240,25 @@ export default function useCamera(
   useEffect(() => {
     if (follow && !wasFollowingRef.current) beginReturnToFocus()
     wasFollowingRef.current = follow
+  }, [follow])
+
+  // Sync follow focus before paint. World-clock flushSync commits new lead + figures together; writing the
+  // viewBox here keeps Spike/Pixi on the same frame instead of chasing with the camera rAF after paint.
+  useLayoutEffect(() => {
     followRef.current = { follow, point: { x: focusX, y: focusY } }
     // While the player is panning or coasting, leave the target alone so follow ticks cannot cancel the glide.
     if (freePanRef.current) return
     targetRef.current = follow ? { x: focusX, y: focusY } : null
-  }, [focus.key, focusX, focusY, follow])
+    if (!follow || returningRef.current) return
+    const size = {
+      width: viewSizeRef.current.width / zoomRef.current,
+      height: viewSizeRef.current.height / zoomRef.current,
+    }
+    const next = clamp(centredOn({ x: focusX, y: focusY }, size), { minX, maxX, minY, maxY }, size)
+    cameraRef.current = next
+    writeViewBox(next, size)
+    movingRef.current = true
+  }, [focus.key, focusX, focusY, follow, minX, maxX, minY, maxY])
 
   useEffect(() => {
     const down = (event) => {
@@ -385,20 +400,23 @@ export default function useCamera(
         }
       } else if (!zoomingRef.current && (followRef.current.follow || targetRef.current)) {
         velocityRef.current = { x: 0, y: 0 }
-        // While following, chase the live focus point every frame — don't drop the target on arrival
-        // or the camera freezes between React position updates.
         const focusPoint = followRef.current.follow ? followRef.current.point : targetRef.current
         const target = clamp(centredOn(focusPoint, size), limits, size)
-        const close = Math.abs(target.x - current.x) < 0.35 && Math.abs(target.y - current.y) < 0.35
-        // GLIDE is the share of the way covered per 60 Hz frame; scaled by the real frame time so the camera moves at the
-        // same speed whatever the refresh rate and however uneven the frames (a fixed share per frame juddered).
-        const glide = 1 - (1 - (returningRef.current ? RETURN_GLIDE : GLIDE)) ** (seconds * 60)
-        next = close ? target : { x: current.x + (target.x - current.x) * glide, y: current.y + (target.y - current.y) * glide }
-        if (close && !followRef.current.follow) {
-          targetRef.current = null
-          returningRef.current = false
-        } else if (close && returningRef.current) {
-          returningRef.current = false
+        if (returningRef.current) {
+          // Soft ease back onto the lead after WASD / drag free-pan.
+          const close = Math.abs(target.x - current.x) < 0.35 && Math.abs(target.y - current.y) < 0.35
+          const glide = 1 - (1 - RETURN_GLIDE) ** (seconds * 60)
+          next = close ? target : { x: current.x + (target.x - current.x) * glide, y: current.y + (target.y - current.y) * glide }
+          if (close) returningRef.current = false
+        } else if (followRef.current.follow) {
+          // Hard lock (layout effect already snapped on React ticks; keep lock if zoom/size changed).
+          next = target
+        } else {
+          // One-shot combat / focus.key glide.
+          const close = Math.abs(target.x - current.x) < 0.35 && Math.abs(target.y - current.y) < 0.35
+          const glide = 1 - (1 - GLIDE) ** (seconds * 60)
+          next = close ? target : { x: current.x + (target.x - current.x) * glide, y: current.y + (target.y - current.y) * glide }
+          if (close) targetRef.current = null
         }
       }
       if (next && (next.x !== cameraRef.current.x || next.y !== cameraRef.current.y || zoomChanged)) {

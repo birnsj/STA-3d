@@ -7,6 +7,7 @@ import { distance, isClear, planRoute, slide } from './navigation.js'
 import { defaultRoamForCreature, getRoamProfile, resolveAuthoredRoam, tickRoam } from './roam.js'
 import { normalizeDisposition } from './dispositions.js'
 import { catCoatForSpawnIndex, normalizeCatCoatId } from '../spike3d/catTexture.js'
+import { chickenCoatForSpawnIndex, normalizeChickenCoatId } from '../spike3d/chickenTexture.js'
 
 /** Fallback flee tuning when Disposition is Afraid but the roam profile has no scatter block. */
 const AFRAID_SCATTER = Object.freeze({
@@ -46,13 +47,17 @@ function animalsFromMap(map) {
         moving: false,
         gait: 'idle',
         idlePose: null,
-        // Cats: authored coat, else cycle separate coat atlases; other animals ignore this field.
+        // Cats / chickens: authored coat, else cycle coat atlases; horses use mount state.
         coat:
           creature.actor === 'cat'
             ? entry.coat
               ? normalizeCatCoatId(entry.coat)
               : catCoatForSpawnIndex(index)
-            : null,
+            : creature.actor === 'chicken'
+              ? entry.coat
+                ? normalizeChickenCoatId(entry.coat)
+                : chickenCoatForSpawnIndex(index)
+              : null,
         disposition: normalizeDisposition(entry.disposition ?? 'neutral'),
       })
     })
@@ -284,8 +289,24 @@ function tickScatter(animal, map, seconds, scatterCfg, threats, rng) {
   }
 }
 
+/** Presentation fields Spike3d / Pixi read — ignore roamRuntime timer churn for React dirtying. */
+const POS_EPS = 1e-4
+const HEADING_EPS = 0.002
+
+function presentationChanged(prev, next) {
+  if (prev.gait !== next.gait || prev.moving !== next.moving || prev.idlePose !== next.idlePose) return true
+  if (Math.abs((prev.heading ?? 0) - (next.heading ?? 0)) > HEADING_EPS) return true
+  if (Math.abs((prev.position?.x ?? 0) - (next.position?.x ?? 0)) > POS_EPS) return true
+  if (Math.abs((prev.position?.y ?? 0) - (next.position?.y ?? 0)) > POS_EPS) return true
+  const prevScatter = Boolean(prev.scatter?.goal)
+  const nextScatter = Boolean(next.scatter?.goal)
+  return prevScatter !== nextScatter
+}
+
 /**
  * Advance ambient creatures one frame. Frozen when combat is active (caller should skip).
+ * Only replaces ambient state when a creature's on-board presentation changes — roam timer
+ * ticks mutate roamRuntime in place so idle animals do not force ExplorationScreen commits.
  */
 export function tickAmbientAnimals(state, map, seconds, rng = Math.random) {
   const ambient = state?.ambient
@@ -298,13 +319,24 @@ export function tickAmbientAnimals(state, map, seconds, rng = Math.random) {
     if (scatterCfg && (threats.length || animal.scatter)) {
       const next = tickScatter(animal, map, seconds, scatterCfg, threats, rng)
       if (next.scatter || animal.scatter) {
-        changed = true
-        return next
+        if (presentationChanged(animal, next)) {
+          changed = true
+          return next
+        }
+        // Still fleeing/settling but pose unchanged this frame — keep sim fields without a new React identity.
+        animal.scatter = next.scatter
+        animal.roamRuntime = next.roamRuntime
+        return animal
       }
       // Fall through to normal roam when not scattering.
       if (next !== animal) {
-        animal = next
-        changed = true
+        if (presentationChanged(animal, next)) {
+          animal = next
+          changed = true
+        } else {
+          animal.scatter = next.scatter
+          animal.roamRuntime = next.roamRuntime
+        }
       }
     }
 
@@ -319,8 +351,7 @@ export function tickAmbientAnimals(state, map, seconds, rng = Math.random) {
       seconds,
       rng,
     })
-    changed = true
-    return {
+    const next = {
       ...animal,
       position: result.position,
       heading: result.heading,
@@ -330,6 +361,14 @@ export function tickAmbientAnimals(state, map, seconds, rng = Math.random) {
       roamRuntime: result.roamRuntime,
       scatter: null,
     }
+    if (presentationChanged(animal, next)) {
+      changed = true
+      return next
+    }
+    // Idle / tiny sub-epsilon drift: keep the same object identity for React; advance runtime in place.
+    animal.roamRuntime = result.roamRuntime
+    animal.scatter = null
+    return animal
   })
   return changed ? { ...state, ambient: { ...ambient, animals } } : state
 }
