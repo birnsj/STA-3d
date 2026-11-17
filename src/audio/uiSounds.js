@@ -30,8 +30,11 @@ let uninstall = null
 
 const soundsOn = () => level > 0 && !muted
 
+// null where there is no Web Audio at all (Node tests, any non-browser host): every sound is then a quiet no-op instead
+// of a ReferenceError, so a randomly chosen animation sound cannot fail an unrelated test.
 function getContext() {
   if (!context) {
+    if (typeof AudioContext === 'undefined') return null
     // iPad/iPhone: "playback" lets these sounds play with the silent switch on, the same as the music.
     if (navigator.audioSession) navigator.audioSession.type = 'playback'
     context = new AudioContext()
@@ -43,6 +46,7 @@ function getContext() {
 // means even the very first press is heard; hovers before any interaction stay silent.
 function withRunningContext(play) {
   const audio = getContext()
+  if (!audio) return
   if (audio.state === 'running') play(audio)
   else audio.resume().then(() => play(audio)).catch(() => {})
 }
@@ -1064,7 +1068,7 @@ export function installUiSounds(root = document) {
     if (event.button !== 0) return
     const target = event.target.closest?.(PRESS_TARGETS)
     if (isPressable(target)) press(target)
-    else getContext().resume().catch(() => {})
+    else getContext()?.resume().catch(() => {})
   }
 
   const onKeyDown = (event) => {
@@ -1076,7 +1080,7 @@ export function installUiSounds(root = document) {
   // iPad/iPhone Safari refuse to start audio on pointerdown; the end of the same tap is allowed, so the first tap
   // unlocks audio here (its beep is then heard slightly late, every later one on time).
   const onTapEnd = () => {
-    if (soundsOn() && context?.state !== 'running') getContext().resume().catch(() => {})
+    if (soundsOn() && context?.state !== 'running') getContext()?.resume().catch(() => {})
   }
 
   root.addEventListener('pointermove', onMove, { passive: true })

@@ -165,6 +165,8 @@ export function createExplorationState(map, characters, seed = 0, { enemiesActiv
     hazardClock: 0,
     // The last challenge attempt, for the interaction panel (attemptChallenge).
     lastTask: null,
+    // Latest fishing splash roll (fishingSpots.js): { key, memberId, spotId, success, successes, difficulty, splashSeconds, momentumSaved }.
+    lastFishing: null,
     // The conversation open now (conversation/conversationRuntime.js), or null.
     conversation: null,
     // The mission's group Momentum and Threat (rules/missionResources.js): challenge objects and combat use this

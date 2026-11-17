@@ -13,8 +13,8 @@ import { standNpcDown } from './partySocial.js'
 export const INFLUENCE_EFFECTS = [
   { id: 'standDown', label: 'Stand down', description: 'become neutral and calm, with no fight pending or search under way' },
   { id: 'hesitate', label: 'Hesitate', description: 'watch and wait instead of acting on what they see' },
-  { id: 'hostile', label: 'Become enemy', description: 'turn enemy (they would fight if it came to it)' },
-  { id: 'escalate', label: 'Escalate', description: 'turn enemy and alerted to the party: a fight started now pulls them in' },
+  { id: 'hostile', label: 'Become hostile', description: 'turn hostile (they would fight if it came to it)' },
+  { id: 'escalate', label: 'Escalate', description: 'turn aggressive and alerted to the party: a fight started now pulls them in' },
   { id: 'share', label: 'Share what they know', description: 'tell the group who the party is and where they stand (scripted group alert)' },
 ]
 export const INFLUENCE_ORIGINS = [
@@ -91,9 +91,9 @@ export function influenceNearby(state, speakerId, action) {
     case 'hesitate':
       return withNpcs(state, Object.fromEntries(affected.map((npc) => [npc.id, { ...npc, responseType: 'observe' }])))
     case 'hostile':
-      return withNpcs(state, Object.fromEntries(affected.map((npc) => [npc.id, { ...npc, disposition: 'enemy', responseType: null }])))
+      return withNpcs(state, Object.fromEntries(affected.map((npc) => [npc.id, { ...npc, disposition: 'hostile', responseType: null }])))
     case 'escalate':
-      return withNpcs(state, Object.fromEntries(affected.map((npc) => [npc.id, { ...npc, disposition: 'enemy', responseType: null, awareness: toldAboutParty(state, npc) }])))
+      return withNpcs(state, Object.fromEntries(affected.map((npc) => [npc.id, { ...npc, disposition: 'aggressive', responseType: null, awareness: toldAboutParty(state, npc) }])))
     case 'share': {
       const leader = state.party.members[state.party.leaderId]
       if (!leader) return state

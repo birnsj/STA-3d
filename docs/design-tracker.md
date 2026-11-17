@@ -6,6 +6,10 @@ Open design decisions for the designer. Each entry separates what the book says 
 
 ## Open
 
+### Fishing catch skill and roll (implemented 2026-11-17)
+
+Book: no fishing rule; Security includes survival (Core p.92); Fitness is physical (p.89). Prototype: Fitness + Security. Passive splash-window scaling around reference skill 11, plus an automatic 2d20 roll when the splash starts (Difficulty = spot difficulty). Success widens the window / Catch button and can save Momentum; failure keeps the skill window. Player still clicks Catch. Tuning in `fishing.json` is first-pass — open for review (attribute pairing, focuses, whether success should auto-catch, bought dice). Where: `src/exploration/fishingSpots.js`, `fishing.json`, `docs/prototype-rules.md` (Exploration).
+
 ### Outdoor horse mount (implemented 2026-11-14)
 
 Book: no rule. Prototype: Horse Spawn markers (`markers.horseSpawns`) in the editor; Play only spawns when markers are authored. **M** assigns free horses to the selected team (nearest / leader first); shortfall walks on foot. Click ring Ride / Dismount / Attack; 1.15× move while riding; mount/dismount/ride seated clips (legs astride); combat auto-dismounts. Attack removes the horse (prototype). Implementer picks open for review: ride multiplier, Attack outcome, mounted combat. Where: `src/exploration/mount.js`, `src/spike3d/HorseModel.js`, `HumanoidAnimator.js`, `docs/prototype-rules.md` (Exploration).

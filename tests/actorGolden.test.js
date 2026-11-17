@@ -18,7 +18,10 @@ const EXPECTED = {
   // 2026-10-25: Minor Klingons, and Auto Combat parties rush to hand-to-hand.
   // 2026-11-10: tiles.json authoring `layer` on catalogue entries (layerOfTile behaviour unchanged).
   exploreRoom: '4e026c8b429ae73d',
-  exploreBrig: 'ff3272b1aa576678',
+  // Re-baselined 2026-11-17 (was 'ff3272b1aa576678'): 779b8ec rewrote navigation.slide() so a body that can't take the full
+  // step slides along one axis instead of stepping both axes in turn. Intended (Wall32 collision fix); the party's walk
+  // across the Brig shifts by sub-tile amounts. Verified by bisect: no other commit moves it.
+  exploreBrig: 'af97f6b300f84f2c',
   autoCombat: '966b39576d38d0f4',
   handOff: '5f824f185c50116b',
 }

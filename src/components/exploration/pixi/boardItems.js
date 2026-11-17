@@ -484,24 +484,27 @@ export class FishingRippleView {
   update(item, now) {
     const centre = project(item.position)
     this.container.position.set(centre.x, centre.y)
-    const size = Math.max(0.5, Number(item.size) || 1)
+    const size = Math.max(0.85, Number(item.size) || 1)
     const splash = Boolean(item.splash)
     const t = (now % 1800) / 1800
     this.rings.clear()
+    // Brighter / larger than a grass tile so the hotspot is easy to see and to aim at.
     const count = splash ? 4 : 3
     for (let i = 0; i < count; i++) {
       const phase = (t + i / count) % 1
-      const rx = (10 + phase * 18) * size * (splash ? 1.15 : 1)
-      const ry = rx * 0.45
-      const alpha = splash ? (1 - phase) * 0.85 : (1 - phase) * 0.55
+      const rx = (18 + phase * 26) * size * (splash ? 1.2 : 1)
+      const ry = rx * 0.48
+      const alpha = splash ? (1 - phase) * 0.9 : (1 - phase) * 0.7
       this.rings.ellipse(0, 0, rx, ry).stroke({
-        color: splash ? 0xa8e8ff : 0x6ec8e8,
-        width: splash ? 2.4 : 1.6,
+        color: splash ? 0xc8f4ff : 0x8ad8f0,
+        width: splash ? 3.2 : 2.4,
         alpha,
       })
     }
     if (splash) {
-      this.rings.ellipse(0, -2, 4 * size, 2 * size).fill({ color: 0xffffff, alpha: 0.55 })
+      this.rings.ellipse(0, -2, 6 * size, 3 * size).fill({ color: 0xffffff, alpha: 0.65 })
+    } else {
+      this.rings.ellipse(0, 0, 7 * size, 3.5 * size).fill({ color: 0x6ec8e8, alpha: 0.28 })
     }
   }
 

@@ -1,10 +1,17 @@
 // Fishing Spot hotspots: authored map.fishingSpots + session state (cast → splash → catch / deplete → respawn).
+import fishingData from '../data/adaptation/exploration/fishing.json'
 import { blocksMovement } from '../combat/battleMap.js'
 import { getItemById } from '../rules/equipment.js'
 import { getInstance, grantItemToMember } from '../rules/inventory.js'
+import { savableMomentum, saveMomentum } from '../rules/missionResources.js'
+import { deriveSeed, seededRandomInt } from '../rules/seededRandom.js'
+import { prepareTask } from '../rules/taskPreparation.js'
+import { resolveStaTask, rollDice, TASK_DICE } from '../rules/taskResolver.js'
+import { augmentTaskContext, augmentTaskSpec } from '../ships/serviceEffects.js'
 
 export { grantItemToMember } from '../rules/inventory.js'
 import { canAct, getMembers } from './partyControl.js'
+import { TASK_SEED_OFFSET } from './challengeObjects.js'
 import {
   authoredFishingSpotFields,
   clampDifficulty,
@@ -13,6 +20,7 @@ import {
   DEFAULT_FISH_IDS,
 } from './fishingAuthored.js'
 import { isFishingWaterAt, shoreApproachTile } from './fishingWater.js'
+import { addLogEntry } from './missionLog.js'
 
 export {
   clampDifficulty,
@@ -22,10 +30,22 @@ export {
   normalizeCatchPool,
 } from './fishingAuthored.js'
 
+export const FISHING_TASK = fishingData.task
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+
 function shoreTile(map, spotPos, from = null) {
   return shoreApproachTile(map, spotPos, from, {
     isWalkable: (cell) => !isFishingWaterAt(map, cell) && !blocksMovement(map, cell),
   })
+}
+
+/** Shore tile to cast from (or walk to). Null when the spot has no adjacent dry walkable tile. */
+export function fishingShoreTile(state, spotId, from = null) {
+  const spot = fishingSpotById(state, spotId)
+  if (!spot) return null
+  const map = state.party?.map ?? state.map
+  return shoreTile(map, spot.position, from)
 }
 
 export const FISHING_ROD_ID = 'fishingRod'
@@ -47,11 +67,40 @@ export function authoredFishingSpot(raw, position) {
   }
 }
 
-/** Hook for future local-water relocation; v1 returns the home tile when it is still water. */
-export function pickRespawnTile(spot, map, _rng = Math.random) {
+// How far (tiles, each way) a ripple may drift from its authored home, so it stays in the water the designer placed it in.
+export const RESPAWN_SEARCH_RADIUS = 6
+
+/**
+ * Where a depleted ripple comes back. Searches the water connected to the spot's home within RESPAWN_SEARCH_RADIUS
+ * (4-way, so a separate pond is never reached), keeps tiles that have a shore to cast from and no other ripple on them,
+ * drops the tile it just left, and picks one with rng. With no such tile it falls back to the home tile if that is still
+ * water, else to where it already is.
+ * @param {Array<{x:number,y:number}>} [taken] tiles held by the other spots
+ */
+export function pickRespawnTile(spot, map, rng = Math.random, taken = []) {
   const home = spot.home ?? spot.position
-  if (isFishingWaterAt(map, home)) return { ...home }
-  return { ...spot.position }
+  const fallback = isFishingWaterAt(map, home) ? { ...home } : { ...spot.position }
+  if (!isFishingWaterAt(map, home)) return fallback
+
+  const key = (cell) => `${cell.x},${cell.y}`
+  const blocked = new Set(taken.map(key))
+  blocked.add(key(spot.position))
+  const seen = new Set([key(home)])
+  const queue = [home]
+  const options = []
+  for (let head = 0; head < queue.length; head += 1) {
+    const cell = queue[head]
+    if (!blocked.has(key(cell)) && shoreTile(map, cell)) options.push({ x: cell.x, y: cell.y })
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const next = { x: cell.x + dx, y: cell.y + dy }
+      if (Math.max(Math.abs(next.x - home.x), Math.abs(next.y - home.y)) > RESPAWN_SEARCH_RADIUS) continue
+      if (seen.has(key(next)) || !isFishingWaterAt(map, next)) continue
+      seen.add(key(next))
+      queue.push(next)
+    }
+  }
+  if (!options.length) return fallback
+  return options[Math.min(options.length - 1, Math.floor(rng() * options.length))]
 }
 
 export function createFishingState(map) {
@@ -83,6 +132,8 @@ export function fishingSpotViews(state) {
       phase: spot.phase,
       fishable: spot.fishable,
       splash: spot.phase === FISHING_PHASE.splash,
+      // Larger Catch button when the roll succeeded or the angler is skilled (presentation only).
+      catchEase: spot.phase === FISHING_PHASE.splash ? (spot.catchEase ?? 1) : 1,
     }))
 }
 
@@ -112,11 +163,115 @@ export function waitSecondsFor(spot) {
   return 2.5 + d * 0.9
 }
 
-/** Catch window seconds; higher difficulty / smaller size = shorter window. */
-export function splashSecondsFor(spot) {
+/** Fitness + Security. Missing stats use the reference skill so incomplete test characters keep the base window. */
+export function fishingSkill(character) {
+  const fitness = character?.attributes?.fitness
+  const security = character?.disciplines?.security
+  if (!Number.isFinite(fitness) || !Number.isFinite(security)) return fishingData.referenceSkill
+  return fitness + security
+}
+
+/**
+ * Catch window seconds. Higher spot difficulty / smaller size shortens it; Fitness + Security lengthens it
+ * (passive, around referenceSkill). character null = authored base only.
+ */
+export function splashSecondsFor(spot, character = null) {
   const d = clampDifficulty(spot?.difficulty)
   const size = clampSize(spot?.size)
-  return Math.max(0.7, (2.8 - d * 0.35) * (0.75 + size * 0.25))
+  const base = Math.max(0.85, (3.0 - d * 0.35) * (0.8 + size * 0.3))
+  if (!character) return base
+  const { perPoint, minFactor, maxFactor } = fishingData.window
+  const factor = clamp(1 + perPoint * (fishingSkill(character) - fishingData.referenceSkill), minFactor, maxFactor)
+  return Math.max(0.85, base * factor)
+}
+
+/** How much larger than default the Catch button should be (1 = normal). */
+export function catchEaseFor(spot, character, rollSuccess = false) {
+  const size = clampSize(spot?.size)
+  const skill = fishingSkill(character)
+  const skillBoost = clamp((skill - fishingData.referenceSkill) * 0.06, -0.15, 0.45)
+  return clamp(0.95 + (size - 1) * 0.25 + skillBoost + (rollSuccess ? 0.35 : 0), 0.9, 1.8)
+}
+
+/**
+ * Splash-start task: Fitness + Security at the spot's Difficulty. Success lengthens the window further and may
+ * save Momentum. Always 2d20 (no bought dice) — the roll is timed, not a panel purchase.
+ */
+export function rollFishingSplash(state, member, spot) {
+  const character = member?.character
+  const baseSplash = splashSecondsFor(spot, character)
+  const ease = catchEaseFor(spot, character, false)
+  // Incomplete characters (no Fitness / Security yet) keep the passive window and skip the roll.
+  const fitness = character?.attributes?.fitness
+  const security = character?.disciplines?.security
+  if (!character || !Number.isFinite(fitness) || !Number.isFinite(security)) {
+    return { state, splashSeconds: baseSplash, catchEase: ease, lastFishing: null }
+  }
+
+  const prepared = prepareTask(
+    character,
+    augmentTaskSpec({ ...FISHING_TASK, difficulty: clampDifficulty(spot.difficulty) }),
+    augmentTaskContext({ traits: state.scenario?.traits, side: 'player', condition: member.condition }),
+  )
+  if (!prepared.possible) {
+    return { state, splashSeconds: baseSplash, catchEase: ease, lastFishing: null }
+  }
+
+  const key = state.scenario?.taskCount ?? 0
+  const random = seededRandomInt(deriveSeed(state.seed ?? 0, TASK_SEED_OFFSET + key))
+  const result = resolveStaTask({
+    leader: { task: prepared.task, dice: rollDice(random, TASK_DICE) },
+    difficulty: prepared.difficulty,
+    ignoreComplications: prepared.ignoreComplications,
+    bonusMomentum: prepared.bonusMomentum,
+  })
+  const resources = state.resources ?? { momentum: 0, threat: 0 }
+  const saved = result.success ? saveMomentum(resources, savableMomentum(result)) : { resources, saved: 0 }
+  let splashSeconds = baseSplash
+  if (result.success) {
+    const { windowFactor, extraSeconds } = fishingData.rollSuccess
+    splashSeconds = Math.max(baseSplash, baseSplash * windowFactor + extraSeconds)
+  }
+  const catchEase = catchEaseFor(spot, character, result.success)
+  const lastFishing = {
+    key,
+    memberId: member.id,
+    spotId: spot.id,
+    success: result.success,
+    successes: result.successes,
+    difficulty: prepared.difficulty,
+    splashSeconds,
+    momentumSaved: saved.saved,
+  }
+  let next = {
+    ...state,
+    resources: saved.resources,
+    scenario: state.scenario ? { ...state.scenario, taskCount: key + 1 } : state.scenario,
+    lastFishing,
+  }
+  const name = character.name ?? 'Angler'
+  next = addLogEntry(next, {
+    kind: 'task',
+    text: `${name}: Fishing (Fitness + Security vs ${prepared.difficulty}): ${result.success ? 'succeeded' : 'failed'}.`,
+    story: { event: result.success ? 'taskSuccess' : 'taskFailure', performer: name, label: 'Fishing' },
+  })
+  return { state: next, splashSeconds, catchEase, lastFishing }
+}
+
+function beginSplash(state, spot) {
+  const memberId = spot.session?.memberId
+  const member = memberId ? state.party?.members?.[memberId] : null
+  const rolled = rollFishingSplash(state, member, spot)
+  let next = withSpot(rolled.state, spot.id, {
+    phase: FISHING_PHASE.splash,
+    waitRemaining: 0,
+    splashRemaining: rolled.splashSeconds,
+    pendingFishId: pickFishId(spot),
+    catchEase: rolled.catchEase,
+    catchRollSuccess: Boolean(rolled.lastFishing?.success),
+  })
+  if (memberId) next = setMemberFishing(next, memberId, { spotId: spot.id, phase: 'splash' })
+  return next
 }
 
 function withSpot(state, spotId, patch) {
@@ -176,8 +331,8 @@ function depleteSpot(state, spotId, { caught = false } = {}) {
   let next = state
   const memberId = spot.session?.memberId
   if (memberId) next = clearMemberFishing(next, memberId)
-  const map = next.party?.map ?? next.map
   const now = next.world?.time ?? 0
+  // The ripple moves when it comes back (tickFishing), not here: it is hidden until then.
   return withSpot(next, spotId, {
     phase: FISHING_PHASE.depleted,
     visible: false,
@@ -187,7 +342,6 @@ function depleteSpot(state, spotId, { caught = false } = {}) {
     session: null,
     pendingFishId: null,
     lastCaught: caught,
-    position: pickRespawnTile(spot, map),
   })
 }
 
@@ -264,7 +418,7 @@ export function syncFishingApproach(state) {
   return next
 }
 
-export function tickFishing(state, dt) {
+export function tickFishing(state, dt, rng = Math.random) {
   if (!state.fishing?.spots || !(dt > 0)) return state
   let next = syncFishingApproach(state)
   const now = next.world?.time ?? 0
@@ -272,7 +426,10 @@ export function tickFishing(state, dt) {
     if (spot.phase === FISHING_PHASE.depleted) {
       if (spot.respawnAt != null && now >= spot.respawnAt) {
         const map = next.party?.map ?? next.map
-        const position = pickRespawnTile(spot, map)
+        const taken = Object.values(next.fishing.spots)
+          .filter((other) => other.id !== spot.id)
+          .map((other) => other.position)
+        const position = pickRespawnTile(spot, map, rng, taken)
         next = withSpot(next, spot.id, {
           phase: FISHING_PHASE.idle,
           visible: true,
@@ -291,16 +448,7 @@ export function tickFishing(state, dt) {
       if (left > 0) {
         next = withSpot(next, spot.id, { waitRemaining: left })
       } else {
-        const fishId = pickFishId(spot)
-        next = withSpot(next, spot.id, {
-          phase: FISHING_PHASE.splash,
-          waitRemaining: 0,
-          splashRemaining: splashSecondsFor(spot),
-          pendingFishId: fishId,
-        })
-        if (spot.session?.memberId) {
-          next = setMemberFishing(next, spot.session.memberId, { spotId: spot.id, phase: 'splash' })
-        }
+        next = beginSplash(next, next.fishing.spots[spot.id] ?? spot)
       }
       continue
     }

@@ -43,6 +43,7 @@ import ExplorationSetup from '../components/exploration/ExplorationSetup.jsx'
 import useExplorationFootsteps from '../components/exploration/useExplorationFootsteps.js'
 import useExplorationKeys from '../components/exploration/useExplorationKeys.js'
 import useGamepadActions from '../input/useGamepadActions.js'
+import { stickMove } from '../input/stickMove.js'
 import useGamepadMove from '../input/useGamepadMove.js'
 import { requestCameraFollow } from '../input/gamepad.js'
 import Minimap from '../components/exploration/Minimap.jsx'
@@ -64,7 +65,7 @@ import { recommendPartyAction } from '../exploration/partyActions.js'
 import { objectFor } from '../world/objects.js'
 import { activeHazards, isStanding } from '../world/environment.js'
 import { hazardChallengeId, isHazardChallengeId } from '../world/EnvironmentalHazard.js'
-import { FISHING_PHASE, fishingSpotViews } from '../exploration/fishingSpots.js'
+import { FISHING_PHASE, fishingShoreTile, fishingSpotViews } from '../exploration/fishingSpots.js'
 import { canMountHorse, horseById } from '../exploration/mount.js'
 import { canAct, getMembers } from '../exploration/partyControl.js'
 import { isVisibleToParty } from '../exploration/partyKnowledge.js'
@@ -313,7 +314,10 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       }),
     )
     .map((spot) => spot.id)
-  const catchSpot = Object.values(state.fishing?.spots ?? {}).find((spot) => spot.phase === FISHING_PHASE.splash && spot.visible !== false) ?? null
+  const catchSpotRaw = Object.values(state.fishing?.spots ?? {}).find((spot) => spot.phase === FISHING_PHASE.splash && spot.visible !== false) ?? null
+  const catchSpot = catchSpotRaw
+    ? { ...catchSpotRaw, catchEase: catchSpotRaw.catchEase ?? fishingViews.find((view) => view.id === catchSpotRaw.id)?.catchEase ?? 1 }
+    : null
   const inReachIds = [...objectsInReach(state, party.memberIds).map((definition) => definition.id), ...hazardInReachIds]
   // An object whose approaches are all still locked can be clicked too, to see what it would take.
   const reachableIds = inReachIds.filter((id) => challengeFor(state, id).listedActions(state).length > 0)
@@ -641,11 +645,19 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     onMount: toggleMount,
   })
 
+  // A new walk order cancels queued walk-then-act orders and closes ring menus (mouse clicks and the stick alike).
+  const clearPendingWalkActions = () => {
+    closeAllMenus()
+    cancelPendingTalk()
+    setPendingPickup(null)
+    setPendingMount(null)
+  }
+
   // Gamepad: left stick / D-pad move the party; right stick pans (useCamera); A Catch or re-follow; B Esc; X sheet; Y bag; LB/RB party; Start log; Select mount.
   useGamepadMove({
     enabled: beamPhase === 'done' && !inCombat && !talking,
     getLeaderPosition: () => party.members[party.leaderId]?.position ?? null,
-    onMove: (target, fresh) => dispatch({ type: 'moveTo', target, fresh }),
+    onMove: (target, fresh) => stickMove(target, fresh, { clearPending: clearPendingWalkActions, dispatch }),
     onStop: () => dispatch({ type: 'stopMove' }),
   })
   useGamepadActions({
@@ -667,12 +679,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   })
 
   const move = (target, fresh) => {
-    if (fresh) {
-      closeAllMenus()
-      cancelPendingTalk()
-      setPendingPickup(null)
-      setPendingMount(null)
-    }
+    if (fresh) clearPendingWalkActions()
     if (beamPhase !== 'done') return
     if (!noiseTool) {
       dispatch({ type: 'moveTo', target, fresh })
@@ -876,8 +883,8 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     onButtonHover: hoverRingButton,
     slotRef: openId ? setRollSlot : undefined,
   }
-  const menuFishing =
-    menuFishingId && !inCombat && fishingReachableIds.includes(menuFishingId) ? menuFishingId : null
+  // Ring opens from any click on a visible ripple; Fish itself still needs reach + rod (canStartFishing).
+  const menuFishing = menuFishingId && !inCombat && fishingViews.some((spot) => spot.id === menuFishingId) ? menuFishingId : null
   const fishingButtons =
     menuFishing &&
     fishingSpotMenuButtons(
@@ -888,23 +895,24 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           closeMenu('fishing')
           dispatch({ type: 'startFishing', spotId: menuFishing, memberId })
         },
+        goTo: () => {
+          closeMenu('fishing')
+          const leader = party.members[party.leaderId]
+          const target = fishingShoreTile(state, menuFishing, leader?.position) ?? fishingViews.find((spot) => spot.id === menuFishing)?.position
+          if (target) dispatch({ type: 'moveTo', target, fresh: true })
+        },
       },
       pickedId,
     )
   const fishingBand =
     fishingButtons?.length > 0
-      ? ringPartyBand(state, { fishingId: menuFishing }, fishingButtons, 'fish', pickedId, pickRingMember)
+      ? ringPartyBand(state, { fishingId: menuFishing }, fishingButtons, hoveredRingButton === 'fish' ? 'fish' : null, pickedId, pickRingMember)
       : null
   const fishingMenu = menuFishing && {
     fishingId: menuFishing,
     position: fishingViews.find((spot) => spot.id === menuFishing)?.position,
     buttons: fishingButtons,
-    party: fishingBand
-      ? {
-          ...fishingBand,
-          slices: fishingBand.slices.filter((slice) => slice.available),
-        }
-      : null,
+    party: fishingBand,
     onButtonHover: hoverRingButton,
   }
   // Name tags hide while that object's ring is open (pointer often stays over the prop).
@@ -1124,7 +1132,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       {confirmAttackNpc && (
         <ConfirmDialog
           title={`Attack ${confirmAttackNpc.name}?`}
-          message={`${confirmAttackNpc.name} is ${dispositionName(confirmAttackNpc.disposition).toLowerCase()}. Attacking turns them enemy and starts a fight, and anyone still standing afterwards stays enemy.`}
+          message={`${confirmAttackNpc.name} is ${dispositionName(confirmAttackNpc.disposition).toLowerCase()}. Attacking turns them hostile and starts a fight, and anyone still standing afterwards stays hostile.`}
           confirmLabel="Attack"
           onConfirm={() => {
             setConfirmAttackId(null)

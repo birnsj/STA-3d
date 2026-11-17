@@ -17,7 +17,7 @@ function preparePartyPreview(character, task, state, condition) {
   )
 }
 import { challengeFor, INTERACT_RANGE } from './challengeObjects.js'
-import { canStartFishing, fishingSpotById } from './fishingSpots.js'
+import { canStartFishing, FISHING_TASK, fishingSpotById } from './fishingSpots.js'
 import { previewObjectShot } from './explorationEnvironment.js'
 import { distance } from './navigation.js'
 import { getMembers } from './partyControl.js'
@@ -114,10 +114,18 @@ export function ringPartyView(state, target, buttonId) {
         })),
     )
   } else if (target.fishingId && buttonId === 'fish') {
+    const spot = fishingSpotById(state, target.fishingId)
     for (const member of members) {
       const check = canStartFishing(state, target.fishingId, member.id)
       blocked[member.id] = check.ok ? null : check.reason
     }
+    // Fitness + Security at the spot's Difficulty (fishing.json); ranks who should cast.
+    const task = { ...FISHING_TASK, difficulty: spot?.difficulty ?? FISHING_TASK.difficulty }
+    recommendation = recommendPerformers(
+      members
+        .filter((member) => !blocked[member.id])
+        .map((member) => ({ id: member.id, prepared: preparePartyPreview(member.character, task, state, member.condition) })),
+    )
   } else if (target.objectId && buttonId) {
     const challenge = challengeFor(state, target.objectId)
     recommendation = challenge.recommend(state, buttonId, members.map((member) => member.id))

@@ -52,7 +52,7 @@
 // markers.horseSpawns: [x, y], [x, y, facing], or { position:[x,y]|x,y, facing?, roam?, disposition?, coat? } — Horse Spawn markers.
 // Play only spawns mounts from these (exploration/mount.js); empty means no horse. Facing degrees (0 = +x).
 // roam: optional { mode: idle|radiusWander|waypointPatrol, radius?, speed? }; omitted/idle = stand at spawn.
-// disposition: friendly|neutral|afraid|enemy (same list as NPCs); coat: horse/cat/chicken texture id when authored.
+// disposition: friendly|neutral|afraid|enemy (the animal list, awareness.json animalDispositions; not the NPC list); coat: horse/cat/chicken texture id when authored.
 // Legacy top-level `horses: [{ id, position, facing? }]` is migrated on load.
 // markers.chickenSpawns (and later ambientCreatures marker kinds): same spawn shapes; default roam is species-specific
 // (chickens wander). See data/adaptation/exploration/ambientCreatures.json.
@@ -808,7 +808,7 @@ function parseNpc(raw, inside) {
   NPC_TEXT_FIELDS.forEach((field) => {
     npc[field] = raw[field] ?? null
   })
-  // Legacy wary / hostile / aggressive → afraid / enemy.
+  // NPC list: friendly / neutral / wary / hostile / aggressive. Animal ids (afraid / enemy) map to their nearest NPC meaning.
   if (npc.disposition) npc.disposition = normalizeDisposition(npc.disposition)
   if (npc.responseType && !RESPONSE_IDS.has(npc.responseType)) npc.responseType = null
   npc.mustSurvive = raw.mustSurvive === true

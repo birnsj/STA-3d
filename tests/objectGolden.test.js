@@ -50,10 +50,14 @@ const team = () => [
 
 // Fields that only drive what the board draws (patrol waypoint idle animations, added 2026-10-18). Left out of the
 // fingerprint so a presentation-only addition to an NPC record cannot read as a gameplay change.
-const withoutPresentation = ({ waypointAnim: _waypointAnim, ...npc }) =>
-  npc.patrol
+// roam / roamRuntime (08a4989, ambient creatures) are null on every authored NPC here; an unset roam adds no behaviour,
+// so it is dropped while null and the original fingerprints still hold. A non-null roam would still show up.
+const withoutPresentation = ({ waypointAnim: _waypointAnim, roam, roamRuntime, ...rest }) => {
+  const npc = { ...rest, ...(roam == null ? {} : { roam }), ...(roamRuntime == null ? {} : { roamRuntime }) }
+  return npc.patrol
     ? { ...npc, patrol: { ...npc.patrol, points: npc.patrol.points.map(({ animation: _a, animationDuration: _d, animationLoop: _l, ...point }) => point) } }
     : npc
+}
 
 const view = (state) => ({
   objects: state.scenario.objects,

@@ -5,7 +5,7 @@
     "controller (optional, default 'ai'): who decides the actor's actions. npcRules (optional): an explicit authored choice of the book's streamlined NPC rules for this actor ('supporting', Book p.278; 'minor' | 'notable' | 'major', Book p.291, or 'main' for the full character rules); without it the actor uses its stat block's category (sourceClassification.npcCategory), else the full character rules (VIDEOGAME ADAPTATION, designer decision Oct 2026). Designer decision (2026-10-25, reversing the earlier override): rank-and-file Klingon Warriors use the Minor category printed in their stat block (Book: Core p.355).",
     "maps: NPCs for one map, keyed by map file name. position [x, y] in tiles; facing in degrees (0 = toward increasing x, 90 = toward increasing y). disposition, alertGroupId, alertMethod, responseType and perception overrides: see awareness.json.",
     "patrol: waypoints walked in order, looping. wait in seconds; facing (optional) is turned to while waiting. Several waypoints on the same spot make a guard who stands and looks around.",
-    "Vault of the Ancients: Guard A (Afraid) stands in the west end of the pillared hall looking east; the party's room door opens behind him. Guard B (Enemy, raises the alarm) patrols the room north of the hall, same alert group. Guard C (Enemy, separate group) watches the door of the south-east room.",
+    "Vault of the Ancients: Guard A (Wary) stands in the west end of the pillared hall looking east; the party's room door opens behind him. Guard B (Hostile, raises the alarm) patrols the room north of the hall, same alert group. Guard C (Aggressive, separate group) watches the door of the south-east room.",
     "fallback: maps without their own entry get these NPCs on their enemy spawns in order, facing the map centre and standing still."
   ],
   "maps": {
@@ -14,7 +14,7 @@
         "id": "guardA",
         "name": "Guard A",
         "characterId": "klingonWarrior1",
-        "disposition": "afraid",
+        "disposition": "wary",
         "alertGroupId": "security-west",
         "alertMethod": "shout",
         "position": [5, 8],
@@ -24,7 +24,7 @@
         "id": "guardB",
         "name": "Guard B",
         "characterId": "klingonWarrior2",
-        "disposition": "enemy",
+        "disposition": "hostile",
         "responseType": "alarm",
         "alertGroupId": "security-west",
         "alertMethod": "shout",
@@ -41,7 +41,7 @@
         "id": "guardC",
         "name": "Guard C",
         "characterId": "klingonWarrior3",
-        "disposition": "enemy",
+        "disposition": "aggressive",
         "alertGroupId": "security-east",
         "alertMethod": "shout",
         "position": [22, 14],
@@ -54,8 +54,8 @@
     ]
   },
   "fallback": [
-    { "id": "guardA", "name": "Guard A", "characterId": "klingonWarrior1", "disposition": "afraid", "alertGroupId": "security-a", "alertMethod": "shout" },
-    { "id": "guardB", "name": "Guard B", "characterId": "klingonWarrior2", "disposition": "enemy", "responseType": "alarm", "alertGroupId": "security-a", "alertMethod": "shout" },
-    { "id": "guardC", "name": "Guard C", "characterId": "klingonWarrior3", "disposition": "enemy", "alertGroupId": "security-b", "alertMethod": "shout" }
+    { "id": "guardA", "name": "Guard A", "characterId": "klingonWarrior1", "disposition": "wary", "alertGroupId": "security-a", "alertMethod": "shout" },
+    { "id": "guardB", "name": "Guard B", "characterId": "klingonWarrior2", "disposition": "hostile", "responseType": "alarm", "alertGroupId": "security-a", "alertMethod": "shout" },
+    { "id": "guardC", "name": "Guard C", "characterId": "klingonWarrior3", "disposition": "aggressive", "alertGroupId": "security-b", "alertMethod": "shout" }
   ]
 }

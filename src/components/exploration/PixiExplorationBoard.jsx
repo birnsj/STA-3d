@@ -469,10 +469,11 @@ export default function PixiExplorationBoard(props) {
     const centre = project(view.position)
     targets.push({ kind: 'object', id: view.id, depth: atDepth(view.position, -0.4), shapes: [{ type: 'diamond', cx: centre.x, cy: centre.y, rx: TILE_W / 2, ry: TILE_H / 2 }] })
   }
+  // Every visible ripple is clickable (not only when already in interact range), with a generous diamond so water
+  // spots are easy to pick over grass / paths. Fish still gates on reach + rod via the ring.
   for (const view of fishingSpots) {
-    if (!fishingReachableIds.includes(view.id)) continue
     const centre = project(view.position)
-    const scale = Math.max(0.5, Number(view.size) || 1)
+    const scale = Math.max(1.6, Number(view.size) || 1)
     targets.push({
       kind: 'fishing',
       id: view.id,
@@ -1180,8 +1181,11 @@ export default function PixiExplorationBoard(props) {
         )}
         {catchSpot && onCatchFish && (() => {
           const at = project(catchSpot.position)
+          const ease = Number.isFinite(catchSpot.catchEase) ? catchSpot.catchEase : 1
+          const width = Math.round(96 * ease)
+          const height = Math.round(36 * ease)
           return (
-            <foreignObject x={at.x - 36} y={at.y - 56} width={72} height={28} className="explore-catch-fo">
+            <foreignObject x={at.x - width / 2} y={at.y - height - 28} width={width} height={height} className="explore-catch-fo">
               <button type="button" className="explore-catch-btn" onClick={(event) => { event.stopPropagation(); onCatchFish(catchSpot.id) }}>
                 Catch
               </button>

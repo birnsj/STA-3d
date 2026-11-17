@@ -11,7 +11,7 @@ import {
   normalizeChickenCoatId,
 } from '../data/adaptation/exploration/animalCoats.js'
 import { getRoamProfile, resolveAuthoredRoam, tickRoam } from './roam.js'
-import { normalizeDisposition } from './dispositions.js'
+import { normalizeAnimalDisposition } from './dispositions.js'
 
 /** Fallback flee tuning when Disposition is Afraid but the roam profile has no scatter block. */
 const AFRAID_SCATTER = Object.freeze({
@@ -62,7 +62,7 @@ function animalsFromMap(map) {
                 ? normalizeChickenCoatId(entry.coat)
                 : chickenCoatForSpawnIndex(index)
               : null,
-        disposition: normalizeDisposition(entry.disposition ?? 'neutral'),
+        disposition: normalizeAnimalDisposition(entry.disposition ?? 'neutral'),
       })
     })
   })
@@ -110,7 +110,7 @@ function nearbyPartyThreats(state) {
  * Neutral → profile.scatter only (chickens / cats bolt from runners).
  */
 function scatterConfigForAnimal(animal, profile) {
-  const disposition = normalizeDisposition(animal.disposition)
+  const disposition = normalizeAnimalDisposition(animal.disposition)
   if (disposition === 'friendly' || disposition === 'enemy') return null
   if (disposition === 'afraid') {
     const base = profile.scatter ?? AFRAID_SCATTER
@@ -125,7 +125,7 @@ function scatterConfigForAnimal(animal, profile) {
 }
 
 function threatsForAnimal(animal, state) {
-  const disposition = normalizeDisposition(animal.disposition)
+  const disposition = normalizeAnimalDisposition(animal.disposition)
   if (disposition === 'afraid') return nearbyPartyThreats(state)
   return runningScareThreats(state)
 }

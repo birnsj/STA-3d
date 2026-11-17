@@ -41,13 +41,14 @@
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 0 8px;
-  border: 1px solid #7ad4ff;
-  border-radius: 4px;
-  background: rgba(8, 28, 40, 0.92);
+  padding: 0 10px;
+  border: 2px solid #7ad4ff;
+  border-radius: 6px;
+  background: rgba(8, 28, 40, 0.94);
   color: #dff6ff;
-  font: 700 12px/1.2 inherit;
+  font: 700 14px/1.2 inherit;
   cursor: var(--cursor-pointer, pointer);
+  box-shadow: 0 0 10px rgba(80, 200, 255, 0.35);
 }
 
 .explore-catch-btn:hover {

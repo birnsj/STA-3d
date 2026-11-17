@@ -7,7 +7,7 @@ import { isClear, nearestWalkableTile, planRoute, RADIUS } from './navigation.js
 import { resolveAuthoredRoam, tickRoam } from './roam.js'
 import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from './mountConstants.js'
 import { MOUNT_LEFT_AFT, MOUNT_LEFT_REACH } from '../spike3d/HorseModel.js'
-import { normalizeDisposition } from './dispositions.js'
+import { normalizeAnimalDisposition } from './dispositions.js'
 import { horseCoatForSpawnIndex, horseCoatLabel, normalizeHorseCoatId } from '../spike3d/horseTexture.js'
 
 export { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT }
@@ -62,7 +62,7 @@ function horsesFromMap(map) {
       riderId: null,
       coat,
       label: horseCoatLabel(coat),
-      disposition: normalizeDisposition(entry.disposition ?? 'neutral'),
+      disposition: normalizeAnimalDisposition(entry.disposition ?? 'neutral'),
     }
   })
 }

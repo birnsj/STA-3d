@@ -9,8 +9,8 @@ export default function EditorControlsHelp() {
         brush. R, Space, or middle-click (no drag): flip the tile paint axis, or rotate a Template Piece brush / selection.
         Move: right-click deletes the same way (or cancels a carry). Place Tiles off, right click an NPC, player start or
         enemy spawn: turn it 45°
-        clockwise (the arrow shows which way it faces). Red: enemies and Enemy-disposition NPCs; purple:
-        other NPCs (Friendly, Neutral, Afraid). R: rotate the tile brush (long walls run the other way, other tiles are mirrored).
+        clockwise (the arrow shows which way it faces). Red: enemies and hostile NPCs (Wary, Hostile, Aggressive); purple:
+        other NPCs. R: rotate the tile brush (long walls run the other way, other tiles are mirrored).
         Move on, drag a tile onto another: the two swap places; a tile with a player start, enemy spawn, NPC, label or
         objective on it moves those instead.         Marker tools: click to place, click again to
         remove. NPC: click a floor tile to place one, click an NPC to edit it in the panel on the right (Response, Perception,

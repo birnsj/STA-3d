@@ -1071,7 +1071,7 @@
     {
       "id": "fenceCorner",
       "layer": "furniture",
-      "symbol": "ƒ",
+      "symbol": "ǂ",
       "label": "Fence Corner",
       "image": "/art/sprites/environment/settlement/fenceCorner.png",
       "solid": true,

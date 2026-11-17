@@ -1,5 +1,5 @@
 import { ambientCreatureByMarkerKind } from '../../data/adaptation/exploration/ambientCreatures.js'
-import { ANIMAL_DISPOSITIONS, normalizeDisposition } from '../../exploration/dispositions.js'
+import { ANIMAL_DISPOSITIONS, normalizeAnimalDisposition } from '../../exploration/dispositions.js'
 import { resolveAuthoredRoam } from '../../exploration/roam.js'
 import { FACINGS, snapFacing } from '../../maps/facing.js'
 import {
@@ -58,7 +58,7 @@ export default function MarkerInspector({
   const authoredRoam = resolveAuthoredRoam(
     marker.roam ?? (marker.kind === 'horseSpawns' ? { mode: 'idle' } : creature?.defaultRoam),
   )
-  const disposition = normalizeDisposition(marker.disposition ?? 'neutral')
+  const disposition = normalizeAnimalDisposition(marker.disposition ?? 'neutral')
   const coatValue =
     coats && marker.coat ? normalizeCoatForMarker(marker.kind, creature, marker.coat) : ''
 

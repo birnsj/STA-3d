@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { BUTTON, createButtonEdgeTracker, dpadAxes, stickAxes } from '../src/input/gamepad.js'
+import { stickMove } from '../src/input/stickMove.js'
 import { createPartyState, partyReducer } from '../src/exploration/partyControl.js'
 import { createBlankMap } from '../src/maps/mapFormat.js'
 import { makeCharacter } from './support/characters.js'
@@ -43,5 +44,32 @@ describe('gamepad helpers', () => {
     assert.ok(moving.members[party.leaderId].order)
     const stopped = partyReducer(moving, { type: 'stopMove' })
     assert.equal(stopped.members[party.leaderId].order, null)
+  })
+})
+
+describe('stick steering and queued walk-then-act orders', () => {
+  const run = (steps) => {
+    const calls = { cleared: 0, dispatched: [] }
+    for (const [target, fresh] of steps) {
+      stickMove(target, fresh, { clearPending: () => { calls.cleared += 1 }, dispatch: (action) => calls.dispatched.push(action) })
+    }
+    return calls
+  }
+
+  it('the first step of a push drops queued pickup / talk / mount orders and closes menus', () => {
+    const calls = run([[{ x: 3, y: 4 }, true]])
+    assert.equal(calls.cleared, 1)
+    assert.deepEqual(calls.dispatched, [{ type: 'moveTo', target: { x: 3, y: 4 }, fresh: true }])
+  })
+
+  it('later steps of the same push only steer', () => {
+    const calls = run([[{ x: 3, y: 4 }, true], [{ x: 3.5, y: 4 }, false], [{ x: 4, y: 4 }, false]])
+    assert.equal(calls.cleared, 1)
+    assert.equal(calls.dispatched.length, 3)
+    assert.deepEqual(calls.dispatched.map((a) => a.fresh), [true, false, false])
+  })
+
+  it('a second push clears again', () => {
+    assert.equal(run([[{ x: 1, y: 1 }, true], [{ x: 2, y: 1 }, false], [{ x: 1, y: 2 }, true]]).cleared, 2)
   })
 })

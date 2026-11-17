@@ -120,8 +120,9 @@ export function objectMenuButtons(state, objectId, actions, activeId = null, pic
   ]
 }
 
-// Fishing Spot ring (left-click the ripple): Fish only — not started from the player ring.
-// actions: { fish(memberId) }; pickedId: who is chosen on the party band.
+// Fishing Spot ring (left-click the ripple): Fish + Go To (same pattern as a ground item's Pick Up + Go To).
+// One button alone collapses the prominent frame to a single wedge — Go To keeps a proper arc.
+// actions: { fish(memberId), goTo }; pickedId: who is chosen on the party band.
 export function fishingSpotMenuButtons(state, spotId, actions, pickedId = null) {
   const spot = fishingSpotById(state, spotId)
   if (!spot || !spot.visible) return []
@@ -146,6 +147,14 @@ export function fishingSpotMenuButtons(state, spotId, actions, pickedId = null) 
       enabled: Boolean(check.ok),
       title,
       onClick: () => actions.fish(memberId),
+    },
+    {
+      id: 'goTo',
+      label: 'Go To',
+      icon: 'move',
+      enabled: true,
+      title: 'Walk the selected characters to the shore by this ripple.',
+      onClick: actions.goTo,
     },
   ]
 }

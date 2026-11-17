@@ -111,4 +111,49 @@ describe('Ring party band (Prototype)', () => {
       assert.equal(entries[id].best, expected.bestIds.includes(id))
     }
   })
+
+  it('Fish ranks the party on Fitness + Security when someone has a rod', () => {
+    const map = createBlankMap({ name: 'Fish Ring', width: 12, height: 12 })
+    map.tiles[4][4] = 'water'
+    map.tiles[4][5] = 'floor'
+    map.markers.playerStarts = [
+      { x: 5, y: 4 },
+      { x: 5, y: 5 },
+    ]
+    map.fishingSpots = [{ id: 'pond', position: { x: 4, y: 4 }, difficulty: 2, size: 1, fishable: true }]
+    const angler = makeCharacter({
+      id: 'alpha',
+      name: 'alpha',
+      attributes: { fitness: 12 },
+      disciplines: { security: 5 },
+    })
+    const other = makeCharacter({ id: 'beta', name: 'beta', attributes: { fitness: 7 }, disciplines: { security: 1 } })
+    let state = createExplorationState(map, [angler, other], 1, { enemiesActive: false })
+    const alpha = state.party.members.alpha
+    state = {
+      ...state,
+      itemInstances: { ...state.itemInstances, rod1: { id: 'rod1', itemId: 'fishingRod', quantity: 1 } },
+      party: {
+        ...state.party,
+        members: {
+          ...state.party.members,
+          alpha: {
+            ...alpha,
+            character: {
+              ...alpha.character,
+              inventory: { ...(alpha.character.inventory ?? { slots: {}, bag: [] }), bag: ['rod1'] },
+            },
+          },
+        },
+      },
+    }
+    const spotId = Object.keys(state.fishing.spots)[0]
+    assert.ok(spotId)
+    const view = ringPartyView(state, { fishingId: spotId }, 'fish')
+    assert.equal(view.hasTask, true)
+    const entries = byId(view)
+    assert.equal(entries.alpha?.available, true)
+    assert.equal(entries.alpha?.best, true)
+    assert.equal(entries.beta?.available, false)
+  })
 })

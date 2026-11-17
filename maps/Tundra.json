@@ -194,6 +194,45 @@
       }
     ]
   },
+  "groundItemPlacements": [
+    {
+      "id": "stackBoxGreen1",
+      "itemId": "stackBoxGreen",
+      "position": [
+        30.5,
+        19.5
+      ]
+    }
+  ],
+  "fishingSpots": [
+    {
+      "id": "fishingSpot1",
+      "position": [
+        28,
+        17
+      ],
+      "catchPool": [
+        "fishMinnow",
+        "fishTrout",
+        "fishSalmon",
+        "fishBass"
+      ]
+    },
+    {
+      "id": "fishingSpot2",
+      "position": [
+        30,
+        15
+      ],
+      "size": 1.25,
+      "catchPool": [
+        "fishMinnow",
+        "fishTrout",
+        "fishSalmon",
+        "fishBass"
+      ]
+    }
+  ],
   "autoPaint": {
     "rulesetId": "biome-tundra",
     "defaultEnvironment": "outdoorSettlement",
