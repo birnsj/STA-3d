@@ -170,6 +170,294 @@
       "opaqueWidth": 64,
       "opaqueHeight": 40
     },
+    "/art/sprites/environment/items/dimBox16x16.png": {
+      "width": 72,
+      "height": 100,
+      "opaqueWidth": 68,
+      "opaqueHeight": 98
+    },
+    "/art/sprites/environment/items/dimBox16x32.png": {
+      "width": 72,
+      "height": 164,
+      "opaqueWidth": 68,
+      "opaqueHeight": 162
+    },
+    "/art/sprites/environment/items/dimBox32x16.png": {
+      "width": 136,
+      "height": 132,
+      "opaqueWidth": 132,
+      "opaqueHeight": 130
+    },
+    "/art/sprites/environment/items/dimBox32x4.png": {
+      "width": 88,
+      "height": 60,
+      "opaqueWidth": 84,
+      "opaqueHeight": 58
+    },
+    "/art/sprites/environment/items/dimBox48x16.png": {
+      "width": 200,
+      "height": 164,
+      "opaqueWidth": 196,
+      "opaqueHeight": 162
+    },
+    "/art/sprites/environment/items/dimBox64x4.png": {
+      "width": 152,
+      "height": 92,
+      "opaqueWidth": 148,
+      "opaqueHeight": 90
+    },
+    "/art/sprites/environment/items/dimBox8x48.png": {
+      "width": 40,
+      "height": 212,
+      "opaqueWidth": 36,
+      "opaqueHeight": 210
+    },
+    "/art/sprites/environment/items/dimBox8x92.png": {
+      "width": 40,
+      "height": 388,
+      "opaqueWidth": 36,
+      "opaqueHeight": 386
+    },
+    "/art/sprites/environment/items/dimFoot12.png": {
+      "width": 56,
+      "height": 60,
+      "opaqueWidth": 52,
+      "opaqueHeight": 58
+    },
+    "/art/sprites/environment/items/dimFoot16.png": {
+      "width": 72,
+      "height": 68,
+      "opaqueWidth": 68,
+      "opaqueHeight": 66
+    },
+    "/art/sprites/environment/items/dimFoot24.png": {
+      "width": 104,
+      "height": 84,
+      "opaqueWidth": 100,
+      "opaqueHeight": 82
+    },
+    "/art/sprites/environment/items/dimFoot32.png": {
+      "width": 136,
+      "height": 100,
+      "opaqueWidth": 132,
+      "opaqueHeight": 98
+    },
+    "/art/sprites/environment/items/dimFoot4.png": {
+      "width": 24,
+      "height": 44,
+      "opaqueWidth": 20,
+      "opaqueHeight": 42
+    },
+    "/art/sprites/environment/items/dimFoot48.png": {
+      "width": 200,
+      "height": 132,
+      "opaqueWidth": 196,
+      "opaqueHeight": 130
+    },
+    "/art/sprites/environment/items/dimFoot64.png": {
+      "width": 264,
+      "height": 164,
+      "opaqueWidth": 260,
+      "opaqueHeight": 162
+    },
+    "/art/sprites/environment/items/dimFoot8.png": {
+      "width": 40,
+      "height": 52,
+      "opaqueWidth": 36,
+      "opaqueHeight": 50
+    },
+    "/art/sprites/environment/items/dimHollow.png": {
+      "width": 128,
+      "height": 96,
+      "opaqueWidth": 128,
+      "opaqueHeight": 96
+    },
+    "/art/sprites/environment/items/dimIrregular.png": {
+      "width": 128,
+      "height": 112,
+      "opaqueWidth": 128,
+      "opaqueHeight": 92
+    },
+    "/art/sprites/environment/items/dimL.png": {
+      "width": 128,
+      "height": 112,
+      "opaqueWidth": 128,
+      "opaqueHeight": 92
+    },
+    "/art/sprites/environment/items/dimPartial.png": {
+      "width": 136,
+      "height": 132,
+      "opaqueWidth": 132,
+      "opaqueHeight": 130
+    },
+    "/art/sprites/environment/items/dimT.png": {
+      "width": 128,
+      "height": 112,
+      "opaqueWidth": 108,
+      "opaqueHeight": 102
+    },
+    "/art/sprites/environment/items/dimTiny12x4h4.png": {
+      "width": 32,
+      "height": 32,
+      "opaqueWidth": 32,
+      "opaqueHeight": 32
+    },
+    "/art/sprites/environment/items/dimTiny16x4h4.png": {
+      "width": 40,
+      "height": 36,
+      "opaqueWidth": 40,
+      "opaqueHeight": 36
+    },
+    "/art/sprites/environment/items/dimTiny16x8h4.png": {
+      "width": 48,
+      "height": 40,
+      "opaqueWidth": 48,
+      "opaqueHeight": 40
+    },
+    "/art/sprites/environment/items/dimTiny2h16.png": {
+      "width": 8,
+      "height": 68,
+      "opaqueWidth": 8,
+      "opaqueHeight": 68
+    },
+    "/art/sprites/environment/items/dimTiny2h2.png": {
+      "width": 8,
+      "height": 12,
+      "opaqueWidth": 8,
+      "opaqueHeight": 12
+    },
+    "/art/sprites/environment/items/dimTiny2h4.png": {
+      "width": 8,
+      "height": 20,
+      "opaqueWidth": 8,
+      "opaqueHeight": 20
+    },
+    "/art/sprites/environment/items/dimTiny2h8.png": {
+      "width": 8,
+      "height": 36,
+      "opaqueWidth": 8,
+      "opaqueHeight": 36
+    },
+    "/art/sprites/environment/items/dimTiny4h16.png": {
+      "width": 16,
+      "height": 72,
+      "opaqueWidth": 16,
+      "opaqueHeight": 72
+    },
+    "/art/sprites/environment/items/dimTiny4h2.png": {
+      "width": 16,
+      "height": 16,
+      "opaqueWidth": 16,
+      "opaqueHeight": 16
+    },
+    "/art/sprites/environment/items/dimTiny4h4.png": {
+      "width": 16,
+      "height": 24,
+      "opaqueWidth": 16,
+      "opaqueHeight": 24
+    },
+    "/art/sprites/environment/items/dimTiny4h8.png": {
+      "width": 16,
+      "height": 40,
+      "opaqueWidth": 16,
+      "opaqueHeight": 40
+    },
+    "/art/sprites/environment/items/dimTiny4x2h2.png": {
+      "width": 12,
+      "height": 16,
+      "opaqueWidth": 12,
+      "opaqueHeight": 14
+    },
+    "/art/sprites/environment/items/dimTiny4x2h4.png": {
+      "width": 12,
+      "height": 24,
+      "opaqueWidth": 12,
+      "opaqueHeight": 22
+    },
+    "/art/sprites/environment/items/dimTiny6h16.png": {
+      "width": 24,
+      "height": 76,
+      "opaqueWidth": 24,
+      "opaqueHeight": 76
+    },
+    "/art/sprites/environment/items/dimTiny6h2.png": {
+      "width": 24,
+      "height": 20,
+      "opaqueWidth": 24,
+      "opaqueHeight": 20
+    },
+    "/art/sprites/environment/items/dimTiny6h4.png": {
+      "width": 24,
+      "height": 28,
+      "opaqueWidth": 24,
+      "opaqueHeight": 28
+    },
+    "/art/sprites/environment/items/dimTiny6h8.png": {
+      "width": 24,
+      "height": 44,
+      "opaqueWidth": 24,
+      "opaqueHeight": 44
+    },
+    "/art/sprites/environment/items/dimTiny6x2h2.png": {
+      "width": 16,
+      "height": 16,
+      "opaqueWidth": 16,
+      "opaqueHeight": 16
+    },
+    "/art/sprites/environment/items/dimTiny6x4h2.png": {
+      "width": 20,
+      "height": 20,
+      "opaqueWidth": 20,
+      "opaqueHeight": 18
+    },
+    "/art/sprites/environment/items/dimTiny8h16.png": {
+      "width": 32,
+      "height": 80,
+      "opaqueWidth": 32,
+      "opaqueHeight": 80
+    },
+    "/art/sprites/environment/items/dimTiny8h2.png": {
+      "width": 32,
+      "height": 24,
+      "opaqueWidth": 32,
+      "opaqueHeight": 24
+    },
+    "/art/sprites/environment/items/dimTiny8h4.png": {
+      "width": 32,
+      "height": 32,
+      "opaqueWidth": 32,
+      "opaqueHeight": 32
+    },
+    "/art/sprites/environment/items/dimTiny8h8.png": {
+      "width": 32,
+      "height": 48,
+      "opaqueWidth": 32,
+      "opaqueHeight": 48
+    },
+    "/art/sprites/environment/items/dimTiny8x2h2.png": {
+      "width": 20,
+      "height": 20,
+      "opaqueWidth": 20,
+      "opaqueHeight": 18
+    },
+    "/art/sprites/environment/items/dimTiny8x4h2.png": {
+      "width": 24,
+      "height": 20,
+      "opaqueWidth": 24,
+      "opaqueHeight": 20
+    },
+    "/art/sprites/environment/items/dimTiny8x4h4.png": {
+      "width": 24,
+      "height": 28,
+      "opaqueWidth": 24,
+      "opaqueHeight": 28
+    },
+    "/art/sprites/environment/items/dimZ.png": {
+      "width": 128,
+      "height": 112,
+      "opaqueWidth": 128,
+      "opaqueHeight": 112
+    },
     "/art/sprites/environment/items/disruptorPistol.png": {
       "width": 64,
       "height": 96,
@@ -193,6 +481,36 @@
       "height": 192,
       "opaqueWidth": 128,
       "opaqueHeight": 84
+    },
+    "/art/sprites/environment/items/fishBass.png": {
+      "width": 64,
+      "height": 96,
+      "opaqueWidth": 64,
+      "opaqueHeight": 39
+    },
+    "/art/sprites/environment/items/fishMinnow.png": {
+      "width": 64,
+      "height": 96,
+      "opaqueWidth": 64,
+      "opaqueHeight": 37
+    },
+    "/art/sprites/environment/items/fishSalmon.png": {
+      "width": 64,
+      "height": 96,
+      "opaqueWidth": 64,
+      "opaqueHeight": 38
+    },
+    "/art/sprites/environment/items/fishTrout.png": {
+      "width": 64,
+      "height": 96,
+      "opaqueWidth": 64,
+      "opaqueHeight": 38
+    },
+    "/art/sprites/environment/items/fishingRod.png": {
+      "width": 64,
+      "height": 96,
+      "opaqueWidth": 64,
+      "opaqueHeight": 42
     },
     "/art/sprites/environment/items/fluxCoupler.png": {
       "width": 64,

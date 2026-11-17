@@ -14,6 +14,7 @@ import { tickWorld } from './awarenessTick.js'
 import { applyScenarioTiles, attemptChallenge, challengeFor, createScenario, INTERACT_RANGE, withMap } from './challengeObjects.js'
 import { combatAction, endCombat, MODE, requestCombat, startCombat } from './combatLink.js'
 import { createAmbientState, tickAmbientAnimals } from './ambientAnimals.js'
+import { catchFish, createFishingState, startFishing, tickFishing } from './fishingSpots.js'
 import {
   createMountState,
   dismountHorse,
@@ -159,6 +160,8 @@ export function createExplorationState(map, characters, seed = 0, { enemiesActiv
     mount: createMountState(worldMap, seeded.party),
     // Ambient creatures (chickens, …) from ambientCreatures registry markers.
     ambient: createAmbientState(worldMap),
+    // Fishing Spot ripples (fishingSpots.js).
+    fishing: createFishingState(worldMap),
     hazardClock: 0,
     // The last challenge attempt, for the interaction panel (attemptChallenge).
     lastTask: null,
@@ -289,9 +292,12 @@ function reduceExploration(state, action) {
       // The clock still runs (challenge-object locks expire on it); only the NPCs stand still.
       const afterParty = (base) => {
         const map = base.world?.map
-        return tickAmbientAnimals(
-          tickUnmountedHorseRoam(tickRideAnims(tickHazards(syncMountAfterParty(base), seconds)), map, seconds),
-          map,
+        return tickFishing(
+          tickAmbientAnimals(
+            tickUnmountedHorseRoam(tickRideAnims(tickHazards(syncMountAfterParty(base), seconds)), map, seconds),
+            map,
+            seconds,
+          ),
           seconds,
         )
       }
@@ -466,6 +472,21 @@ function reduceExploration(state, action) {
       if (next !== state) playItemPickup(category)
       return next
     }
+    // { spotId, memberId }: begin fishing at a Fishing Spot (fishingSpots.js). Walks to shore when needed.
+    case 'startFishing': {
+      if (state.mode === MODE.COMBAT) return state
+      const memberId = action.memberId ?? state.party.leaderId
+      const next = startFishing(state, { spotId: action.spotId, memberId })
+      const spot = next.fishing?.spots?.[action.spotId]
+      const approach = spot?.session?.approach
+      if (spot?.phase === 'approaching' && approach) {
+        return { ...next, party: partyReducer(next.party, { type: 'moveTo', target: approach, fresh: true, memberIds: [memberId] }) }
+      }
+      return next
+    }
+    // { spotId }: catch during the splash window.
+    case 'catchFish':
+      return state.mode === MODE.COMBAT ? state : catchFish(state, { spotId: action.spotId })
     default: {
       // Party orders are frozen while combat runs: the combat screen gives the orders then.
       if (state.mode === MODE.COMBAT) return state

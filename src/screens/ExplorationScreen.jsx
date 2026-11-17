@@ -28,6 +28,7 @@ import { ActionsToggle, ExplorationActionButtons, ExplorationPartyBar, Formation
 import {
   destructibleInfo,
   destructibleMenuButtons,
+  fishingSpotMenuButtons,
   groundItemInfo,
   groundItemMenuButtons,
   horseMenuButtons,
@@ -60,6 +61,7 @@ import { recommendPartyAction } from '../exploration/partyActions.js'
 import { objectFor } from '../world/objects.js'
 import { activeHazards, isStanding } from '../world/environment.js'
 import { hazardChallengeId, isHazardChallengeId } from '../world/EnvironmentalHazard.js'
+import { FISHING_PHASE, fishingSpotViews } from '../exploration/fishingSpots.js'
 import { canMountHorse, horseById } from '../exploration/mount.js'
 import { canAct, getMembers } from '../exploration/partyControl.js'
 import { isVisibleToParty } from '../exploration/partyKnowledge.js'
@@ -299,6 +301,16 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     .map((region) => challengeFor(state, hazardChallengeId(region.id)))
     .filter(Boolean)
   const hazardInReachIds = hazardChallenges.filter((object) => object.membersInRange(party).length > 0).map((object) => object.id)
+  const fishingViews = fishingSpotViews(state)
+  const fishingReachableIds = fishingViews
+    .filter((spot) =>
+      getMembers(party).some((member) => {
+        if (!canAct(member)) return false
+        return Math.hypot(member.position.x - spot.position.x, member.position.y - spot.position.y) <= INTERACT_RANGE
+      }),
+    )
+    .map((spot) => spot.id)
+  const catchSpot = Object.values(state.fishing?.spots ?? {}).find((spot) => spot.phase === FISHING_PHASE.splash && spot.visible !== false) ?? null
   const inReachIds = [...objectsInReach(state, party.memberIds).map((definition) => definition.id), ...hazardInReachIds]
   // An object whose approaches are all still locked can be clicked too, to see what it would take.
   const reachableIds = inReachIds.filter((id) => challengeFor(state, id).listedActions(state).length > 0)
@@ -364,12 +376,14 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     menuDestructibleId,
     menuGroundItemId,
     menuHorseId,
+    menuFishingId,
     toggleMemberMenu,
     toggleNpcMenu,
     toggleObjectMenu,
     toggleDestructibleMenu,
     toggleGroundItemMenu,
     toggleHorseMenu,
+    toggleFishingMenu,
     closeMenu,
     closeAllMenus,
   } = useRingMenus()
@@ -815,6 +829,37 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     onButtonHover: hoverRingButton,
     slotRef: openId ? setRollSlot : undefined,
   }
+  const menuFishing =
+    menuFishingId && !inCombat && fishingReachableIds.includes(menuFishingId) ? menuFishingId : null
+  const fishingButtons =
+    menuFishing &&
+    fishingSpotMenuButtons(
+      state,
+      menuFishing,
+      {
+        fish: (memberId) => {
+          closeMenu('fishing')
+          dispatch({ type: 'startFishing', spotId: menuFishing, memberId })
+        },
+      },
+      pickedId,
+    )
+  const fishingBand =
+    fishingButtons?.length > 0
+      ? ringPartyBand(state, { fishingId: menuFishing }, fishingButtons, 'fish', pickedId, pickRingMember)
+      : null
+  const fishingMenu = menuFishing && {
+    fishingId: menuFishing,
+    position: fishingViews.find((spot) => spot.id === menuFishing)?.position,
+    buttons: fishingButtons,
+    party: fishingBand
+      ? {
+          ...fishingBand,
+          slices: fishingBand.slices.filter((slice) => slice.available),
+        }
+      : null,
+    onButtonHover: hoverRingButton,
+  }
   // Name tags hide while that object's ring is open (pointer often stays over the prop).
   const hiddenTagIds = [
     ...(menuObject && !isHazardChallengeId(menuObject) ? [menuObject] : []),
@@ -966,6 +1011,11 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           reachableIds={reachableIds}
           onInteract={toggleObjectMenu}
           hazards={hazardChallenges.filter((object) => hazardInReachIds.includes(object.id)).map((object) => ({ id: object.id, position: object.position() }))}
+          fishingSpots={fishingViews}
+          fishingReachableIds={fishingReachableIds}
+          onFishingSpot={toggleFishingMenu}
+          catchSpot={catchSpot ? { id: catchSpot.id, position: catchSpot.position } : null}
+          onCatchFish={(spotId) => dispatch({ type: 'catchFish', spotId })}
           destructibles={destructibleViews}
           environment={state.environment}
           lastObjectShot={state.lastObjectShot ?? null}
@@ -994,7 +1044,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           onOpenNpcMenu={toggleNpcMenu}
           onOpenHorseMenu={toggleHorseMenu}
           onStaggerDone={(id) => dispatch({ type: 'clearBlastReact', id })}
-          menu={memberMenu || npcMenu || objectMenu || destructibleMenu || groundItemMenu || horseMenu}
+          menu={memberMenu || npcMenu || objectMenu || destructibleMenu || groundItemMenu || horseMenu || fishingMenu}
           beamIn={beamPhase}
           scanPulse={scanPulse}
           onBoardReady={onExploreBoardReady}

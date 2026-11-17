@@ -8,6 +8,7 @@ import { challengeFor } from '../../exploration/challengeObjects.js'
 import { previewObjectShot } from '../../exploration/explorationEnvironment.js'
 import { canScan, canScanNpc, scanRadius } from '../../exploration/partyScan.js'
 import { canDismount, canDismountHorse, canMountHorse, horseById, isMounted } from '../../exploration/mount.js'
+import { canStartFishing, fishingSpotById, hasFishingRod } from '../../exploration/fishingSpots.js'
 import { challengeScanner, destructibleScanner, destructibleShooter, groundItemScanner, npcButtonPerformer, ringPartyView } from '../../exploration/ringParty.js'
 import { canAct } from '../../exploration/partyControl.js'
 import { getEquippedItems } from '../../rules/equipment.js'
@@ -116,6 +117,36 @@ export function objectMenuButtons(state, objectId, actions, activeId = null, pic
       keepOpen: true,
     },
     ...approaches,
+  ]
+}
+
+// Fishing Spot ring (left-click the ripple): Fish only — not started from the player ring.
+// actions: { fish(memberId) }; pickedId: who is chosen on the party band.
+export function fishingSpotMenuButtons(state, spotId, actions, pickedId = null) {
+  const spot = fishingSpotById(state, spotId)
+  if (!spot || !spot.visible) return []
+  const member =
+    (pickedId && state.party.members[pickedId] && canAct(state.party.members[pickedId]) ? state.party.members[pickedId] : null) ||
+    state.party.members[state.party.leaderId]
+  const memberId = member?.id
+  const check = memberId ? canStartFishing(state, spotId, memberId) : { ok: false, reason: 'Select a character first.' }
+  const hasRod = memberId ? hasFishingRod(state, memberId) : false
+  const title = !spot.fishable
+    ? 'Fish: this spot is not fishable.'
+    : !hasRod
+      ? `Fish: ${member?.character?.name ?? 'Character'} needs a fishing rod.`
+      : check.ok
+        ? `Fish: ${member.character.name} casts from the shore.`
+        : `Fish: ${check.reason}`
+  return [
+    {
+      id: 'fish',
+      label: 'Fish',
+      icon: 'interact',
+      enabled: Boolean(check.ok),
+      title,
+      onClick: () => actions.fish(memberId),
+    },
   ]
 }
 

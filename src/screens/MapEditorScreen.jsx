@@ -616,6 +616,9 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     onToggleTemplatePieceMove: tools.toggleTemplatePieceMove,
     onTemplatePieceCleared: tools.clearTemplatePiece,
     onHazardCleared: tools.clearHazard,
+    fishingSpotMoving: tools.movingFishingSpot,
+    onToggleFishingSpotMove: tools.toggleFishingSpotMove,
+    onFishingSpotCleared: tools.clearFishingSpot,
     editingPatrol: tools.editingPatrol,
     movingWaypoint: tools.movingWaypoint,
     selectedWaypointIndex: tools.selectedWaypointIndex,
@@ -732,6 +735,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
             selectedObjectId={tools.selectedObjectId}
             selectedDestructibleId={tools.selectedDestructibleId}
             selectedHazardId={tools.selectedHazardId}
+            selectedFishingSpotId={tools.selectedFishingSpotId}
             selectedGroundItemId={tools.selectedGroundItemId}
             movingGroundItem={tools.movingGroundItem}
             selectedTemplatePieceId={tools.selectedTemplatePieceId}

@@ -46,6 +46,7 @@ const MARKER_TOOLS = [
     swatch: creature.swatch ?? 'npc',
   })),
   { id: 'npcs', label: 'NPC', swatch: 'npc' },
+  { id: 'fishingSpot', label: 'Fishing Spot', swatch: 'area' },
   { id: 'area', label: 'Area Label', swatch: 'area' },
   { id: 'erase', label: 'Erase Marker', swatch: 'erase' },
   { id: 'eraseFloor', label: 'Erase Floor (Null)', swatch: 'erase' },

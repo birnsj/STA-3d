@@ -20,6 +20,7 @@ const MARKER_FILLS = {
   npc: 0xb07ee8,
   objective: 0xe0a800,
   object: 0x1fa59a,
+  fishing: 0x4fc3f7,
   patrol: 0xe8c44a,
 }
 // Guide grid over the floor (world pixels; 64 = one tile). Drawn under markers so figures stay readable.

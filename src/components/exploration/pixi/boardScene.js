@@ -4,7 +4,7 @@ import { ExplosionView } from '../../maps/pixi/explosionView.js'
 import { HazardLayer } from '../../maps/pixi/hazardLayer.js'
 import { FigureView, SheetStore } from '../../maps/pixi/figures.js'
 import { reconcile, reducedMotion, startPixiStage } from '../../maps/pixi/pixiStage.js'
-import { GroundLootView, HighlightView, LastKnownView, MarkerView, PulseView } from './boardItems.js'
+import { FishingRippleView, GroundLootView, HighlightView, LastKnownView, MarkerView, PulseView } from './boardItems.js'
 
 // The Pixi exploration board's scene (pixiStage.js), drawn once per animation frame from the latest board description
 // (PixiExplorationBoard): the ground items (last-known markers, click rings) on the floor, the figures and the
@@ -23,6 +23,7 @@ export async function startBoardScene(host, read, onReady, isCancelled) {
   const highlights = new Map()
   const markers = new Map()
   const groundLoot = new Map()
+  const fishingRipples = new Map()
   const lastKnown = new Map()
   const pulses = new Map()
   const effects = new Map()
@@ -43,6 +44,13 @@ export async function startBoardScene(host, read, onReady, isCancelled) {
     reconcile(highlights, map.ready ? board.highlights : [], depthLayer, () => new HighlightView(), (highlight, item) => highlight.update(board.layout, item, now))
     reconcile(markers, board.markers, depthLayer, () => new MarkerView(), (marker, item) => marker.update(item, now))
     reconcile(groundLoot, board.groundLoot ?? [], depthLayer, () => new GroundLootView(), (loot, item) => loot.update(item, now, options.playing))
+    reconcile(
+      fishingRipples,
+      board.fishingRipples ?? [],
+      groundLayer,
+      () => new FishingRippleView(),
+      (ripple, item) => ripple.update(item, now),
+    )
     reconcile(lastKnown, board.lastKnown, groundLayer, () => new LastKnownView(), (marker, item) => marker.update(item))
     reconcile(pulses, board.pulses, groundLayer, () => new PulseView(), (pulse, item) => pulse.update(item, now))
     reconcile(effects, board.effects, fxLayer, () => new EffectView(), (effect, item) => effect.update(item, now))
@@ -59,7 +67,7 @@ export async function startBoardScene(host, read, onReady, isCancelled) {
 
   return {
     destroy() {
-      for (const views of [figures, highlights, markers, groundLoot, lastKnown, pulses, effects, explosions]) for (const view of views.values()) view.destroy()
+      for (const views of [figures, highlights, markers, groundLoot, fishingRipples, lastKnown, pulses, effects, explosions]) for (const view of views.values()) view.destroy()
       hazards.destroy()
       sheets.destroy()
       stage.destroy()

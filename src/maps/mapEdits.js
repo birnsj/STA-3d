@@ -1,5 +1,7 @@
 // Pure edits for the dev map editor; each returns a new map (or the same one when nothing changed).
 import { AMBIENT_CREATURES, ambientMarkerKinds } from '../data/adaptation/exploration/ambientCreatures.js'
+import { authoredFishingSpotFields } from '../exploration/fishingAuthored.js'
+import { isFishingWaterAt } from '../exploration/fishingWater.js'
 import { defaultRoamForCreature } from '../exploration/roam.js'
 import { getItemById } from '../rules/equipment.js'
 import { snapToGuideGrid } from '../components/maps/editorGrid.js'
@@ -72,6 +74,7 @@ export function dependentsAt(map, position, objectDefinitions = []) {
     }
   }
   if (destructibleAt(map, position)) found.push({ kind: 'destructible', label: 'destructible' })
+  if (fishingSpotAt(map, position)) found.push({ kind: 'fishingSpot', label: 'fishing spot' })
   if (hazardRegionAt(map, position)) found.push({ kind: 'hazard', label: 'hazard' })
   if (objectDefinitions.some((definition) => definition.position[0] === position.x && definition.position[1] === position.y)) {
     found.push({ kind: 'object', label: 'challenge object' })
@@ -375,6 +378,8 @@ export function selectionCandidates(map, objectDefinitions, position, { cellPx =
   if (object) candidates.push({ kind: 'object', layer: layerOfSelection('object'), object })
   const destructible = destructibleAt(map, position)
   if (destructible) candidates.push({ kind: 'destructible', layer: layerOfSelection('destructible'), destructible })
+  const fishingSpot = fishingSpotAt(map, position)
+  if (fishingSpot) candidates.push({ kind: 'fishingSpot', layer: layerOfSelection('fishingSpot'), fishingSpot })
   const hazard = hazardRegionAt(map, position)
   if (hazard) candidates.push({ kind: 'hazard', layer: layerOfSelection('hazard'), hazard })
   // With a pointer the drawn art decides, and a click through transparent padding is not an item. The floor cell match is
@@ -505,6 +510,9 @@ export function eraseMarkers(map, position, { characters = true, markers = true 
     // Spawn markers share the Characters layer lock with NPCs; areas use Markers.
     markers: characters ? { ...map.markers, ...characterMarkersWithout(map, position) } : map.markers,
     npcs: characters ? (map.npcs ?? []).filter((npc) => !same(npc.position, position)) : (map.npcs ?? []),
+    fishingSpots: markers
+      ? (map.fishingSpots ?? []).filter((spot) => !same(spot.position, position))
+      : map.fishingSpots ?? [],
   }
 }
 
@@ -648,6 +656,61 @@ export function updateDestructible(map, id, changes) {
 }
 
 export const removeDestructible = (map, id) => ({ ...map, destructibles: (map.destructibles ?? []).filter((entry) => entry.id !== id) })
+
+// ---------- Fishing spots (mapFormat.js fishingSpots) ----------
+
+export const fishingSpotAt = (map, position) =>
+  (map.fishingSpots ?? []).find((spot) => same(spot.position, position)) ?? null
+
+export function placeFishingSpot(map, position) {
+  if (fishingSpotAt(map, position)) return null
+  const list = map.fishingSpots ?? []
+  const spot = {
+    id: freeId('fishingSpot', new Set(list.map((entry) => entry.id))),
+    position: { x: position.x, y: position.y },
+    ...authoredFishingSpotFields({}),
+  }
+  return {
+    map: { ...map, fishingSpots: [...list, spot] },
+    spot,
+    warn: isFishingWaterAt(map, position) ? null : 'Fishing Spot should be on water or shallows.',
+  }
+}
+
+export function moveFishingSpot(map, id, position) {
+  const spot = (map.fishingSpots ?? []).find((entry) => entry.id === id)
+  if (!spot || same(spot.position, position) || fishingSpotAt(map, position)) return { map, warn: null }
+  return {
+    map: {
+      ...map,
+      fishingSpots: map.fishingSpots.map((entry) => (entry.id === id ? { ...entry, position: { ...position } } : entry)),
+    },
+    warn: isFishingWaterAt(map, position) ? null : 'Fishing Spot should be on water or shallows.',
+  }
+}
+
+export function updateFishingSpot(map, id, changes) {
+  return {
+    ...map,
+    fishingSpots: (map.fishingSpots ?? []).map((entry) => {
+      if (entry.id !== id) return entry
+      const merged = { ...entry, ...changes }
+      if (changes.catchPool != null) merged.catchPool = authoredFishingSpotFields({ catchPool: changes.catchPool }).catchPool
+      if (changes.difficulty != null) merged.difficulty = authoredFishingSpotFields({ difficulty: changes.difficulty }).difficulty
+      if (changes.size != null) merged.size = authoredFishingSpotFields({ size: changes.size }).size
+      if (changes.respawnSeconds != null) {
+        merged.respawnSeconds = authoredFishingSpotFields({ respawnSeconds: changes.respawnSeconds }).respawnSeconds
+      }
+      if (changes.fishable != null) merged.fishable = changes.fishable !== false
+      return merged
+    }),
+  }
+}
+
+export const removeFishingSpot = (map, id) => ({
+  ...map,
+  fishingSpots: (map.fishingSpots ?? []).filter((entry) => entry.id !== id),
+})
 
 // ---------- Ground inventory placements (mapFormat.js groundItemPlacements; snap cellPx matches editor grid) ----------
 

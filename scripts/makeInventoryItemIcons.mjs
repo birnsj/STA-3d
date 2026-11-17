@@ -632,6 +632,74 @@ function dkTahgIcon() {
   return bytes
 }
 
+// --- Fishing ---
+function fishingRodIcon() {
+  const bytes = blank()
+  const wood = hex('#8a6040')
+  const tip = hex('#c8a878')
+  const reel = hex('#6a7888')
+  const cord = hex('#d0d8e0')
+  const ink = inkOf()
+  line(bytes, 8, 26, 22, 5, wood, 2)
+  line(bytes, 20, 6, 24, 4, tip, 1)
+  fillCircle(bytes, 11, 20, 3, reel)
+  fillCircle(bytes, 11, 20, 1, ink)
+  line(bytes, 13, 18, 22, 8, cord, 1)
+  fillCircle(bytes, 24, 5, 1, hex('#c04040'))
+  return bytes
+}
+
+function fishIcon({ body, belly, fin, eye = hex('#0a0e18') }) {
+  const bytes = blank()
+  const ink = inkOf()
+  // Body
+  fillRect(bytes, 8, 12, 22, 20, body)
+  fillRect(bytes, 10, 11, 20, 21, body)
+  fillRect(bytes, 12, 10, 18, 22, body)
+  // Belly highlight
+  fillRect(bytes, 10, 17, 18, 20, belly)
+  // Head / snout
+  fillRect(bytes, 20, 13, 24, 19, body)
+  fillRect(bytes, 23, 14, 26, 18, body)
+  // Tail
+  fillRect(bytes, 4, 11, 9, 15, fin)
+  fillRect(bytes, 4, 17, 9, 21, fin)
+  fillRect(bytes, 5, 14, 8, 18, body)
+  // Dorsal fin
+  fillRect(bytes, 12, 7, 17, 11, fin)
+  // Eye
+  setPixel(bytes, 22, 14, hex('#f0f4f8'))
+  setPixel(bytes, 23, 14, eye)
+  outlineRect(bytes, 9, 12, 21, 20, ink)
+  return bytes
+}
+
+function fishMinnowIcon() {
+  return fishIcon({ body: hex('#a8b8c0'), belly: hex('#d8e0e8'), fin: hex('#708090') })
+}
+
+function fishTroutIcon() {
+  const bytes = fishIcon({ body: hex('#5a9870'), belly: hex('#c8d8b0'), fin: hex('#3a6848') })
+  const speck = hex('#2a4838')
+  setPixel(bytes, 12, 14, speck)
+  setPixel(bytes, 15, 13, speck)
+  setPixel(bytes, 17, 15, speck)
+  setPixel(bytes, 14, 16, speck)
+  return bytes
+}
+
+function fishSalmonIcon() {
+  return fishIcon({ body: hex('#e09078'), belly: hex('#f0d0c0'), fin: hex('#b06050') })
+}
+
+function fishBassIcon() {
+  const bytes = fishIcon({ body: hex('#3a6848'), belly: hex('#90a878'), fin: hex('#2a4830') })
+  // Broader midsection cue
+  fillRect(bytes, 11, 11, 19, 21, hex('#3a6848'))
+  fillRect(bytes, 12, 18, 18, 21, hex('#90a878'))
+  return bytes
+}
+
 const ICONS = {
   // Batch 1
   starfleet_padd: paddIcon,
@@ -679,6 +747,12 @@ const ICONS = {
   isolinear_optical_chip: isolinearOpticalChipIcon,
   disruptor_pistol: disruptorPistolIcon,
   dk_tahg: dkTahgIcon,
+  // Fishing
+  fishing_rod: fishingRodIcon,
+  fish_minnow: fishMinnowIcon,
+  fish_trout: fishTroutIcon,
+  fish_salmon: fishSalmonIcon,
+  fish_bass: fishBassIcon,
 }
 
 for (const [id, draw] of Object.entries(ICONS)) {

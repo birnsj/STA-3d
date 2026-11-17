@@ -131,6 +131,7 @@ export function layerOfSelection(kind) {
       return 'characters'
     case 'area':
     case 'objective':
+    case 'fishingSpot':
       return 'markers'
     default:
       if (AMBIENT_SPAWN_KINDS.has(kind)) return 'characters'

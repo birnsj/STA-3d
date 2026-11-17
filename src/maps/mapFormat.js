@@ -47,6 +47,8 @@
 // Fractional x/y are allowed for the 32×32 drop grid. name overrides the hover label; pickable/visible default true and
 // are left out on disk when true. on: { tile: [x, y] } or { placement: id } when elevated on a support surface; omitted
 // on the floor. Entries missing id get one on parse. Runtime drops never write back into the map file.
+// fishingSpots: [{ id, position: [x,y], fishable?, difficulty? 0–5, size? 0.5–2, respawnSeconds?, catchPool? [itemId] }] —
+// water ripples (exploration/fishingSpots.js). Prefer water/shallows tiles; validateMap warns when not.
 // markers.horseSpawns: [x, y], [x, y, facing], or { position:[x,y]|x,y, facing?, roam?, disposition?, coat? } — Horse Spawn markers.
 // Play only spawns mounts from these (exploration/mount.js); empty means no horse. Facing degrees (0 = +x).
 // roam: optional { mode: idle|radiusWander|waypointPatrol, radius?, speed? }; omitted/idle = stand at spawn.
@@ -73,6 +75,8 @@ import { emptyMusic, normalizeMusic, serializeMusic } from '../audio/musicCues.j
 import awareness from '../data/adaptation/exploration/awareness.json'
 import { ambientMarkerKinds } from '../data/adaptation/exploration/ambientCreatures.js'
 import { normalizeDisposition } from '../exploration/dispositions.js'
+import { authoredFishingSpotFields } from '../exploration/fishingAuthored.js'
+import { isFishingWaterTileId } from '../exploration/fishingWater.js'
 import { parseRoam, serializeRoam } from '../exploration/roam.js'
 import catalogue from '../data/adaptation/maps/tiles.json'
 import destructibleData from '../data/adaptation/world/destructibles.json'
@@ -376,6 +380,9 @@ function assertMapFileStructure(file) {
       assertTuple(position, `destructibles[${index}].linkedTiles[${linkedIndex}]`, [2], { integers: true }),
     )
   })
+  ;(file.fishingSpots ?? []).forEach((spot, index) => {
+    if (spot?.position != null) assertTuple(spot.position, `fishingSpots[${index}].position`, [2], { integers: true })
+  })
   ;(file.hazards ?? []).forEach((hazard, index) => {
     ;(hazard?.tiles ?? []).forEach((tile, tileIndex) => {
       assertTuple(tile, `hazards[${index}].tiles[${tileIndex}]`, [3])
@@ -411,9 +418,17 @@ function assertMapFileStructure(file) {
     if (horse?.position != null) assertTuple(horse.position, `horses[${index}].position`, [2, 3])
     if (horse?.facing != null && !Number.isFinite(horse.facing)) invalidMap(`horses[${index}].facing`, 'expected a finite number')
   })
-  ;['npcs', 'objectives', 'objects', 'destructibles', 'hazards', 'groundItemPlacements', 'templatePiecePlacements', 'horses'].forEach((path) =>
-    assertUniqueAuthoredIds(file[path], path),
-  )
+  ;[
+    'npcs',
+    'objectives',
+    'objects',
+    'destructibles',
+    'hazards',
+    'groundItemPlacements',
+    'templatePiecePlacements',
+    'fishingSpots',
+    'horses',
+  ].forEach((path) => assertUniqueAuthoredIds(file[path], path))
 }
 
 /** Legacy file.horses → marker spawns (same facing rules as player starts). */
@@ -485,6 +500,7 @@ function blankFields(name, width, height, tiles) {
     destructibles: [],
     hazards: [],
     groundItemPlacements: [],
+    fishingSpots: [],
     templatePiecePlacements: [],
     autoPaint: null,
     briefing: '',
@@ -909,6 +925,31 @@ const serializeDestructible = (object) => ({
   ...(!object.noExplosion && explosionOverrides(object.explosion) ? { explosion: explosionOverrides(object.explosion) } : {}),
   ...(object.linkedTiles?.length ? { linkedTiles: object.linkedTiles.map(fromPosition) } : {}),
 })
+
+function parseFishingSpot(raw, inside) {
+  if (raw?.id == null || raw.position == null) return null
+  const position = toPosition(raw.position)
+  if (!inside(position)) return null
+  const fields = authoredFishingSpotFields(raw)
+  return {
+    id: String(raw.id),
+    position,
+    ...fields,
+  }
+}
+
+const serializeFishingSpot = (spot) => {
+  const fields = authoredFishingSpotFields(spot)
+  return {
+    id: spot.id,
+    position: fromPosition(spot.position),
+    ...(fields.fishable === false ? { fishable: false } : {}),
+    ...(fields.difficulty !== 2 ? { difficulty: fields.difficulty } : {}),
+    ...(fields.size !== 1 ? { size: fields.size } : {}),
+    ...(fields.respawnSeconds !== 45 ? { respawnSeconds: fields.respawnSeconds } : {}),
+    ...(Array.isArray(spot.catchPool) && spot.catchPool.length ? { catchPool: [...fields.catchPool] } : {}),
+  }
+}
 const clampIntensity = (value) => Math.min(3, Math.max(1, Math.round(Number(value) || 1)))
 // A hazard region's overrides of its type's values (hazards.json); any left out use the type's.
 export const HAZARD_OVERRIDES = [
@@ -1068,6 +1109,7 @@ export function parseMapFile(file, id) {
     groundItemPlacements: (file.groundItemPlacements ?? [])
       .map((raw) => parseGroundItemPlacement(raw, inside, groundItemIds))
       .filter(Boolean),
+    fishingSpots: (file.fishingSpots ?? []).map((raw) => parseFishingSpot(raw, inside)).filter(Boolean),
     templatePiecePlacements: (() => {
       const used = new Set()
       return (file.templatePiecePlacements ?? [])
@@ -1137,6 +1179,7 @@ export function serializeMap(map) {
     ...(map.groundItemPlacements?.length
       ? { groundItemPlacements: map.groundItemPlacements.map(serializeGroundItemPlacement) }
       : {}),
+    ...(map.fishingSpots?.length ? { fishingSpots: map.fishingSpots.map(serializeFishingSpot) } : {}),
     ...(map.templatePiecePlacements?.length
       ? { templatePiecePlacements: map.templatePiecePlacements.map(serializeTemplatePiecePlacement) }
       : {}),
@@ -1190,6 +1233,7 @@ export function resizeMap(map, width, height, { fill } = {}) {
       .map((object) => (object.linkedTiles ? { ...object, linkedTiles: object.linkedTiles.filter(inside) } : object)),
     hazards: (map.hazards ?? []).map((hazard) => hazardInside(hazard, inside)).filter((hazard) => Object.keys(hazard.tiles).length),
     groundItemPlacements: (map.groundItemPlacements ?? []).filter((entry) => inside(entry.position)),
+    fishingSpots: (map.fishingSpots ?? []).filter((spot) => inside(spot.position)),
     templatePiecePlacements: (map.templatePiecePlacements ?? []).filter((entry) =>
       templatePieceInside(w, h, entry.position),
     ),
@@ -1303,6 +1347,15 @@ export function validateMap(map, { enemySpawns = 0, label = 'this mode', hasAuth
     }
   })
   warnings.push(...placementSupportDiagnostics(map.groundItemPlacements ?? []).filter((message) => !warnings.includes(message)))
+  ;(map.fishingSpots ?? []).forEach((spot) => {
+    const tileId = map.tiles[spot.position.y]?.[spot.position.x]
+    if (!isFishingWaterTileId(tileId)) {
+      warnings.push(`Fishing Spot ${spot.id} is not on water or shallows (${spot.position.x}, ${spot.position.y}).`)
+    }
+    if (Number.isFinite(spot.difficulty) && (spot.difficulty < 0 || spot.difficulty > 5)) {
+      warnings.push(`Fishing Spot ${spot.id} has an out-of-range difficulty.`)
+    }
+  })
   Object.values(map.objectPlacements ?? {}).forEach((position) => {
     if (inside(position) && isEmptyTile(map.tiles[position.y][position.x])) {
       warnings.push(`A challenge object at ${position.x}, ${position.y} is on an empty cell.`)

@@ -107,8 +107,8 @@ export default function EditorColourField({
     if (!open || !rootRef.current) return
     const place = () => {
       const rect = rootRef.current.getBoundingClientRect()
-      const width = 220
-      const height = presets?.length ? 248 : 210
+      const width = 248
+      const height = presets?.length ? 292 : 254
       let left = rect.left
       let top = rect.bottom + 6
       if (left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - width - 8)
@@ -151,17 +151,21 @@ export default function EditorColourField({
 
   const dragOn = (ref, read) => (event) => {
     event.preventDefault()
+    event.currentTarget.setPointerCapture?.(event.pointerId)
     const el = ref.current
     if (!el) return
+    // Snapshot HSV at drag start so hue edits keep S/V (and SV edits keep H) stable.
+    const base = hsv
     const apply = (clientX, clientY) => {
       const box = el.getBoundingClientRect()
       const x = Math.min(1, Math.max(0, (clientX - box.left) / box.width))
       const y = Math.min(1, Math.max(0, (clientY - box.top) / box.height))
-      commit(read(x, y, hsv))
+      commit(read(x, y, base))
     }
     apply(event.clientX, event.clientY)
     const move = (e) => apply(e.clientX, e.clientY)
-    const up = () => {
+    const up = (e) => {
+      el.releasePointerCapture?.(e.pointerId)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
     }
@@ -184,7 +188,7 @@ export default function EditorColourField({
           ref={svRef}
           className="ed-colour-sv"
           style={{ backgroundColor: hueCss(hsv.h) }}
-          onPointerDown={dragOn(svRef, (x, y) => ({ ...hsv, s: x, v: 1 - y }))}
+          onPointerDown={dragOn(svRef, (x, y, base) => ({ ...base, s: x, v: 1 - y }))}
         >
           <div className="ed-colour-sv-white" />
           <div className="ed-colour-sv-black" />
@@ -193,7 +197,7 @@ export default function EditorColourField({
         <div
           ref={hueRef}
           className="ed-colour-hue"
-          onPointerDown={dragOn(hueRef, (x) => ({ ...hsv, h: x * 360 }))}
+          onPointerDown={dragOn(hueRef, (x, _y, base) => ({ ...base, h: x * 360 }))}
         >
           <span className="ed-colour-hue-thumb" style={{ left: `${(hsv.h / 360) * 100}%` }} />
         </div>

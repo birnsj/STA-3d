@@ -17,6 +17,7 @@ function preparePartyPreview(character, task, state, condition) {
   )
 }
 import { challengeFor, INTERACT_RANGE } from './challengeObjects.js'
+import { canStartFishing, fishingSpotById } from './fishingSpots.js'
 import { previewObjectShot } from './explorationEnvironment.js'
 import { distance } from './navigation.js'
 import { getMembers } from './partyControl.js'
@@ -39,6 +40,13 @@ function bandMembers(state, target) {
     const npc = state.world.npcs[target.npcId]
     if (!npc) return []
     return members.filter((member) => !isDefeated(member.condition) && distance(member.position, npc.position) <= INTERACT_RANGE)
+  }
+  if (target.fishingId) {
+    const spot = fishingSpotById(state, target.fishingId)
+    if (!spot) return []
+    return members.filter(
+      (member) => !isDefeated(member.condition) && distance(member.position, spot.position) <= INTERACT_RANGE,
+    )
   }
   return members.filter((member) => !isDefeated(member.condition))
 }
@@ -105,6 +113,11 @@ export function ringPartyView(state, target, buttonId) {
           prepared: preparePartyPreview(member.character, SCAN_TASK, state, member.condition),
         })),
     )
+  } else if (target.fishingId && buttonId === 'fish') {
+    for (const member of members) {
+      const check = canStartFishing(state, target.fishingId, member.id)
+      blocked[member.id] = check.ok ? null : check.reason
+    }
   } else if (target.objectId && buttonId) {
     const challenge = challengeFor(state, target.objectId)
     recommendation = challenge.recommend(state, buttonId, members.map((member) => member.id))

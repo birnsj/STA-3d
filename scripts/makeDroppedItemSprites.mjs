@@ -365,6 +365,12 @@ const PROPS = {
     }),
   disruptorPistol: () => render(blockScene(8, disruptorPistolMaterial()), { bloom: 1.08 }),
   dkTahg: () => render(blockScene(7, daggerMaterial({ serrated: false }))),
+  // Fishing
+  fishingRod: () => render(blockScene(10, fishingRodMaterial())),
+  fishMinnow: () => render(blockScene(5, fishMaterial({ body: rgb('#a8b8c0'), belly: rgb('#d8e0e8'), fin: rgb('#708090'), scale: 0.78 }))),
+  fishTrout: () => render(blockScene(6, fishMaterial({ body: rgb('#5a9870'), belly: rgb('#c8d8b0'), fin: rgb('#3a6848'), speckles: true }))),
+  fishSalmon: () => render(blockScene(6, fishMaterial({ body: rgb('#e09078'), belly: rgb('#f0d0c0'), fin: rgb('#b06050') }))),
+  fishBass: () => render(blockScene(7, fishMaterial({ body: rgb('#3a6848'), belly: rgb('#90a878'), fin: rgb('#2a4830'), scale: 1.12 }))),
 }
 
 function cylinderToolMaterial({ body, tip, band }) {
@@ -868,6 +874,91 @@ function disruptorPistolMaterial() {
         return { albedo: body, spec: 0.35, shininess: 26 }
       }
       return { albedo: body, spec: 0.3, shininess: 24, ao: 0.72 }
+    },
+  }
+}
+
+function fishingRodMaterial() {
+  const H = 10
+  const wood = rgb('#8a6040')
+  const tip = rgb('#c8a878')
+  const reel = rgb('#6a7888')
+  return {
+    height(u, v, face) {
+      if (face === 'top') {
+        // Straight pole with offset reel — reads after 4× downsample better than a thin diagonal.
+        const pole = inside(u, v, 14, 3, 18, 28)
+        const handle = inside(u, v, 13, 22, 19, 29)
+        const onReel = Math.hypot(u - 11, v - 18) < 3.6
+        const onTip = Math.hypot(u - 16, v - 4) < 1.8
+        let h = 0
+        if (pole > 0) h = bevel(pole, 1, 0.7) * 1.15
+        if (handle > 0) h = Math.max(h, bevel(handle, 1, 0.7) * 1.35)
+        if (onReel) h = Math.max(h, bevel(3.6 - Math.hypot(u - 11, v - 18), 1.1, 0.8))
+        if (onTip) h = Math.max(h, 1.1)
+        return h
+      }
+      const on = Math.abs(u - 16) < 6
+      return on ? bevel(Math.min(6 - Math.abs(u - 16), v, H - v), 0.8, 0.65) : 0
+    },
+    surface(u, v, face) {
+      if (face === 'top') {
+        if (Math.hypot(u - 11, v - 18) < 3.6) return { albedo: reel, spec: 0.55, shininess: 36 }
+        if (v < 6) return { albedo: tip, spec: 0.35, shininess: 24 }
+        if (v > 22) return { albedo: scale(wood, 0.78), spec: 0.2, shininess: 16 }
+        return { albedo: scale(wood, 0.92 + brushed(u, v, 88) * 0.1), spec: 0.22, shininess: 18 }
+      }
+      return { albedo: wood, spec: 0.22, shininess: 18, ao: 0.72 }
+    },
+  }
+}
+
+function fishMaterial({ body, belly, fin, scale: bodyScale = 1, speckles = false }) {
+  // Lying fish along U, thick enough to survive 4× stack downsample.
+  const H = Math.round(6 + 2.5 * bodyScale)
+  const cx = 16
+  const cy = 16
+  const rx = 10.5 * bodyScale
+  const ry = 5.2 * bodyScale
+  return {
+    height(u, v, face) {
+      if (face === 'top') {
+        const dx = (u - cx) / rx
+        const dy = (v - cy) / ry
+        const r = Math.sqrt(dx * dx + dy * dy)
+        const inBody = r <= 1
+        const snout = u > cx + rx * 0.45 && Math.abs(v - cy) < ry * 0.85 && u < cx + rx + 3.5
+        const tailFork =
+          u < cx - rx + 2.5 &&
+          Math.abs(v - cy) > 0.8 &&
+          Math.abs(v - cy) < ry + 3.5 * bodyScale &&
+          u > cx - rx - 4.5 * bodyScale
+        const dorsal =
+          Math.abs(u - (cx - 1)) < rx * 0.4 && v < cy - ry + 1 && v > cy - ry - 4.2 * bodyScale
+        let h = 0
+        if (inBody) h = bevel(1 - r, 1.4, 0.9) * (1.8 + 0.6 * bodyScale)
+        if (snout) h = Math.max(h, 1.1)
+        if (tailFork) h = Math.max(h, 0.95)
+        if (dorsal) h = Math.max(h, 1.05)
+        return h
+      }
+      const on = Math.abs(u - cx) < rx + 4
+      return on ? bevel(Math.min(rx + 4 - Math.abs(u - cx), v, H - v), 0.8, 0.65) : 0
+    },
+    surface(u, v, face) {
+      if (face === 'top') {
+        const onTail = u < cx - rx + 2.5 && Math.abs(v - cy) > 1
+        const onDorsal = Math.abs(u - (cx - 1)) < rx * 0.4 && v < cy - ry + 1
+        if (onTail || onDorsal) return { albedo: fin, spec: 0.28, shininess: 20 }
+        if (v > cy + 0.4) return { albedo: belly, spec: 0.38, shininess: 28 }
+        if (speckles && noise(u / 2.1, v / 2.1, 19) > 0.58) return { albedo: scale(body, 0.7), spec: 0.32, shininess: 24 }
+        if (u > cx + rx * 0.55 && Math.abs(v - cy) < 1.2) return { albedo: rgb('#101418'), spec: 0.15, shininess: 12 }
+        return { albedo: scale(body, 0.94 + brushed(u, v, 61) * 0.08), spec: 0.42, shininess: 32 }
+      }
+      const z = v
+      const ao = 0.7 + 0.3 * smoothstep(0, 4, z)
+      if (z < H * 0.35) return { albedo: belly, spec: 0.3, shininess: 22, ao }
+      return { albedo: body, spec: 0.35, shininess: 26, ao }
     },
   }
 }

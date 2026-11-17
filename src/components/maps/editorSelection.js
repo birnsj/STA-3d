@@ -18,6 +18,8 @@ export const MARKER_HELP = {
   npcs: 'Click a floor tile to place an NPC, or click an NPC to edit it in Properties.',
   area: 'Click a floor tile to set or clear a room label.',
   erase: 'Click a tile to erase markers on it.',
+  fishingSpot:
+    'Click a water or shallows tile to place a Fishing Spot ripple, or click an existing one to edit it in Properties. Non-water tiles warn but still place.',
 }
 
 // The active tool as { kind, id }, or null when it is not an Assets selection.
@@ -29,6 +31,7 @@ export function parseTool(tool) {
   if (tool.startsWith('template:')) return { kind: 'template', id: tool.slice('template:'.length) }
   if (tool.startsWith('hazard:')) return { kind: 'hazard', id: tool.slice('hazard:'.length) }
   if (tool === 'hazardErase') return { kind: 'hazardErase' }
+  if (tool === 'fishingSpot') return { kind: 'fishingSpot' }
   if (MARKER_HELP[tool]) return { kind: 'marker', id: tool }
   return null
 }
@@ -43,6 +46,7 @@ export function hasBoardSelection(selection) {
       selection?.destructible ||
       selection?.hazard ||
       selection?.groundItem ||
-      selection?.templatePiece,
+      selection?.templatePiece ||
+      selection?.fishingSpot,
   )
 }

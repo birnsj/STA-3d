@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import useResettableState from '../useResettableState.js'
 import { AMBIENT_CREATURES } from '../../data/adaptation/exploration/ambientCreatures.js'
 import { canEditEffects, setOverlayEmissive, setOverlayEmitColour } from '../../maps/effectsFiles.js'
-import { DEFAULT_AMBIENT_COLOUR, getTile, imageSize } from '../../maps/mapFormat.js'
+import { getTile, imageSize } from '../../maps/mapFormat.js'
 import {
   OVERLAY_EMISSIVE_MAX,
   OVERLAY_EMISSIVE_MIN,
@@ -15,6 +15,7 @@ import { LAYER_IDS, LAYER_LABELS, layerOfTemplatePiece, layerOfTile } from '../.
 import { tileSpriteInfo } from '../../maps/tileSpriteInfo.js'
 import { canEditTiles, setTileFlag, setTileLayer } from '../../maps/tileFiles.js'
 import EditorSelect from './EditorSelect.jsx'
+import EditorColourField from './EditorColourField.jsx'
 import {
   canEditTemplatePieces,
   setTemplateOverlayEmitColour,
@@ -250,28 +251,13 @@ function EmissiveControls({ tileId, value, onValue, colour, fallbackColour, onCo
         />
         <span className="ed-emissive-value">{value.toFixed(1)}</span>
       </label>
-      <label className="ed-emissive" title="Colour of the light spill on the floor. Clear to use the tile's default glow colour.">
-        <span className="ed-emissive-label">Colour</span>
-        <input
-          className="ed-colour"
-          type="color"
-          value={toColourInput(hex)}
-          aria-label="Ground emit colour"
-          onChange={(event) => applyColour(event.target.value)}
-        />
-        <input
-          className="ed-colour-hex me-name"
-          value={colour ? hex : ''}
-          placeholder={fallbackColour || 'natural'}
-          aria-label="Ground emit colour hex"
-          onChange={(event) => {
-            const next = event.target.value.trim()
-            setHex(next || fallbackColour || '#ffffff')
-            if (next === '') applyColour(null)
-            else if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(next)) applyColour(next)
-          }}
-        />
-      </label>
+      <EditorColourField
+        label="Colour"
+        title="Colour of the light spill on the floor. Clear to use the tile's default glow colour."
+        ariaLabel="Ground emit colour"
+        value={hex}
+        onChange={(next) => applyColour(next)}
+      />
       {colour && (
         <button type="button" className="me-button" onClick={() => applyColour(null)}>
           Clear colour
@@ -279,11 +265,6 @@ function EmissiveControls({ tileId, value, onValue, colour, fallbackColour, onCo
       )}
     </>
   )
-}
-
-function toColourInput(hex) {
-  const value = hex || DEFAULT_AMBIENT_COLOUR
-  return value.length === 4 ? `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}` : value
 }
 
 function SpriteDetails({ tile, onStatus }) {
@@ -457,28 +438,13 @@ function TemplateEmissiveControls({ pieceId, value, onValue, colour, fallbackCol
         />
         <span className="ed-emissive-value">{value.toFixed(1)}</span>
       </label>
-      <label className="ed-emissive" title="Colour of the light spill on the floor. Clear to use the piece default.">
-        <span className="ed-emissive-label">Colour</span>
-        <input
-          className="ed-colour"
-          type="color"
-          value={toColourInput(hex)}
-          aria-label="Ground emit colour"
-          onChange={(event) => applyColour(event.target.value)}
-        />
-        <input
-          className="ed-colour-hex me-name"
-          value={colour ? hex : ''}
-          placeholder={fallbackColour || 'natural'}
-          aria-label="Ground emit colour hex"
-          onChange={(event) => {
-            const next = event.target.value.trim()
-            setHex(next || fallbackColour || '#ffffff')
-            if (next === '') applyColour(null)
-            else if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(next)) applyColour(next)
-          }}
-        />
-      </label>
+      <EditorColourField
+        label="Colour"
+        title="Colour of the light spill on the floor. Clear to use the piece default."
+        ariaLabel="Ground emit colour"
+        value={hex}
+        onChange={(next) => applyColour(next)}
+      />
       {colour && (
         <button type="button" className="me-button" onClick={() => applyColour(null)}>
           Clear colour

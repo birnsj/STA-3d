@@ -5,6 +5,7 @@ import { canEditLayer } from '../../maps/layers.js'
 import {
   clearNpcPatrol,
   removeDestructible,
+  removeFishingSpot,
   removeGroundItem,
   removeHazard,
   removeNpc,
@@ -16,6 +17,7 @@ import {
   moveTemplatePiece,
   removeTemplatePiece,
   updateDestructible,
+  updateFishingSpot,
   updateGroundItem,
   updateHazard,
   updateNpc,
@@ -24,6 +26,7 @@ import {
   updateTemplatePiece,
 } from '../../maps/mapEdits.js'
 import DestructibleInspector from './DestructibleInspector.jsx'
+import FishingSpotInspector from './FishingSpotInspector.jsx'
 import GroundItemInspector from './GroundItemInspector.jsx'
 import HazardInspector from './HazardInspector.jsx'
 import MarkerInspector from './MarkerInspector.jsx'
@@ -74,6 +77,9 @@ export default function EditorInspectors({
   onToggleTemplatePieceMove,
   onTemplatePieceCleared,
   onHazardCleared,
+  fishingSpotMoving = false,
+  onToggleFishingSpotMove,
+  onFishingSpotCleared,
   editingPatrol = false,
   movingWaypoint = false,
   selectedWaypointIndex = null,
@@ -85,12 +91,25 @@ export default function EditorInspectors({
   onStatus = null,
   animateTiles = true,
 }) {
-  const { npc, object, marker, destructible, hazard, groundItem, templatePiece } = selection
+  const { npc, object, marker, destructible, hazard, groundItem, templatePiece, fishingSpot } = selection
   const mutate = (layerId, change) => {
     if (canEditLayer(layers, layerId)) edit(change())
   }
   return (
     <>
+      {fishingSpot && (
+        <FishingSpotInspector
+          spot={fishingSpot}
+          moving={fishingSpotMoving}
+          onChange={(changes) => mutate('markers', () => updateFishingSpot(map, fishingSpot.id, changes))}
+          onMove={onToggleFishingSpotMove}
+          onDelete={() => {
+            if (!canEditLayer(layers, 'markers')) return
+            edit(removeFishingSpot(map, fishingSpot.id))
+            onFishingSpotCleared?.()
+          }}
+        />
+      )}
       {templatePiece && (
         <TemplatePieceInspector
           object={templatePiece}

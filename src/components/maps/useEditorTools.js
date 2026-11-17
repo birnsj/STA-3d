@@ -16,11 +16,13 @@ import {
   eraseHazardTile,
   eraseMarkers,
   eraseStructure,
+  fishingSpotAt,
   groundItemAt,
   groundItemAtBoard,
   hasMarkers,
   hazardRegionAt,
   moveDestructible,
+  moveFishingSpot,
   moveGroundItem,
   moveMarkers,
   npcAt,
@@ -28,10 +30,12 @@ import {
   paintFloor,
   paintHazardTile,
   placeDestructible,
+  placeFishingSpot,
   placeGroundItem,
   placeNpc,
   placeTemplatePiece,
   removeDestructible,
+  removeFishingSpot,
   removeGroundItem,
   removePatrolWaypoint,
   selectionCandidates,
@@ -224,6 +228,8 @@ export default function useEditorTools({
   // Template Piece overlays (tools 'template:{pieceId}'): selected instance and Move mode. Layer from catalogue.
   const [selectedTemplatePieceId, setSelectedTemplatePieceId] = useState(null)
   const [movingTemplatePiece, setMovingTemplatePiece] = useState(false)
+  const [selectedFishingSpotId, setSelectedFishingSpotId] = useState(null)
+  const [movingFishingSpot, setMovingFishingSpot] = useState(false)
   // Brush rotation for the next place (R steps 90° while a template tool is held).
   const [templateRotation, setTemplateRotation] = useState(0)
 
@@ -251,6 +257,8 @@ export default function useEditorTools({
     setMovingGroundItem(false)
     setSelectedTemplatePieceId(null)
     setMovingTemplatePiece(false)
+    setSelectedFishingSpotId(null)
+    setMovingFishingSpot(false)
     setPendingCharacterId(null)
   }
 
@@ -278,6 +286,7 @@ export default function useEditorTools({
   const selectedHazard = (map.hazards ?? []).find((region) => region.id === selectedHazardId) ?? null
   const selectedGroundItem = (map.groundItemPlacements ?? []).find((entry) => entry.id === selectedGroundItemId) ?? null
   const selectedTemplatePiece = (map.templatePiecePlacements ?? []).find((entry) => entry.id === selectedTemplatePieceId) ?? null
+  const selectedFishingSpot = (map.fishingSpots ?? []).find((entry) => entry.id === selectedFishingSpotId) ?? null
   const clearLayerSelection = (layerId) => {
     if (layerId === 'furniture') {
       setSelectedObjectId(null)
@@ -305,6 +314,8 @@ export default function useEditorTools({
     if (layerId === 'markers') {
       setPlacingObjective(null)
       setPlacingFromEditor(false)
+      setSelectedFishingSpotId(null)
+      setMovingFishingSpot(false)
     }
     setMoveFrom(null)
   }
@@ -404,6 +415,16 @@ export default function useEditorTools({
         setStatus(`Removed ${selectedGroundItem.id}.`)
         return
       }
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedFishingSpot) {
+        event.preventDefault()
+        if (!canEditLayer(layers, 'markers')) return setStatus('Markers / Triggers layer is locked or hidden.')
+        ensureActiveLayer('markers')
+        edit(removeFishingSpot(map, selectedFishingSpot.id))
+        setSelectedFishingSpotId(null)
+        setMovingFishingSpot(false)
+        setStatus(`Removed ${selectedFishingSpot.id}.`)
+        return
+      }
       if (event.key !== 'Escape') return
       if (movingWaypoint) return setMovingWaypoint(false)
       if (editingPatrol) {
@@ -415,6 +436,7 @@ export default function useEditorTools({
       if (movingDestructible) return setMovingDestructible(false)
       if (movingGroundItem) return setMovingGroundItem(false)
       if (movingTemplatePiece) return setMovingTemplatePiece(false)
+      if (movingFishingSpot) return setMovingFishingSpot(false)
       if (placingObject) return setPlacingObject(false)
       if (editingObjectCovers) return setEditingObjectCovers(false)
       if (placingObjective !== null) {
@@ -528,6 +550,7 @@ export default function useEditorTools({
     setLinkingDestructible(false)
     setMovingGroundItem(false)
     setMovingTemplatePiece(false)
+    setMovingFishingSpot(false)
   }
 
   const clearBoardSelection = () => {
@@ -548,6 +571,8 @@ export default function useEditorTools({
     setMovingGroundItem(false)
     setSelectedTemplatePieceId(null)
     setMovingTemplatePiece(false)
+    setSelectedFishingSpotId(null)
+    setMovingFishingSpot(false)
   }
 
   const applyCandidate = (candidate, position) => {
@@ -560,6 +585,7 @@ export default function useEditorTools({
     setSelectedHazardId(candidate?.kind === 'hazard' ? candidate.hazard.id : null)
     setSelectedGroundItemId(candidate?.kind === 'groundItem' ? candidate.groundItem.id : null)
     setSelectedTemplatePieceId(candidate?.kind === 'templatePiece' ? candidate.templatePiece.id : null)
+    setSelectedFishingSpotId(candidate?.kind === 'fishingSpot' ? candidate.fishingSpot.id : null)
     if (candidate?.kind !== 'npc') {
       setEditingPatrol(false)
       setSelectedWaypointIndex(null)
@@ -629,6 +655,7 @@ export default function useEditorTools({
       if (candidate.kind === 'hazard') return candidate.hazard.id === selectedHazardId
       if (candidate.kind === 'groundItem') return candidate.groundItem.id === selectedGroundItemId
       if (candidate.kind === 'templatePiece') return candidate.templatePiece.id === selectedTemplatePieceId
+      if (candidate.kind === 'fishingSpot') return candidate.fishingSpot.id === selectedFishingSpotId
       if (isCharacterSpawnKind(candidate.kind)) {
         return selectedMarker?.kind === candidate.kind && selectedMarker.x === position.x && selectedMarker.y === position.y
       }
@@ -755,6 +782,18 @@ export default function useEditorTools({
       setMovingGroundItem(false)
       return
     }
+    if (movingFishingSpot && selectedFishingSpot) {
+      if (!first) return
+      if (!layerAllowsTool('markers')) return setStatus('Markers / Triggers layer is locked or hidden.')
+      const moved = moveFishingSpot(map, selectedFishingSpot.id, position)
+      if (moved.map === map) setStatus('That tile already has a Fishing Spot.')
+      else {
+        edit(moved.map)
+        if (moved.warn) setStatus(`Moved ${selectedFishingSpot.id}. Warning: ${moved.warn}`)
+      }
+      setMovingFishingSpot(false)
+      return
+    }
     if (movingTemplatePiece && selectedTemplatePiece) {
       if (!first) return
       const moveLayer = layerOfTemplatePiece(selectedTemplatePiece.pieceId)
@@ -811,6 +850,28 @@ export default function useEditorTools({
       return
     }
     // The hazard brushes paint (or erase) every tile dragged over. Visibility/lock follows Furniture.
+    if (tool === 'fishingSpot') {
+      if (!first) return
+      if (!layerAllowsTool('markers')) return setStatus('Markers / Triggers layer is locked or hidden.')
+      ensureActiveLayer('markers')
+      const existing = fishingSpotAt(map, position)
+      if (existing) {
+        clearBoardSelection()
+        setSelectedFishingSpotId(existing.id)
+        return
+      }
+      const placed = placeFishingSpot(map, position)
+      if (!placed) return setStatus('A Fishing Spot is already on that tile.')
+      edit(placed.map)
+      clearBoardSelection()
+      setSelectedFishingSpotId(placed.spot.id)
+      setStatus(
+        placed.warn
+          ? `Placed ${placed.spot.id}. Warning: ${placed.warn}`
+          : `Placed Fishing Spot (${placed.spot.id}).`,
+      )
+      return
+    }
     if (tool?.startsWith('hazard:')) {
       if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
       const painted = paintHazardTile(map, position, tool.slice('hazard:'.length), hazardIntensity)
@@ -1424,6 +1485,7 @@ export default function useEditorTools({
       hazard: selectedHazard,
       groundItem: selectedGroundItem,
       templatePiece: selectedTemplatePiece,
+      fishingSpot: selectedFishingSpot,
     },
     selectedNpcId,
     selectedObjectId,
@@ -1465,6 +1527,7 @@ export default function useEditorTools({
     selectedHazardId: selectedHazard?.id ?? null,
     selectedGroundItemId: selectedGroundItem?.id ?? null,
     selectedTemplatePieceId: selectedTemplatePiece?.id ?? null,
+    selectedFishingSpotId: selectedFishingSpot?.id ?? null,
     templateRotation,
     movingDestructible,
     toggleDestructibleMove: () => {
@@ -1480,6 +1543,12 @@ export default function useEditorTools({
     toggleGroundItemMove: () => setMovingGroundItem((value) => !value),
     movingTemplatePiece,
     toggleTemplatePieceMove: () => setMovingTemplatePiece((value) => !value),
+    movingFishingSpot,
+    toggleFishingSpotMove: () => setMovingFishingSpot((value) => !value),
+    clearFishingSpot: () => {
+      setSelectedFishingSpotId(null)
+      setMovingFishingSpot(false)
+    },
     duplicateDestructible: duplicateSelected,
     duplicateGroundItem: duplicateSelectedGroundItem,
     clearDestructible: () => {

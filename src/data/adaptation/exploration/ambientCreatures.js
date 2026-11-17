@@ -18,3 +18,13 @@ export function ambientMarkerKinds() {
 export function isAmbientMarkerKind(kind) {
   return AMBIENT_CREATURES.some((entry) => entry.markerKind === kind)
 }
+
+/** Preferred foods for an ambient creature (item ids and/or tags). Empty when unset. */
+export function preferredFoodsOf(creatureId) {
+  const creature = ambientCreatureById(creatureId)
+  const foods = creature?.preferredFoods
+  return {
+    itemIds: Array.isArray(foods?.itemIds) ? [...foods.itemIds] : [],
+    tags: Array.isArray(foods?.tags) ? [...foods.tags] : [],
+  }
+}

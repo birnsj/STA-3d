@@ -114,6 +114,7 @@ const boardCursor = (target) => {
   if (target.kind === 'destructible') return 'attack'
   if (target.kind === 'horse') return 'use'
   if (target.kind === 'groundItem') return 'use'
+  if (target.kind === 'fishing') return 'use'
   return target.kind === 'object' ? 'use' : 'pointer'
 }
 
@@ -128,6 +129,11 @@ export default function PixiExplorationBoard(props) {
     onInteract,
     environment = null,
     hazards = [],
+    fishingSpots = [],
+    fishingReachableIds = [],
+    onFishingSpot = () => {},
+    catchSpot = null,
+    onCatchFish = null,
     destructibles = [],
     onDestructible = () => {},
     groundItems = [],
@@ -463,6 +469,17 @@ export default function PixiExplorationBoard(props) {
     const centre = project(view.position)
     targets.push({ kind: 'object', id: view.id, depth: atDepth(view.position, -0.4), shapes: [{ type: 'diamond', cx: centre.x, cy: centre.y, rx: TILE_W / 2, ry: TILE_H / 2 }] })
   }
+  for (const view of fishingSpots) {
+    if (!fishingReachableIds.includes(view.id)) continue
+    const centre = project(view.position)
+    const scale = Math.max(0.5, Number(view.size) || 1)
+    targets.push({
+      kind: 'fishing',
+      id: view.id,
+      depth: atDepth(view.position, -0.35),
+      shapes: [{ type: 'diamond', cx: centre.x, cy: centre.y, rx: (TILE_W / 2) * scale, ry: (TILE_H / 2) * scale }],
+    })
+  }
   // Runtime inventory drops (rules/inventory.js): isometric tile props + challenge-style name markers.
   // Elevated drops carry z (art pixels) and depth from placement.js so they sit on / sort with their support.
   // Template Piece overlays share GroundLootView for drawing only — pickable: false so play clicks pass through
@@ -781,6 +798,7 @@ export default function PixiExplorationBoard(props) {
       destructibleHighlights,
       markers,
       groundLoot,
+      fishingRipples: fishingSpots,
       lastKnown,
       pulses,
       effects,
@@ -994,6 +1012,7 @@ export default function PixiExplorationBoard(props) {
     if (event.button !== 0) return false
     if (target.kind === 'destructible') onDestructible(target.id)
     else if (target.kind === 'groundItem') onGroundItem(target.id)
+    else if (target.kind === 'fishing') onFishingSpot(target.id)
     else onInteract(target.id)
     return true
   }
@@ -1120,9 +1139,11 @@ export default function PixiExplorationBoard(props) {
       ? world.npcs[menu.npcId]?.position
       : menu?.objectId
         ? challenges.find((view) => view.id === menu.objectId)?.position
-        : menu?.horseId
-          ? getHorses(exploreState).find((horse) => horse.id === menu.horseId)?.position
-          : null
+        : menu?.fishingId
+          ? fishingSpots.find((view) => view.id === menu.fishingId)?.position
+          : menu?.horseId
+            ? getHorses(exploreState).find((horse) => horse.id === menu.horseId)?.position
+            : null
 
   if (failed) return <WebglUnavailable />
   return (
@@ -1157,6 +1178,16 @@ export default function PixiExplorationBoard(props) {
         {menuPosition && (
           <UnitActionRing position={menuPosition} buttons={menu.buttons} info={menu.info ?? null} party={menu.party ?? null} onButtonHover={menu.onButtonHover} slotRef={menu.slotRef} placement="top" prominent />
         )}
+        {catchSpot && onCatchFish && (() => {
+          const at = project(catchSpot.position)
+          return (
+            <foreignObject x={at.x - 36} y={at.y - 56} width={72} height={28} className="explore-catch-fo">
+              <button type="button" className="explore-catch-btn" onClick={(event) => { event.stopPropagation(); onCatchFish(catchSpot.id) }}>
+                Catch
+              </button>
+            </foreignObject>
+          )
+        })()}
         {box && (
           <rect
             className="explore-select-box"

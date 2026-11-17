@@ -352,6 +352,7 @@ export default function EditorBoard({
   selectedObjectId = null,
   selectedDestructibleId = null,
   selectedHazardId = null,
+  selectedFishingSpotId = null,
   selectedGroundItemId = null,
   movingGroundItem = false,
   selectedTemplatePieceId = null,
@@ -475,6 +476,7 @@ export default function EditorBoard({
       ...(map.markers.horseSpawns ?? []),
       ...AMBIENT_CREATURES.flatMap((creature) => map.markers[creature.markerKind] ?? []),
       ...map.areas.map((area) => area.position),
+      ...(map.fishingSpots ?? []).map((spot) => spot.position),
       ...(map.npcs ?? []).map((npc) => npc.position),
     ].some(doomed)
 
@@ -563,6 +565,17 @@ export default function EditorBoard({
             selected: npc.id === selectedNpcId,
             doomed: doomed(npc.position),
           }))
+      : []),
+    ...(layerShown('markers')
+      ? (map.fishingSpots ?? []).map((spot, index) => ({
+          id: `f${spot.id}`,
+          position: spot.position,
+          kind: 'fishing',
+          label: `F${index + 1}`,
+          facing: null,
+          selected: spot.id === selectedFishingSpotId,
+          doomed: doomed(spot.position),
+        }))
       : []),
     ...((map.npcs ?? []).find((npc) => npc.id === selectedNpcId)?.patrol ?? []).map((point, index) => ({
       id: `w${selectedNpcId}:${index}`,

@@ -8,7 +8,8 @@
       "defaultRoam": { "mode": "radiusWander", "radius": 3 },
       "actor": "chicken",
       "mountable": false,
-      "swatch": "chicken"
+      "swatch": "chicken",
+      "preferredFoods": { "itemIds": [], "tags": [] }
     },
     {
       "id": "cat",
@@ -18,7 +19,11 @@
       "defaultRoam": { "mode": "radiusWander", "radius": 4 },
       "actor": "cat",
       "mountable": false,
-      "swatch": "cat"
+      "swatch": "cat",
+      "preferredFoods": {
+        "itemIds": ["fishMinnow", "fishTrout", "fishSalmon", "fishBass"],
+        "tags": ["fish"]
+      }
     }
   ]
 }

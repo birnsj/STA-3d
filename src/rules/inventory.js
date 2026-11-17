@@ -648,6 +648,25 @@ export function pickupItem(state, { instanceId, memberId }) {
   return withMemberCharacter(next, memberId, character)
 }
 
+/** Create a fresh instance of itemId and put it in the member's bag. Full bag → refuse (same as pickup). */
+export function grantItemToMember(state, memberId, itemId) {
+  const def = getItemById(itemId)
+  const member = state.party.members[memberId]
+  if (!def || !member?.character?.inventory) return { state, ok: false, reason: 'Cannot grant item.' }
+  if (bagFreeSlots(member.character) < 1) return { state, ok: false, reason: 'Inventory is full.' }
+  const free = firstFreeBagIndex(member.character.inventory.bag)
+  if (free < 0) return { state, ok: false, reason: 'Inventory is full.' }
+  const id = freshInstanceId(state.itemInstances)
+  const itemInstances = { ...state.itemInstances, [id]: { id, itemId: def.id, quantity: 1 } }
+  const inventory = {
+    ...member.character.inventory,
+    slots: { ...member.character.inventory.slots },
+    bag: assignBagIndex(member.character.inventory.bag, free, id),
+  }
+  const character = syncEquippedEquipment({ ...member.character, inventory }, itemInstances)
+  return { state: withMemberCharacter({ ...state, itemInstances }, memberId, character), ok: true, instanceId: id }
+}
+
 export function groundItemViews(state, { hideInstanceId = null } = {}) {
   return Object.values(state.groundItems ?? {})
     .filter((entry) => entry.instanceId !== hideInstanceId && entry.visible !== false)

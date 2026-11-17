@@ -1461,6 +1461,66 @@
     {"id":"dimL","name":"Dim L Item","category":"dimension","icon":"/art/sprites/environment/items/dimL.png","worldImage":"/art/sprites/environment/items/dimL.png","description":"Dimension fixture. Intended world size 32×32×12.","tags":["dimension","selection"],"equipSlot":null,"sourceType":"original","statsSourceType":"adaptation"},
     {"id":"dimIrregular","name":"Dim Irregular","category":"dimension","icon":"/art/sprites/environment/items/dimIrregular.png","worldImage":"/art/sprites/environment/items/dimIrregular.png","description":"Dimension fixture. Intended world size 32×32×12.","tags":["dimension","selection"],"equipSlot":null,"sourceType":"original","statsSourceType":"adaptation"},
     {"id":"dimT","name":"Dim T Item","category":"dimension","icon":"/art/sprites/environment/items/dimT.png","worldImage":"/art/sprites/environment/items/dimT.png","description":"Dimension fixture. Intended world size 32×32×12.","tags":["dimension","selection"],"equipSlot":null,"sourceType":"original","statsSourceType":"adaptation"},
-    {"id":"dimZ","name":"Dim Z Item","category":"dimension","icon":"/art/sprites/environment/items/dimZ.png","worldImage":"/art/sprites/environment/items/dimZ.png","description":"Dimension fixture. Intended world size 32×32×12.","tags":["dimension","selection"],"equipSlot":null,"sourceType":"original","statsSourceType":"adaptation"}
+    {"id":"dimZ","name":"Dim Z Item","category":"dimension","icon":"/art/sprites/environment/items/dimZ.png","worldImage":"/art/sprites/environment/items/dimZ.png","description":"Dimension fixture. Intended world size 32×32×12.","tags":["dimension","selection"],"equipSlot":null,"sourceType":"original","statsSourceType":"adaptation"},
+    {
+      "id": "fishingRod",
+      "name": "Fishing Rod",
+      "category": "utility",
+      "icon": "/art/items/fishing_rod.png",
+      "worldImage": "/art/sprites/environment/items/fishingRod.png",
+      "description": "A simple rod for catching fish from shore or shallow water.",
+      "tags": ["fishing", "tool"],
+      "equipSlot": null,
+      "sourceType": "original",
+      "statsSourceType": "adaptation"
+    },
+    {
+      "id": "fishMinnow",
+      "name": "Minnow",
+      "category": "utility",
+      "icon": "/art/items/fish_minnow.png",
+      "worldImage": "/art/sprites/environment/items/fishMinnow.png",
+      "description": "A small freshwater fish.",
+      "tags": ["food", "fish"],
+      "equipSlot": null,
+      "sourceType": "original",
+      "statsSourceType": "adaptation"
+    },
+    {
+      "id": "fishTrout",
+      "name": "Trout",
+      "category": "utility",
+      "icon": "/art/items/fish_trout.png",
+      "worldImage": "/art/sprites/environment/items/fishTrout.png",
+      "description": "A speckled freshwater trout.",
+      "tags": ["food", "fish"],
+      "equipSlot": null,
+      "sourceType": "original",
+      "statsSourceType": "adaptation"
+    },
+    {
+      "id": "fishSalmon",
+      "name": "Salmon",
+      "category": "utility",
+      "icon": "/art/items/fish_salmon.png",
+      "worldImage": "/art/sprites/environment/items/fishSalmon.png",
+      "description": "A silver salmon.",
+      "tags": ["food", "fish"],
+      "equipSlot": null,
+      "sourceType": "original",
+      "statsSourceType": "adaptation"
+    },
+    {
+      "id": "fishBass",
+      "name": "Bass",
+      "category": "utility",
+      "icon": "/art/items/fish_bass.png",
+      "worldImage": "/art/sprites/environment/items/fishBass.png",
+      "description": "A sturdy freshwater bass.",
+      "tags": ["food", "fish"],
+      "equipSlot": null,
+      "sourceType": "original",
+      "statsSourceType": "adaptation"
+    }
   ]
 }

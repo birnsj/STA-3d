@@ -473,6 +473,43 @@ export class LastKnownView {
   }
 }
 
+// Fishing Spot ripple on water. item: { id, position, size, splash }.
+export class FishingRippleView {
+  constructor() {
+    this.container = new Container()
+    this.rings = new Graphics()
+    this.container.addChild(this.rings)
+  }
+
+  update(item, now) {
+    const centre = project(item.position)
+    this.container.position.set(centre.x, centre.y)
+    const size = Math.max(0.5, Number(item.size) || 1)
+    const splash = Boolean(item.splash)
+    const t = (now % 1800) / 1800
+    this.rings.clear()
+    const count = splash ? 4 : 3
+    for (let i = 0; i < count; i++) {
+      const phase = (t + i / count) % 1
+      const rx = (10 + phase * 18) * size * (splash ? 1.15 : 1)
+      const ry = rx * 0.45
+      const alpha = splash ? (1 - phase) * 0.85 : (1 - phase) * 0.55
+      this.rings.ellipse(0, 0, rx, ry).stroke({
+        color: splash ? 0xa8e8ff : 0x6ec8e8,
+        width: splash ? 2.4 : 1.6,
+        alpha,
+      })
+    }
+    if (splash) {
+      this.rings.ellipse(0, -2, 4 * size, 2 * size).fill({ color: 0xffffff, alpha: 0.55 })
+    }
+  }
+
+  destroy() {
+    this.container.destroy({ children: true })
+  }
+}
+
 // ClickPulse: a ring on the ground where a click-to-move landed, growing and fading over 380 ms (ease-out).
 const PULSE_MS = 380
 export class PulseView {

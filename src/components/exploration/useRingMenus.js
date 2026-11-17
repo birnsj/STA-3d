@@ -25,6 +25,7 @@ export default function useRingMenus() {
   const toggleDestructibleMenu = useCallback((id) => toggle('destructible', id), [toggle])
   const toggleGroundItemMenu = useCallback((id) => toggle('groundItem', id), [toggle])
   const toggleHorseMenu = useCallback((id) => toggle('horse', id), [toggle])
+  const toggleFishingMenu = useCallback((id) => toggle('fishing', id), [toggle])
 
   const idFor = (kind) => (menu?.kind === kind ? menu.id : null)
 
@@ -35,6 +36,7 @@ export default function useRingMenus() {
     menuDestructibleId: idFor('destructible'),
     menuGroundItemId: idFor('groundItem'),
     menuHorseId: idFor('horse'),
+    menuFishingId: idFor('fishing'),
     showMemberMenu,
     toggleMemberMenu,
     showNpcMenu,
@@ -43,6 +45,7 @@ export default function useRingMenus() {
     toggleDestructibleMenu,
     toggleGroundItemMenu,
     toggleHorseMenu,
+    toggleFishingMenu,
     closeMenu,
     closeAllMenus,
   }
