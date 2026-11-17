@@ -332,15 +332,21 @@
 /* Tile PNGs are 64x96; the thumbnail shows the drawn part at half size. */
 .me-thumb-wrap {
   position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   flex-shrink: 0;
   width: 44px;
   height: 56px;
+  overflow: hidden;
 }
 
 .me-thumb-preview {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center bottom;
 }
@@ -1853,12 +1859,16 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-width: 0;
+  min-height: 0;
   aspect-ratio: 1;
   padding: 2px;
   border: 1px solid var(--ed-border);
   border-radius: 3px;
   background: #10141a;
   cursor: var(--cursor-pointer);
+  /* Tall sprites must not grow the square cell (flex min-size:auto) or paint over labels. */
+  overflow: hidden;
 }
 
 .ed-thumb-btn.is-paint-set:not(.is-selected) {
@@ -1869,9 +1879,13 @@
   border-color: #5a6575;
 }
 
+/* Native size when it fits; shrink only when larger than the cell — never upscale to fill. */
 .ed-thumb-btn .me-thumb-preview {
-  width: 100%;
-  height: 100%;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: auto;

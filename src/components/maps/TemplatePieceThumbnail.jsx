@@ -26,10 +26,12 @@ function loadImage(href) {
 
 function drawFitted(ctx, image, lights, width, height) {
   ctx.clearRect(0, 0, width, height)
-  // Source is 4× AA art — bilinear shrink into the thumb, not nearest-neighbour (that made walls look jagged).
+  // Source is often 4× AA art — bilinear shrink into the thumb, not nearest-neighbour (that made walls look jagged).
+  // Never upscale: small pieces stay small relative to large ones; only downscale when the PNG exceeds the frame.
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
-  const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight)
+  const fit = Math.min(width / image.naturalWidth, height / image.naturalHeight)
+  const scale = Math.min(1, fit)
   const w = Math.max(1, Math.round(image.naturalWidth * scale))
   const h = Math.max(1, Math.round(image.naturalHeight * scale))
   const x = Math.floor((width - w) / 2)
