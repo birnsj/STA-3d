@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { CAMERA_FOLLOW_EVENT, isTypingTarget, readGamepad, stickAxes } from '../../input/gamepad.js'
 import { useDisplaySettings } from '../../settings/DisplaySettingsContext.js'
 
 // Presentation only: which part of the battlefield is on screen. WASD / arrow keys, right-click drag, one-finger drag,
@@ -261,18 +262,21 @@ export default function useCamera(
   }, [focus.key, focusX, focusY, follow, minX, maxX, minY, maxY])
 
   useEffect(() => {
+    const followFromInput = () => {
+      // Map editor: Space / gamepad A flips paint axis / rotates Template Piece (same as R). Play: re-follow.
+      if (onSpaceRef.current) {
+        onSpaceRef.current()
+        return
+      }
+      // After WASD / stick / drag free-pan: glide back onto the followed point and ask the caller to turn follow on.
+      beginReturnToFocus()
+      if (!followRef.current.follow) onFollowRef.current?.()
+    }
     const down = (event) => {
       if (isTyping(event.target) || event.ctrlKey || event.metaKey || event.altKey) return
       if (event.code === 'Space' && !event.repeat) {
         event.preventDefault()
-        // Map editor: Space flips paint axis / rotates Template Piece (same as R). Play: re-follow.
-        if (onSpaceRef.current) {
-          onSpaceRef.current()
-          return
-        }
-        // After WASD / drag free-pan: glide back onto the followed point and ask the caller to turn follow on.
-        beginReturnToFocus()
-        if (!followRef.current.follow) onFollowRef.current?.()
+        followFromInput()
         return
       }
       const key = event.key.toLowerCase()
@@ -282,13 +286,19 @@ export default function useCamera(
     }
     const up = (event) => heldRef.current.delete(event.key.toLowerCase())
     const clear = () => heldRef.current.clear()
+    const onPadFollow = () => {
+      if (isTypingTarget()) return
+      followFromInput()
+    }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
     window.addEventListener('blur', clear)
+    window.addEventListener(CAMERA_FOLLOW_EVENT, onPadFollow)
     return () => {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
       window.removeEventListener('blur', clear)
+      window.removeEventListener(CAMERA_FOLLOW_EVENT, onPadFollow)
     }
   }, [])
 
@@ -310,6 +320,15 @@ export default function useCamera(
       for (const key of heldRef.current) {
         dx += KEYS[key][0]
         dy += KEYS[key][1]
+      }
+      // Right stick pans the camera (left stick / D-pad move the party in exploration).
+      if (!isTypingTarget()) {
+        const pad = readGamepad()
+        if (pad) {
+          const stick = stickAxes(pad, 'right')
+          dx += stick.x
+          dy += stick.y
+        }
       }
       let current = cameraRef.current
       let next = null

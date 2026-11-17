@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { isPlayerControlled } from '../actors/controllers.js'
+import useGamepadActions from '../input/useGamepadActions.js'
 import { useEpisodeMusic, useMusicScene } from '../audio/useMusicScene.js'
 import { playBeamOutSound } from '../audio/uiSounds.js'
 import { useDisplaySettings, useOpenSettings } from '../settings/DisplaySettingsContext.js'
@@ -450,6 +451,16 @@ export function Battle({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [mode, setRingId])
+
+  // Right stick pans via useCamera; A re-follows; B cancels ambush like Escape.
+  useGamepadActions({
+    enabled: true,
+    onCancel: () => {
+      if (mode !== 'ambush') return
+      setMode(null)
+      setRingId(null)
+    },
+  })
 
   usePendingObjectHit(state.pendingObjectHit, dispatch, { speed })
 

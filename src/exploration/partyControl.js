@@ -228,6 +228,20 @@ function moveSelection(state, target, fresh) {
   return { ...state, members }
 }
 
+function stopSelection(state) {
+  let members = null
+  for (const id of state.memberIds) {
+    const member = state.members[id]
+    if (!member?.order) continue
+    const selected = state.selectedIds.includes(id)
+    const followingSelected = member.order.type === 'follow' && state.selectedIds.includes(member.order.leaderId)
+    if (!selected && !followingSelected) continue
+    if (!members) members = { ...state.members }
+    members[id] = { ...member, order: null, path: [], stall: { seconds: 0, best: Infinity }, moving: false, running: false, pace: null }
+  }
+  return members ? { ...state, members } : state
+}
+
 function regroup(state) {
   const able = state.memberIds.filter((id) => canAct(state.members[id]))
   const leaderId = able.includes(state.leaderId) ? state.leaderId : able[0]
@@ -576,6 +590,9 @@ export function partyReducer(state, action) {
     // target: a world point in tiles. fresh: a new click or press (false while the mouse is held and dragged).
     case 'moveTo':
       return moveSelection(state, action.target, action.fresh !== false)
+    // Clear move / follow orders for the selection (and anyone still following them). Used when a gamepad stick releases.
+    case 'stopMove':
+      return stopSelection(state)
     case 'tick':
       return tick(state, action.seconds)
     case 'startBeamOut':

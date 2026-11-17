@@ -42,6 +42,9 @@ import {
 import ExplorationSetup from '../components/exploration/ExplorationSetup.jsx'
 import useExplorationFootsteps from '../components/exploration/useExplorationFootsteps.js'
 import useExplorationKeys from '../components/exploration/useExplorationKeys.js'
+import useGamepadActions from '../input/useGamepadActions.js'
+import useGamepadMove from '../input/useGamepadMove.js'
+import { requestCameraFollow } from '../input/gamepad.js'
 import Minimap from '../components/exploration/Minimap.jsx'
 import MapFadeIn from '../components/maps/MapFadeIn.jsx'
 import { isSpike3dPreferred } from '../spike3d/enabled.js'
@@ -585,38 +588,82 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     .filter((view) => getMembers(party).some((member) => Math.hypot(member.position.x - view.position.x, member.position.y - view.position.y) <= INTERACT_RANGE))
     .map((view) => view.id)
 
+  const escapeExploration = useCallback(() => {
+    if (itemDragRef.current) {
+      clearItemDrag()
+      return
+    }
+    closeInteraction()
+    closeAllMenus()
+    cancelPendingTalk()
+    setPendingPickup(null)
+    setPendingMount(null)
+    dispatch({ type: 'clearPendingMount' })
+    setLogOpen(false)
+    setInventoryOpen(false)
+    if (talking) dispatch({ type: 'conversationLeave' })
+  }, [cancelPendingTalk, clearItemDrag, closeAllMenus, closeInteraction, dispatch, talking])
+
+  const toggleSheet = useCallback(() => setSheetOpen((open) => !open), [])
+  const toggleInventory = useCallback(() => {
+    setInventoryOpen((open) => !open)
+    setInventoryViewId((id) => id ?? party.selectedIds[0] ?? party.leaderId)
+  }, [party.leaderId, party.selectedIds])
+  const toggleLog = useCallback(() => setLogOpen((open) => !open), [])
+  const toggleMount = useCallback(() => {
+    if (beamPhase !== 'done' || talking || inCombat) return
+    // Selected team claims free horses (walk-to-mount); anyone without a horse stays on foot.
+    dispatch({
+      type: 'toggleMount',
+      memberIds: party.selectedIds.length ? party.selectedIds : [party.leaderId],
+    })
+  }, [beamPhase, dispatch, inCombat, party.leaderId, party.selectedIds, talking])
+
+  const cyclePartyMember = useCallback(
+    (delta) => {
+      const ids = party.memberIds
+      if (!ids.length) return
+      const current = party.selectedIds[0] ?? party.leaderId
+      const index = Math.max(0, ids.indexOf(current))
+      const next = ids[(index + delta + ids.length) % ids.length]
+      select(next, false)
+    },
+    [party.leaderId, party.memberIds, party.selectedIds, select],
+  )
+
   useExplorationKeys({
     memberIds: party.memberIds,
     onPick: select,
-    onEscape: () => {
-      if (itemDragRef.current) {
-        clearItemDrag()
+    onEscape: escapeExploration,
+    onSheet: toggleSheet,
+    onInventory: toggleInventory,
+    onLog: toggleLog,
+    onMount: toggleMount,
+  })
+
+  // Gamepad: left stick / D-pad move the party; right stick pans (useCamera); A Catch or re-follow; B Esc; X sheet; Y bag; LB/RB party; Start log; Select mount.
+  useGamepadMove({
+    enabled: beamPhase === 'done' && !inCombat && !talking,
+    getLeaderPosition: () => party.members[party.leaderId]?.position ?? null,
+    onMove: (target, fresh) => dispatch({ type: 'moveTo', target, fresh }),
+    onStop: () => dispatch({ type: 'stopMove' }),
+  })
+  useGamepadActions({
+    enabled: beamPhase === 'done' && !inCombat,
+    onConfirm: () => {
+      if (catchSpot) {
+        dispatch({ type: 'catchFish', spotId: catchSpot.id })
         return
       }
-      closeInteraction()
-      closeAllMenus()
-      cancelPendingTalk()
-      setPendingPickup(null)
-      setPendingMount(null)
-      dispatch({ type: 'clearPendingMount' })
-      setLogOpen(false)
-      setInventoryOpen(false)
-      if (talking) dispatch({ type: 'conversationLeave' })
+      requestCameraFollow()
     },
-    onSheet: () => setSheetOpen((open) => !open),
-    onInventory: () => {
-      setInventoryOpen((open) => !open)
-      setInventoryViewId((id) => id ?? party.selectedIds[0] ?? party.leaderId)
-    },
-    onLog: () => setLogOpen((open) => !open),
-    onMount: () => {
-      if (beamPhase !== 'done' || talking || inCombat) return
-      // Selected team claims free horses (walk-to-mount); anyone without a horse stays on foot.
-      dispatch({
-        type: 'toggleMount',
-        memberIds: party.selectedIds.length ? party.selectedIds : [party.leaderId],
-      })
-    },
+    onCancel: escapeExploration,
+    onSheet: toggleSheet,
+    onInventory: toggleInventory,
+    onLog: toggleLog,
+    onMount: toggleMount,
+    onPrevMember: () => cyclePartyMember(-1),
+    onNextMember: () => cyclePartyMember(1),
   })
 
   const move = (target, fresh) => {
