@@ -424,9 +424,9 @@ export class WorldEncounter extends CombatEncounter {
     party = cancelBeamOut(party, party.memberIds)
     members = getMembers(party)
 
-    // Attacking someone who wasn't hostile (an innocent) turns them Hostile (designer request, Oct 2026).
+    // Attacking someone who wasn't hostile (an innocent) turns them Enemy (designer request, Oct 2026).
     const turnsHostile = source === 'PLAYER_ATTACK' && !isHostile(trigger)
-    const startWorld = turnsHostile ? { ...state.world, npcs: { ...state.world.npcs, [triggerNpcId]: { ...trigger, disposition: 'hostile', responseType: null } } } : state.world
+    const startWorld = turnsHostile ? { ...state.world, npcs: { ...state.world.npcs, [triggerNpcId]: { ...trigger, disposition: 'enemy', responseType: null } } } : state.world
 
     // 1. Who fights: the trigger, any NPC already alerted to the party, and whoever their alert groups reach.
     const alerted = getNpcs(startWorld).filter(

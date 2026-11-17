@@ -75,6 +75,11 @@ export class ProceduralBody {
     this.animator.setViewerLoopOnce(on)
   }
 
+  /** Animation viewer: stride SFX for walk/run (board uses its own footstep systems). */
+  setViewerLocoSounds(on) {
+    this.animator.setViewerLocoSounds(on)
+  }
+
   /** Scrub playhead to u∈[0,1] and snap the pose. */
   seek(u) {
     return this.animator.seek(u)

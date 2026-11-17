@@ -64,8 +64,11 @@ export class CatPreviewBody {
           this._t = this._seconds
         } else {
           this._t %= this._seconds
+          // Looping clips re-roll Random % each cycle (catIdle → meow).
           if (play === 'catWalk' || play === 'catRun') {
             playClipSound(play, { minGapMs: 260 })
+          } else if (play === 'catIdle') {
+            playClipSound(play, { minGapMs: 1600 })
           }
         }
       }

@@ -47,9 +47,10 @@
 // Fractional x/y are allowed for the 32×32 drop grid. name overrides the hover label; pickable/visible default true and
 // are left out on disk when true. on: { tile: [x, y] } or { placement: id } when elevated on a support surface; omitted
 // on the floor. Entries missing id get one on parse. Runtime drops never write back into the map file.
-// markers.horseSpawns: [x, y], [x, y, facing], or { position:[x,y]|x,y, facing?, roam? } — Horse Spawn markers.
+// markers.horseSpawns: [x, y], [x, y, facing], or { position:[x,y]|x,y, facing?, roam?, disposition?, coat? } — Horse Spawn markers.
 // Play only spawns mounts from these (exploration/mount.js); empty means no horse. Facing degrees (0 = +x).
 // roam: optional { mode: idle|radiusWander|waypointPatrol, radius?, speed? }; omitted/idle = stand at spawn.
+// disposition: friendly|neutral|afraid|enemy (same list as NPCs); coat: horse/cat texture id when authored.
 // Legacy top-level `horses: [{ id, position, facing? }]` is migrated on load.
 // markers.chickenSpawns (and later ambientCreatures marker kinds): same spawn shapes; default roam is species-specific
 // (chickens wander). See data/adaptation/exploration/ambientCreatures.json.
@@ -71,6 +72,7 @@
 import { emptyMusic, normalizeMusic, serializeMusic } from '../audio/musicCues.js'
 import awareness from '../data/adaptation/exploration/awareness.json'
 import { ambientMarkerKinds } from '../data/adaptation/exploration/ambientCreatures.js'
+import { normalizeDisposition } from '../exploration/dispositions.js'
 import { parseRoam, serializeRoam } from '../exploration/roam.js'
 import catalogue from '../data/adaptation/maps/tiles.json'
 import destructibleData from '../data/adaptation/world/destructibles.json'
@@ -277,14 +279,23 @@ function toRoamSpawn(raw) {
   if (facing != null && Number.isFinite(facing)) spawn.facing = facing
   const roam = parseRoam(raw.roam)
   if (roam) spawn.roam = roam
+  if (typeof raw.disposition === 'string' && raw.disposition) spawn.disposition = raw.disposition
+  if (typeof raw.coat === 'string' && raw.coat) spawn.coat = raw.coat
   return spawn
 }
 
 function fromRoamSpawn(spawn, { omitIdleRoam = true } = {}) {
   const roam = serializeRoam(spawn.roam, { omitIdle: omitIdleRoam })
-  if (!roam) return fromSpawn(spawn)
-  const record = { position: fromPosition({ x: spawn.x, y: spawn.y }), roam }
+  const hasExtras =
+    Boolean(roam) ||
+    (typeof spawn.disposition === 'string' && spawn.disposition) ||
+    (typeof spawn.coat === 'string' && spawn.coat)
+  if (!hasExtras) return fromSpawn(spawn)
+  const record = { position: fromPosition({ x: spawn.x, y: spawn.y }) }
   if (spawn.facing != null && Number.isFinite(spawn.facing)) record.facing = Math.round(spawn.facing)
+  if (roam) record.roam = roam
+  if (typeof spawn.disposition === 'string' && spawn.disposition) record.disposition = spawn.disposition
+  if (typeof spawn.coat === 'string' && spawn.coat) record.coat = spawn.coat
   return record
 }
 
@@ -781,6 +792,8 @@ function parseNpc(raw, inside) {
   NPC_TEXT_FIELDS.forEach((field) => {
     npc[field] = raw[field] ?? null
   })
+  // Legacy wary / hostile / aggressive → afraid / enemy.
+  if (npc.disposition) npc.disposition = normalizeDisposition(npc.disposition)
   if (npc.responseType && !RESPONSE_IDS.has(npc.responseType)) npc.responseType = null
   npc.mustSurvive = raw.mustSurvive === true
   npc.influenceRadius = Number.isFinite(raw.influenceRadius) && raw.influenceRadius > 0 ? Number(raw.influenceRadius) : null

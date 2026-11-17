@@ -7,7 +7,8 @@ import { isClear, nearestWalkableTile, planRoute, RADIUS } from './navigation.js
 import { resolveAuthoredRoam, tickRoam } from './roam.js'
 import { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT } from './mountConstants.js'
 import { MOUNT_LEFT_AFT, MOUNT_LEFT_REACH } from '../spike3d/HorseModel.js'
-import { horseCoatForSpawnIndex, horseCoatLabel } from '../spike3d/horseTexture.js'
+import { normalizeDisposition } from './dispositions.js'
+import { horseCoatForSpawnIndex, horseCoatLabel, normalizeHorseCoatId } from '../spike3d/horseTexture.js'
 
 export { RIDE_RUN_SPEED_MULT, RIDE_SPEED_MULT }
 
@@ -47,7 +48,7 @@ function horsesFromMap(map) {
       entry.heading != null && Number.isFinite(entry.heading)
         ? entry.heading
         : headingFromFacingDegrees(entry.facing ?? 0)
-    const coat = horseCoatForSpawnIndex(index)
+    const coat = entry.coat ? normalizeHorseCoatId(entry.coat) : horseCoatForSpawnIndex(index)
     // Default idle when roam omitted (legacy maps stand at spawn).
     const roam = resolveAuthoredRoam(entry.roam ?? { mode: 'idle' })
     return {
@@ -61,6 +62,7 @@ function horsesFromMap(map) {
       riderId: null,
       coat,
       label: horseCoatLabel(coat),
+      disposition: normalizeDisposition(entry.disposition ?? 'neutral'),
     }
   })
 }

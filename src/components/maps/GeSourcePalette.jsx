@@ -299,7 +299,7 @@ export default function GeSourcePalette({
       style={{ '--ed-thumb-cols': thumbCols }}
       data-thumb-scale={thumbScale}
     >
-      <div className="ed-panel-head">
+      <div className="ed-panel-head" title={hint || undefined}>
         <span>{title}</span>
         <div className="ed-seg ed-thumb-scale" role="group" aria-label="Thumbnail size">
           {THUMB_SCALES.map((entry) => (
@@ -376,7 +376,6 @@ export default function GeSourcePalette({
           </button>
         )}
       </div>
-      {hint ? <p className="ge-source-hint">{hint}</p> : null}
       <div className="ed-asset-body">
         {body === 'layers' &&
           (useGroups ? (

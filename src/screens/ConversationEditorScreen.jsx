@@ -178,7 +178,7 @@ export default function ConversationEditorScreen({ initialId = null, map = null,
       <div className="ce-toolbar">
         <strong className="ess-title">Conversation Editor</strong>
         <button type="button" className="ce-button" onClick={async () => (await confirmDiscard()) && onBack()}>
-          Back to Map
+          Back to Editor
         </button>
         <EditorSelect className="ce-input" value={fileId ?? ''} aria-label="Open conversation" onChange={(event) => onOpen(event.target.value)}>
           <option value="">{fileId ? 'Open…' : 'Not saved yet'}</option>

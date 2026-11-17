@@ -690,6 +690,7 @@ export default function PixiExplorationBoard(props) {
     facing: { x: Math.cos(animal.heading), y: Math.sin(animal.heading) },
     gait: animal.gait === 'run' ? 'run' : animal.gait === 'walk' || animal.moving ? 'walk' : 'idle',
     idlePose: animal.idlePose ?? null,
+    coat: animal.coat ?? null,
   }))
   // X clip overlay: people + horses (mount ring figures use a different id; skip them).
   figuresDebugRef.current = [

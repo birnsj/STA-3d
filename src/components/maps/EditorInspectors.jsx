@@ -226,6 +226,36 @@ export default function EditorInspectors({
             }
             mutate('characters', () => updateSpawnMarker(map, marker.kind, marker, { roam }))
           }}
+          onDisposition={(disposition) => {
+            if (!canEditLayer(layers, 'characters')) {
+              onStatus?.('NPCs / Characters layer is locked or hidden — unlock it to edit this marker.')
+              return
+            }
+            mutate('characters', () => updateSpawnMarker(map, marker.kind, marker, { disposition }))
+          }}
+          onCoat={(coat) => {
+            if (!canEditLayer(layers, 'characters')) {
+              onStatus?.('NPCs / Characters layer is locked or hidden — unlock it to edit this marker.')
+              return
+            }
+            mutate('characters', () => {
+              if (coat == null) {
+                const list = map.markers[marker.kind] ?? []
+                return {
+                  ...map,
+                  markers: {
+                    ...map.markers,
+                    [marker.kind]: list.map((entry) => {
+                      if (entry.x !== marker.x || entry.y !== marker.y) return entry
+                      const { coat: _drop, ...rest } = entry
+                      return rest
+                    }),
+                  },
+                }
+              }
+              return updateSpawnMarker(map, marker.kind, marker, { coat })
+            })
+          }}
           onDelete={() => {
             if (!canEditLayer(layers, 'characters')) {
               onStatus?.('NPCs / Characters layer is locked or hidden — unlock it to delete this marker.')

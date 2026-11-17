@@ -36,7 +36,13 @@
       "waitMax": 5.5,
       "goalMinDist": 1.0,
       "preferFar": false,
-      "idlePoses": ["sit", "sit", "lick", "stretch"]
+      "idlePoses": ["sit", "sit", "lick", "stretch"],
+      "scatter": {
+        "scareRadius": 3.2,
+        "burstSpeed": 5.6,
+        "fleeDistance": 3.8,
+        "settleSeconds": 0.4
+      }
     }
   }
 }

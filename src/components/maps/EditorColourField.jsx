@@ -245,7 +245,7 @@ export default function EditorColourField({
   return (
     <div
       ref={rootRef}
-      className={`ed-colour-field me-ambient ed-emissive${className ? ` ${className}` : ''}`}
+      className={`ed-colour-field ed-emissive${className ? ` ${className}` : ''}`}
       title={title}
     >
       {label ? <span className="ed-colour-field-label">{label}</span> : null}

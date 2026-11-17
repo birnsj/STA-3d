@@ -204,6 +204,7 @@ export default function AnimationPreview({
           : new ProceduralBody({ height: HEIGHT, uniform: resolved.uniform, appearance: resolved })
     body.setViewerHoldOnce?.(true)
     body.setViewerLoopOnce?.(loopOnce)
+    body.setViewerLocoSounds?.(true)
     figure.add(body.root)
 
     const shadow = createContactShadow({

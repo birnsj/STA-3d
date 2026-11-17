@@ -176,6 +176,20 @@
           "radius": 3
         }
       }
+    ],
+    "catSpawns": [
+      {
+        "position": [
+          31,
+          13
+        ],
+        "roam": {
+          "mode": "radiusWander",
+          "radius": 6
+        },
+        "disposition": "afraid",
+        "coat": "black"
+      }
     ]
   },
   "autoPaint": {

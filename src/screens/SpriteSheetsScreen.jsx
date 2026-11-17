@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
+import { SUB_EDITOR_BACK_LABEL, subEditorFileMenus } from '../components/maps/editorSubMenus.js'
 import SpriteSheetPreview from '../components/maps/SpriteSheetPreview.jsx'
 import useResettableState from '../components/useResettableState.js'
 import {
@@ -73,7 +74,7 @@ function SpriteSubgroup({ subgroup, open, onToggle, selectedPath, onSelect }) {
   )
 }
 
-export default function SpriteSheetsScreen({ onBack }) {
+export default function SpriteSheetsScreen({ onBack, backLabel = SUB_EDITOR_BACK_LABEL }) {
   const [entries, setEntries] = useState([])
   const [selectedPath, setSelectedPath] = useState(null)
   const [query, setQuery] = useState('')
@@ -215,8 +216,15 @@ export default function SpriteSheetsScreen({ onBack }) {
     <EditorSubScreen
       className="ss-screen"
       title="Sprite Sheets"
+      menus={subEditorFileMenus({ load: false, save: false, backLabel })}
+      onMenuAction={(id) => {
+        if (id === 'back') onBack?.()
+      }}
       toolbar={
         <>
+          <button type="button" className="me-button" title={backLabel} onClick={() => onBack?.()}>
+            {backLabel}
+          </button>
           <button type="button" className="me-button" disabled={!selected || busy} onClick={onExport}>
             Export
           </button>
@@ -224,9 +232,6 @@ export default function SpriteSheetsScreen({ onBack }) {
             Import…
           </button>
           <input ref={fileRef} type="file" accept="image/png,.png" hidden onChange={onImportFile} />
-          <button type="button" className="me-button" onClick={onBack}>
-            Back to Menu
-          </button>
           {!canEditSprites && <span className="me-text">Import needs the Vite DEV server (view/export still work if listed).</span>}
           {status && <span className="me-text ss-status">{status}</span>}
         </>

@@ -5,16 +5,25 @@
   inset: 0;
 }
 
-.av-anim-set-select {
-  max-width: 110px;
-  margin-left: auto;
+/* Four property tabs (Ragdoll / Attachments / Light / Sounds) must stay on one row. */
+.av-screen .ed-properties-tabs .ed-tab {
+  padding: 0 5px;
+  font-size: 9px;
 }
 
-.av-view-bar .av-view-bar-label {
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 10px;
+/* EditorSelect wraps the trigger; keep the set picker on the panel-head trailing edge. */
+.av-screen .ed-panel-head > .ed-select {
+  margin-left: auto;
+  max-width: 110px;
+  flex-shrink: 0;
+}
+
+.av-anim-set-select {
+  max-width: 110px;
+}
+
+.av-view-bar .ess-title {
+  margin-right: 4px;
 }
 
 .av-view-bar .ed-toolbar-end {
@@ -83,7 +92,7 @@
   gap: 4px;
 }
 
-.av-dock-model-fields .me-select {
+.av-dock-model-fields .ed-select {
   min-width: 72px;
 }
 
@@ -235,7 +244,8 @@
   font-weight: 600;
 }
 
-.av-ragdoll-field .me-select {
+.av-ragdoll-field .ed-select {
+  display: block;
   width: 100%;
   margin-top: 0.25rem;
 }

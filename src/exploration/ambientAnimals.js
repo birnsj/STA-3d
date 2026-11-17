@@ -1,9 +1,20 @@
 // Ambient creatures (non-mount): spawn from registry marker kinds, tick via shared roam.js.
-// Chickens (and any profile with scatter) bolt when a party member runs at them.
+// Scatter: profile.scatter + map Disposition. Afraid flees party nearby; Neutral bolts from runners
+// (chicken/cat profiles); Friendly / Enemy do not flee.
 import { AMBIENT_CREATURES } from '../data/adaptation/exploration/ambientCreatures.js'
 import { canAct, getMembers } from './partyControl.js'
 import { distance, isClear, planRoute, slide } from './navigation.js'
 import { defaultRoamForCreature, getRoamProfile, resolveAuthoredRoam, tickRoam } from './roam.js'
+import { normalizeDisposition } from './dispositions.js'
+import { catCoatForSpawnIndex, normalizeCatCoatId } from '../spike3d/catTexture.js'
+
+/** Fallback flee tuning when Disposition is Afraid but the roam profile has no scatter block. */
+const AFRAID_SCATTER = Object.freeze({
+  scareRadius: 3.5,
+  burstSpeed: 5.8,
+  fleeDistance: 4,
+  settleSeconds: 0.4,
+})
 
 function headingFromFacingDegrees(facing) {
   if (!Number.isFinite(facing)) return 0
@@ -35,6 +46,14 @@ function animalsFromMap(map) {
         moving: false,
         gait: 'idle',
         idlePose: null,
+        // Cats: authored coat, else cycle separate coat atlases; other animals ignore this field.
+        coat:
+          creature.actor === 'cat'
+            ? entry.coat
+              ? normalizeCatCoatId(entry.coat)
+              : catCoatForSpawnIndex(index)
+            : null,
+        disposition: normalizeDisposition(entry.disposition ?? 'neutral'),
       })
     })
   })
@@ -58,8 +77,8 @@ export function getAmbientAnimals(state) {
   return state?.ambient?.animals ?? []
 }
 
-/** Running (or near-run pace) party members that can scare skittish animals. */
-function scareThreats(state) {
+/** Running (or near-run pace) party members — Neutral animals with scatter only react to these. */
+function runningScareThreats(state) {
   if (!state?.party) return []
   return getMembers(state.party).filter((member) => {
     if (!canAct(member) || !member.position) return false
@@ -68,6 +87,38 @@ function scareThreats(state) {
     // Mounted or foot burst that isn't flagged running yet still reads as a charge.
     return pace >= 3.2
   })
+}
+
+/** Any acting party member (Afraid animals flee approach, not only a charge). */
+function nearbyPartyThreats(state) {
+  if (!state?.party) return []
+  return getMembers(state.party).filter((member) => canAct(member) && member.position)
+}
+
+/**
+ * Scatter config for this animal from Disposition + roam profile.
+ * Afraid → flee (profile scatter or AFRAID_SCATTER). Friendly / Enemy → none.
+ * Neutral → profile.scatter only (chickens / cats bolt from runners).
+ */
+function scatterConfigForAnimal(animal, profile) {
+  const disposition = normalizeDisposition(animal.disposition)
+  if (disposition === 'friendly' || disposition === 'enemy') return null
+  if (disposition === 'afraid') {
+    const base = profile.scatter ?? AFRAID_SCATTER
+    // Slightly wider scare when authored Afraid.
+    return {
+      ...base,
+      scareRadius: Math.max(base.scareRadius ?? 2.5, 3.2),
+      fleeDistance: Math.max(base.fleeDistance ?? 3, 3.6),
+    }
+  }
+  return profile.scatter ?? null
+}
+
+function threatsForAnimal(animal, state) {
+  const disposition = normalizeDisposition(animal.disposition)
+  if (disposition === 'afraid') return nearbyPartyThreats(state)
+  return runningScareThreats(state)
 }
 
 function nearestThreat(animal, threats) {
@@ -239,11 +290,11 @@ function tickScatter(animal, map, seconds, scatterCfg, threats, rng) {
 export function tickAmbientAnimals(state, map, seconds, rng = Math.random) {
   const ambient = state?.ambient
   if (!ambient?.animals?.length || !map) return state
-  const threats = scareThreats(state)
   let changed = false
   const animals = ambient.animals.map((animal) => {
     const profile = getRoamProfile(animal.profileId)
-    const scatterCfg = profile.scatter
+    const scatterCfg = scatterConfigForAnimal(animal, profile)
+    const threats = scatterCfg ? threatsForAnimal(animal, state) : []
     if (scatterCfg && (threats.length || animal.scatter)) {
       const next = tickScatter(animal, map, seconds, scatterCfg, threats, rng)
       if (next.scatter || animal.scatter) {

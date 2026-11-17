@@ -12,9 +12,11 @@ import { headingTo, wrapAngle } from '../actors/CharacterController.js'
 import { isDown } from '../actors/actorStatus.js'
 import { blocksLineOfFire } from '../combat/battleMap.js'
 import data from '../data/adaptation/exploration/awareness.json'
+import { ANIMAL_DISPOSITIONS, dispositionName, normalizeDisposition } from './dispositions.js'
 import { distance } from './navigation.js'
 import { sneakDetectionMultiplier, sneakSkill } from './sneak.js'
 
+export { ANIMAL_DISPOSITIONS, dispositionName, normalizeDisposition }
 export const STATE = { UNAWARE: 'UNAWARE', SUSPICIOUS: 'SUSPICIOUS', INVESTIGATING: 'INVESTIGATING', ALERTED: 'ALERTED', COMBAT_READY: 'COMBAT_READY' }
 export const RANK = { UNAWARE: 0, SUSPICIOUS: 1, INVESTIGATING: 2, ALERTED: 3, COMBAT_READY: 4 }
 const STATE_NAMES = Object.fromEntries(data.states.map((state) => [state.id, state.name]))
@@ -33,9 +35,8 @@ export const NOISE_SHOW_SECONDS = 1.5
 const PRIORITY = { noise: 1, alert: 1, glimpse: 2, lost: 3 }
 
 export const stateName = (id) => STATE_NAMES[id] ?? id
-export const dispositionName = (id) => DISPOSITIONS[id]?.name ?? id
 export const alertMethodName = (id) => ALERT_METHODS[id]?.name ?? id
-export const dispositionOf = (npc) => DISPOSITIONS[npc.disposition]
+export const dispositionOf = (npc) => DISPOSITIONS[normalizeDisposition(npc.disposition)]
 
 const toPoint = ([x, y]) => ({ x, y })
 export const EMPTY_RECORD = { state: STATE.UNAWARE, confidence: 0, lastKnownPosition: null, lastSeenTime: null, reported: false, searched: false }
@@ -159,7 +160,7 @@ export function createNpc(config, character = null) {
     // conversation talking to it opens (conversations/{id}.json), or null.
     faction: config.faction || character?.faction?.id || null,
     conversationId: config.conversationId ?? null,
-    disposition: DISPOSITIONS[config.disposition] ? config.disposition : 'neutral',
+    disposition: normalizeDisposition(config.disposition),
     responseType: config.responseType ?? null,
     alertGroupId: config.alertGroupId ?? null,
     alertMethod: ALERT_METHODS[config.alertMethod] ? config.alertMethod : data.defaultAlertMethod,

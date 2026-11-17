@@ -1,5 +1,11 @@
-// File menus for Map Editor full-screen Tools editors (Animation Viewer pattern).
+// File menus for Map Editor full-screen Tools editors.
 // Save / Load act on that editor's data — not the open map — unless the screen is map-embedded.
+
+/** Toolbar + File → back when leaving a Tools sub-screen for Dev Edit. */
+export const SUB_EDITOR_BACK_LABEL = 'Back to Editor'
+
+/** Dirty Tools sub-screen back (confirm / discard). */
+export const SUB_EDITOR_BACK_DISCARD_LABEL = 'Back (discard changes)'
 
 export function subEditorFileMenus({
   newItem = false,
@@ -12,7 +18,7 @@ export function subEditorFileMenus({
   saveLabel = 'Save',
   revertLabel = 'Revert',
   deleteLabel = 'Delete',
-  backLabel = 'Back to Map',
+  backLabel = SUB_EDITOR_BACK_LABEL,
   extraFileItems = [],
 } = {}) {
   const items = []

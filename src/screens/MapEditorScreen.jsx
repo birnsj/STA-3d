@@ -43,6 +43,8 @@ const StoryEditorScreen = lazy(() => import('./StoryEditorScreen.jsx'))
 const CharacterLibraryScreen = lazy(() => import('./CharacterLibraryScreen.jsx'))
 const GeneratorEditorScreen = lazy(() => import('./GeneratorEditorScreen.jsx'))
 const AutoPaintRulesetEditorScreen = lazy(() => import('./AutoPaintRulesetEditorScreen.jsx'))
+const AnimationViewerScreen = lazy(() => import('./AnimationViewerScreen.jsx'))
+const SpriteSheetsScreen = lazy(() => import('./SpriteSheetsScreen.jsx'))
 
 // Editor Play: four party + four enemies (not the full eight-start / full-spawn roster).
 const EDITOR_PLAY_TEAM = 4
@@ -117,6 +119,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   const [characterLibrary, setCharacterLibrary] = useState(false)
   const [generatorEditor, setGeneratorEditor] = useState(false)
   const [autoPaintRulesetEditor, setAutoPaintRulesetEditor] = useState(false)
+  const [animationViewer, setAnimationViewer] = useState(false)
+  const [spriteSheets, setSpriteSheets] = useState(false)
 
   // Hover clears the moment a floating window takes the pointer. Compared while rendering, so no stale frame shows.
   const [wasBlocked, setWasBlocked] = useState(boardBlocked)
@@ -143,7 +147,9 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     storyEditor ||
     characterLibrary ||
     generatorEditor ||
-    autoPaintRulesetEditor
+    autoPaintRulesetEditor ||
+    animationViewer ||
+    spriteSheets
 
   // Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redo. Tab cycles the guide grid size.
   // Skipped while a dialog or sub-editor is open.
@@ -215,10 +221,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
   const [revealEpisodeCard, setRevealEpisodeCard] = useState(0)
   if (selectionNow.some((value, index) => !Object.is(value, selectionSeen[index]))) {
     setSelectionSeen(selectionNow)
+    // Selecting a board entity or Assets tool opens Properties; clearing selection returns to Map.
+    // Manual Map-tab clicks still work while something stays selected (do not force Map off every render).
     setShowMapTab(wantsMapTab)
   }
-  // Board marker/NPC picks must leave the Map tab even when the Assets tool was already keeping Properties open.
-  if (selection.marker && showMapTab) setShowMapTab(false)
 
   const onGenerateCard = () => {
     setShowMapTab(true)
@@ -322,6 +328,10 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
         return setGeneratorEditor(true)
       case 'autoPaintRuleset':
         return setAutoPaintRulesetEditor(true)
+      case 'animations':
+        return setAnimationViewer(true)
+      case 'spriteSheets':
+        return setSpriteSheets(true)
       case 'story':
         return setStoryEditor(true)
       case 'play':
@@ -443,6 +453,26 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
             await doc.onGenerate()
           }}
         />
+      </Suspense>
+    )
+  }
+
+  if (animationViewer) {
+    return (
+      <Suspense fallback={null}>
+        <AnimationViewerScreen
+          onBack={() => setAnimationViewer(false)}
+          viewScale={viewScale}
+          onViewScale={onViewScale}
+        />
+      </Suspense>
+    )
+  }
+
+  if (spriteSheets) {
+    return (
+      <Suspense fallback={null}>
+        <SpriteSheetsScreen onBack={() => setSpriteSheets(false)} />
       </Suspense>
     )
   }
@@ -650,6 +680,8 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
         onCharacters={() => setCharacterLibrary(true)}
         onGeneratorEditor={() => setGeneratorEditor(true)}
         onAutoPaintRuleset={() => setAutoPaintRulesetEditor(true)}
+        onAnimationViewer={() => setAnimationViewer(true)}
+        onSpriteSheets={() => setSpriteSheets(true)}
         onStory={() => setStoryEditor(true)}
         overviewOpen={overviewOpen}
         onOverview={() => setOverviewOpen((value) => !value)}

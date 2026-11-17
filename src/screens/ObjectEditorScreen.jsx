@@ -214,7 +214,7 @@ export default function ObjectEditorScreen({ map, onChange, initialId = null, on
       toolbar={
         <>
           <button type="button" className="me-button" onClick={onBack}>
-            Back to Map
+            Back to Editor
           </button>
           <button type="button" className="me-button" onClick={add}>
             Add Object

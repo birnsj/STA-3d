@@ -449,6 +449,58 @@
 .me-field-label { color: #8fb4ba; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
 .me-inspector { padding-bottom: 6px; margin-bottom: 6px; border-bottom: var(--ui-border) solid #23434a; }
 .me-inspector-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+/* Animal spawn Texture: pick among coat atlas PNGs (not a colour picker). */
+.me-texture-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 4px;
+}
+.me-texture-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  margin: 0;
+  border: 1px solid #23434a;
+  border-radius: 3px;
+  background: #0b1a1d;
+  color: #9fb9bd;
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+}
+.me-texture-pick:hover { border-color: #3a6a72; }
+.me-texture-pick.is-selected { outline: 2px solid #ffb347; border-color: #ffb347; }
+.me-texture-pick-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 2px;
+  background: #061214;
+  image-rendering: auto;
+}
+.me-texture-pick-auto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: #061214;
+  color: #8fb4ba;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.me-texture-pick-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .me-npc-portrait { display: block; width: 64px; height: 80px; margin: 2px 0 6px; border: 1px solid #23434a; border-radius: 3px; background: #0b1a1d center / cover; object-fit: cover; image-rendering: pixelated; }
 .me-patrol-list { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .me-patrol-list .me-link { width: 100%; text-align: left; }

@@ -774,7 +774,7 @@ export class Spike3dScene {
         let animal = this.ambientAnimals.get(pose.id)
         if (!animal) {
           animal =
-            pose.kind === 'cat' ? new CatActor(pose.id, this) : new ChickenActor(pose.id, this)
+            pose.kind === 'cat' ? new CatActor(pose.id, this, { coat: pose.coat }) : new ChickenActor(pose.id, this)
           this.ambientAnimals.set(pose.id, animal)
         }
         animal.setPose(pose)

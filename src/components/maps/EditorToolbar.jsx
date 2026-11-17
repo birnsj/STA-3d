@@ -83,6 +83,30 @@ function IconWorldGen() {
   )
 }
 
+/** Animation Viewer — figure with stride. */
+function IconAnimationViewer() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M8 1.4a1.6 1.6 0 1 1 0 3.2A1.6 1.6 0 0 1 8 1.4ZM6.2 5.2h3.6l.9 3.4H9.4L8.8 6.6 8 9.2l1.8 4.6H8.4L7.2 10.4 6.2 13.8H4.8L6.6 9.2 5.4 6.6 4.6 8.6H3.2L6.2 5.2Zm5.6 1.1.9.7-1.4 1.8.9.5 1.5-1.9.9.7-2.1 2.7-1.6-.9 1.1-1.4-.9-.5-1.2 1.5-.9-.7 2.3-2.5Z"
+      />
+    </Icon>
+  )
+}
+
+/** Sprite Sheets — film / frame grid. */
+function IconSpriteSheets() {
+  return (
+    <Icon>
+      <path
+        fill="currentColor"
+        d="M2 2h5v5H2V2Zm7 0h5v5H9V2ZM2 9h5v5H2V9Zm7 0h5v5H9V9ZM3.2 3.2h2.6v2.6H3.2V3.2Zm7 0h2.6v2.6H10.2V3.2ZM3.2 10.2h2.6v2.6H3.2v-2.6Zm7 0h2.6v2.6H10.2v-2.6Z"
+      />
+    </Icon>
+  )
+}
+
 /** Story Wording — open book. */
 function IconStory() {
   return (
@@ -181,15 +205,29 @@ function IconOverview() {
   )
 }
 
-const TOOL_BUTTONS = [
-  { id: 'objectives', label: 'Objective Editor', Icon: IconObjectives, prop: 'onObjectives' },
-  { id: 'objects', label: 'Object Editor', Icon: IconObjects, prop: 'onObjects' },
-  { id: 'conversations', label: 'Conversation Editor', Icon: IconConversations, prop: 'onConversations' },
-  { id: 'characters', label: 'Character Library', Icon: IconCharacters, prop: 'onCharacters' },
-  { id: 'generators', label: 'Legacy Map Generator', Icon: IconLegacyGenerator, prop: 'onGeneratorEditor' },
-  { id: 'autoPaintRuleset', label: 'World Generation Ruleset', Icon: IconWorldGen, prop: 'onAutoPaintRuleset' },
-  { id: 'story', label: 'Story Wording', Icon: IconStory, prop: 'onStory' },
-]
+function toolButtons({
+  onObjectives,
+  onObjects,
+  onConversations,
+  onCharacters,
+  onGeneratorEditor,
+  onAutoPaintRuleset,
+  onAnimationViewer,
+  onSpriteSheets,
+  onStory,
+}) {
+  return [
+    { id: 'objectives', label: 'Objective Editor', Icon: IconObjectives, onClick: onObjectives },
+    { id: 'objects', label: 'Object Editor', Icon: IconObjects, onClick: onObjects },
+    { id: 'conversations', label: 'Conversation Editor', Icon: IconConversations, onClick: onConversations },
+    { id: 'characters', label: 'Character Library', Icon: IconCharacters, onClick: onCharacters },
+    { id: 'generators', label: 'Legacy Map Generator', Icon: IconLegacyGenerator, onClick: onGeneratorEditor },
+    { id: 'autoPaintRuleset', label: 'World Generation Ruleset', Icon: IconWorldGen, onClick: onAutoPaintRuleset },
+    { id: 'animations', label: 'Animation Viewer', Icon: IconAnimationViewer, onClick: onAnimationViewer },
+    { id: 'spriteSheets', label: 'Sprite Sheets', Icon: IconSpriteSheets, onClick: onSpriteSheets },
+    { id: 'story', label: 'Story Wording', Icon: IconStory, onClick: onStory },
+  ]
+}
 
 function SizeFields({ width, height, onResize }) {
   const [draft, setDraft] = useState({ width, height, from: `${width}x${height}` })
@@ -228,17 +266,17 @@ function SizeFields({ width, height, onResize }) {
   )
 }
 
-function IconButtonRow({ label, buttons, actions }) {
+function IconButtonRow({ label, buttons }) {
   return (
     <div className="ed-seg" role="group" aria-label={label}>
-      {buttons.map(({ id, label: title, Icon, prop }) => (
+      {buttons.map(({ id, label: title, Icon, onClick }) => (
         <button
           key={id}
           type="button"
           className="me-button ed-icon-btn"
           title={title}
           aria-label={title}
-          onClick={() => actions[prop]?.()}
+          onClick={() => onClick?.()}
         >
           <Icon />
         </button>
@@ -280,6 +318,8 @@ export default function EditorToolbar({
   onCharacters,
   onGeneratorEditor,
   onAutoPaintRuleset,
+  onAnimationViewer,
+  onSpriteSheets,
   onStory,
   overviewOpen = false,
   onOverview,
@@ -288,15 +328,17 @@ export default function EditorToolbar({
   levelsOpen = false,
   onLevels,
 }) {
-  const toolActions = {
+  const tools = toolButtons({
     onObjectives,
     onObjects,
     onConversations,
     onCharacters,
     onGeneratorEditor,
     onAutoPaintRuleset,
+    onAnimationViewer,
+    onSpriteSheets,
     onStory,
-  }
+  })
 
   return (
     <div className="me-toolbar ed-toolbar">
@@ -401,7 +443,7 @@ export default function EditorToolbar({
         </div>
         <SizeFields width={map.width} height={map.height} onResize={onResize} />
         <div className="ed-toolbar-end">
-          <IconButtonRow label="Tools" buttons={TOOL_BUTTONS} actions={toolActions} />
+          <IconButtonRow label="Tools" buttons={tools} />
           <label className="me-check" title="The green or red footprint while placing an inventory object.">
             <input type="checkbox" checked={placementPreview} onChange={(event) => onPlacementPreview(event.target.checked)} /> Placement box
           </label>

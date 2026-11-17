@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { autoPaintRoleThumbTitle } from '../components/maps/assetThumbTitle.js'
 import EditorBoard from '../components/maps/EditorBoard.jsx'
 import { DEFAULT_EDITOR_GRID_SIZE, EDITOR_GRID_SIZES } from '../components/maps/editorGrid.js'
@@ -7,8 +7,6 @@ import EditorSelect from '../components/maps/EditorSelect.jsx'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import { subEditorFileMenus } from '../components/maps/editorSubMenus.js'
 import AssetProperties from '../components/maps/AssetProperties.jsx'
-import BoardSunOrbitDial from '../components/maps/BoardSunOrbitDial.jsx'
-import EditorColourField, { SUN_COLOUR_PRESETS } from '../components/maps/EditorColourField.jsx'
 import GeSourcePalette from '../components/maps/GeSourcePalette.jsx'
 import {
   PropertySection,
@@ -48,11 +46,6 @@ import {
   templatePieceCatalogueEpochOf,
 } from '../maps/templatePieces.js'
 import { WORLD_GENERATION_HELP_TOPICS } from '../data/adaptation/maps/worldGenerationWorkflow.js'
-import {
-  getBoardSunSettings,
-  setBoardSunSettings,
-  subscribeBoardSunSettings,
-} from '../spike3d/boardSunSettings.js'
 
 // Tools → World Generation Ruleset. Palette = Dev Edit Assets (Template Pieces + every tileset). Wall roles place tiles.
 // Help + flowchart copy/settings: edit worldGenerationWorkflow.js (not Legacy).
@@ -313,9 +306,6 @@ export default function AutoPaintRulesetEditorScreen({
   const [localTooltips, setLocalTooltips] = useState(true)
   const showTooltips = typeof onShowTooltips === 'function' ? showTooltipsProp : localTooltips
   const setShowTooltips = typeof onShowTooltips === 'function' ? onShowTooltips : setLocalTooltips
-  const [sun, setSun] = useState(() => getBoardSunSettings())
-
-  useEffect(() => subscribeBoardSunSettings(setSun), [])
 
   const dirty = !rulesetEqual(draft, saved)
   const canSave = canEditAutoPaintRulesets
@@ -422,7 +412,7 @@ export default function AutoPaintRulesetEditorScreen({
       if (!ok) return
       setViewMode('map')
       const label = draft.label || selectedId
-      const message = `Generate Map (${label}). Still in World Generation Ruleset — Back to Map when done.`
+      const message = `Generate Map (${label}). Still in World Generation Ruleset — Back to Editor when done.`
       setStatus(message)
       onStatus?.(message)
     } finally {
@@ -616,10 +606,10 @@ export default function AutoPaintRulesetEditorScreen({
           <button
             type="button"
             className="me-button"
-            title={dirty ? 'Return to Dev Edit without saving ruleset changes' : 'Return to Dev Edit'}
+            title={dirty ? 'Return to the map editor without saving ruleset changes' : 'Return to the map editor'}
             onClick={discardAndBack}
           >
-            {dirty ? 'Back (discard)' : 'Back to Map'}
+            {dirty ? 'Back (discard changes)' : 'Back to Editor'}
           </button>
           <button
             type="button"
@@ -845,66 +835,6 @@ export default function AutoPaintRulesetEditorScreen({
                   </option>
                 ))}
               </EditorSelect>
-            </label>
-            <label
-              className="me-scale"
-              title="Orbit the 3D key light (Play)."
-            >
-              <span className="me-scale-label">Sun</span>
-              <input
-                type="range"
-                min="0"
-                max="359"
-                step="1"
-                value={sun.azimuthDeg}
-                aria-label="Sun orbit"
-                onChange={(event) => {
-                  const azimuthDeg = Number(event.target.value)
-                  setSun((prev) => ({ ...prev, azimuthDeg }))
-                  setBoardSunSettings({ azimuthDeg })
-                }}
-              />
-              <span className="me-ambient-value">{sun.azimuthDeg}°</span>
-            </label>
-            <BoardSunOrbitDial
-              azimuthDeg={sun.azimuthDeg}
-              colour={sun.colour}
-              shadowStrength={sun.shadowStrength}
-              onAzimuth={(azimuthDeg) => {
-                setSun((prev) => ({ ...prev, azimuthDeg }))
-                setBoardSunSettings({ azimuthDeg })
-              }}
-            />
-            <EditorColourField
-              label="Sun colour"
-              title="Sun colour: tints 3D figure lighting in Play."
-              ariaLabel="Sun colour"
-              value={sun.colour}
-              presets={SUN_COLOUR_PRESETS}
-              onChange={(colour) => {
-                setSun((prev) => ({ ...prev, colour }))
-                setBoardSunSettings({ colour })
-              }}
-            />
-            <label
-              className="me-scale"
-              title="Cast shadow strength in Play. 100% is the previous full strength."
-            >
-              <span className="me-scale-label">Shadow</span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                value={Math.round((sun.shadowStrength ?? 1) * 100)}
-                aria-label="Shadow strength"
-                onChange={(event) => {
-                  const shadowStrength = Number(event.target.value) / 100
-                  setSun((prev) => ({ ...prev, shadowStrength }))
-                  setBoardSunSettings({ shadowStrength })
-                }}
-              />
-              <span className="me-ambient-value">{Math.round((sun.shadowStrength ?? 1) * 100)}%</span>
             </label>
           </>
         )}

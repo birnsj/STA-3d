@@ -405,7 +405,7 @@ export default function GeneratorEditorScreen({ map = null, mapType = null, onBa
       toolbar={
         <>
           <button type="button" className="me-button" onClick={discardAndBack}>
-            {dirty ? 'Back (discard)' : 'Back to Map'}
+            {dirty ? 'Back (discard changes)' : 'Back to Editor'}
           </button>
           <button
             type="button"

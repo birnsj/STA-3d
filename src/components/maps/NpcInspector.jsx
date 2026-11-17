@@ -12,6 +12,7 @@ import { dialogueMismatchWarning, dialogueTierLabel, dialogueTierOf } from '../.
 import { conversationIdFor } from '../../conversation/defaultConversations.js'
 import { loadConversation } from '../../conversation/conversationFiles.js'
 import { defaultInfluenceRadius } from '../../exploration/influence.js'
+import { normalizeDisposition } from '../../exploration/dispositions.js'
 import awareness from '../../data/adaptation/exploration/awareness.json'
 import factionData from '../../data/adaptation/factions.json'
 import { FACINGS, snapFacing } from '../../maps/facing.js'
@@ -422,7 +423,11 @@ export default function NpcInspector({
           </EditorSelect>
         </Field>
         <Field label="Disposition">
-          <EditorSelect className="me-select me-wide" value={npc.disposition ?? 'neutral'} onChange={select('disposition')}>
+          <EditorSelect
+            className="me-select me-wide"
+            value={normalizeDisposition(npc.disposition ?? 'neutral')}
+            onChange={select('disposition')}
+          >
             {awareness.dispositions.map((disposition) => (
               <option key={disposition.id} value={disposition.id}>
                 {disposition.name}

@@ -30,6 +30,16 @@ const CLIP_SOUND_SKIP = new Set([
   'hazardPanicRun',
 ])
 
+// Viewer-only: stride SFX for loco clips (board uses useExplorationFootsteps / combat steps instead).
+const VIEWER_LOCO_SOUND_CLIPS = new Set([
+  'walk',
+  'run',
+  'sneakWalk',
+  'stepBack',
+  'hazardPanicWalk',
+  'hazardPanicRun',
+])
+
 const SPEED_WALK = 0.55
 const SPEED_RUN = 1
 const LOCO_SPEED = {
@@ -953,6 +963,8 @@ export class HumanoidAnimator {
     this._viewerHoldOnce = false
     // Animation viewer: treat once-clips as looping when the Loop checkbox is on.
     this._viewerLoopOnce = false
+    // Animation viewer: play walk/run clip sounds on a stride cadence (skipped on the board).
+    this._viewerLocoSounds = false
     this._lean = 0
     this._hipYaw = 0
     this._hipRoll = 0
@@ -1014,6 +1026,11 @@ export class HumanoidAnimator {
   setViewerLoopOnce(on) {
     this._viewerLoopOnce = Boolean(on)
     if (this._viewerLoopOnce) this._actionDone = false
+  }
+
+  /** Lab mode: walk/run play footstep (etc.) on a stride cadence; board still skips these. */
+  setViewerLocoSounds(on) {
+    this._viewerLocoSounds = Boolean(on)
   }
 
   /**
@@ -1116,7 +1133,9 @@ export class HumanoidAnimator {
     this._targetSpeed = LOCO_SPEED[clip] ?? 0
     this._actionT = 0
     this._actionDone = false
-    if (!CLIP_SOUND_SKIP.has(clip)) playClipSound(clip, { minGapMs: 90 })
+    if (!CLIP_SOUND_SKIP.has(clip) || (this._viewerLocoSounds && VIEWER_LOCO_SOUND_CLIPS.has(clip))) {
+      playClipSound(clip, { minGapMs: 90 })
+    }
     const leavingFall = String(prev).startsWith('fall') || prev === 'getUp'
     const coverClip = clip === 'cover' || clip === 'cover-attack' || clip === 'cover-enter'
     // cover / cover-attack begin kneeling — keep hipDrop. cover-enter begins standing.
@@ -1237,6 +1256,10 @@ export class HumanoidAnimator {
     if (speed > 0.015) {
       const cycle = lerp(WALK_SECONDS, RUN_SECONDS, runMix) * (sneak ? 1.35 : 1)
       this._gaitPhase = (this._gaitPhase + dt / cycle) % 1
+      // Two steps per gait cycle (viewer only — exploration/combat drive their own footsteps).
+      if (this._viewerLocoSounds && VIEWER_LOCO_SOUND_CLIPS.has(clip)) {
+        playClipSound(clip, { minGapMs: Math.max(120, cycle * 500) })
+      }
     }
 
     this._idleT += dt

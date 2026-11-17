@@ -1028,7 +1028,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       {confirmAttackNpc && (
         <ConfirmDialog
           title={`Attack ${confirmAttackNpc.name}?`}
-          message={`${confirmAttackNpc.name} is ${dispositionName(confirmAttackNpc.disposition).toLowerCase()}. Attacking turns them hostile and starts a fight, and anyone still standing afterwards stays hostile.`}
+          message={`${confirmAttackNpc.name} is ${dispositionName(confirmAttackNpc.disposition).toLowerCase()}. Attacking turns them enemy and starts a fight, and anyone still standing afterwards stays enemy.`}
           confirmLabel="Attack"
           onConfirm={() => {
             setConfirmAttackId(null)
@@ -1206,7 +1206,7 @@ export function ExplorationPlaytest({ map, characters, savedCharacters = [], ene
   const onOutro = useCallback(() => setMissionEnded(true), [])
   if (intro) return <MissionIntro map={state.party.map} onBegin={() => setIntro(false)} />
   if (missionEnded) {
-    return <MissionEndScreen state={state} exitLabel="Return to Editor" playOutro={playOutro} onExit={onExit} />
+    return <MissionEndScreen state={state} exitLabel="Back to Editor" playOutro={playOutro} onExit={onExit} />
   }
   return (
     <MapFadeIn>

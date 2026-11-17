@@ -943,28 +943,34 @@ function playHorseHoof(audio) {
 }
 
 function playCatMeow(audio) {
+  // Rising then falling “mrr-ow”: two stacked voices so it reads as a cat, not a soft blip.
   const start = audio.currentTime + LOOKAHEAD_S
-  playTone(audio, audio.destination, { at: start, from: 720, to: 480, length: 0.16, gain: 0.06, wave: 'triangle', attack: 0.01 })
-  playTone(audio, audio.destination, { at: start + 0.05, from: 540, to: 380, length: 0.12, gain: 0.035, wave: 'sine' })
+  const dest = audio.destination
+  playTone(audio, dest, { at: start, from: 520, to: 880, length: 0.14, gain: 0.09, wave: 'triangle', attack: 0.02 })
+  playTone(audio, dest, { at: start + 0.02, from: 780, to: 1180, length: 0.12, gain: 0.045, wave: 'sine', attack: 0.015 })
+  playTone(audio, dest, { at: start + 0.12, from: 900, to: 360, length: 0.28, gain: 0.085, wave: 'triangle', attack: 0.01 })
+  playTone(audio, dest, { at: start + 0.14, from: 1100, to: 420, length: 0.22, gain: 0.04, wave: 'sine', attack: 0.01 })
+  playNoiseBurst(audio, { start: start + 0.08, length: 0.12, gain: 0.035, filterType: 'bandpass', frequency: 1400, q: 1.6 })
 }
 
 function playCatPurr(audio) {
   const start = audio.currentTime + LOOKAHEAD_S
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     playNoiseBurst(audio, {
-      start: start + i * 0.07,
-      length: 0.06,
-      gain: 0.045,
+      start: start + i * 0.065,
+      length: 0.07,
+      gain: 0.055,
       filterType: 'bandpass',
-      frequency: 160 + i * 20,
-      q: 2.4,
+      frequency: 140 + i * 18,
+      q: 2.6,
     })
   }
 }
 
 function playCatMew(audio) {
   const start = audio.currentTime + LOOKAHEAD_S
-  playTone(audio, audio.destination, { at: start, from: 880, to: 640, length: 0.09, gain: 0.045, wave: 'triangle', attack: 0.006 })
+  playTone(audio, audio.destination, { at: start, from: 980, to: 720, length: 0.11, gain: 0.07, wave: 'triangle', attack: 0.008 })
+  playTone(audio, audio.destination, { at: start + 0.03, from: 1200, to: 640, length: 0.09, gain: 0.035, wave: 'sine', attack: 0.006 })
 }
 
 function playSoftPad(audio) {

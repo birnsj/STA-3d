@@ -38,7 +38,7 @@ export default function WorldGenerationMapPanel({
       <aside className="ed-properties me-side wg-map-panel">
         <div className="ed-panel-head">Properties</div>
         <p className="me-text" style={{ padding: '8px' }}>
-          No open map. Back to Map, then open World Generation again.
+          No open map. Back to Editor, then open World Generation again.
         </p>
       </aside>
     )

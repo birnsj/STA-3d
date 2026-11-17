@@ -60,6 +60,8 @@ const BASE_MENUS = [
       { id: 'characters', label: 'Character Library' },
       { id: 'generators', label: 'Legacy Map Generator' },
       { id: 'autoPaintRuleset', label: 'World Generation Ruleset' },
+      { id: 'animations', label: 'Animation Viewer' },
+      { id: 'spriteSheets', label: 'Sprite Sheets' },
       { id: 'story', label: 'Story Wording' },
     ],
   },

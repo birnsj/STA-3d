@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import EditorMenuBar from '../components/maps/EditorMenuBar.jsx'
+import EditorSelect from '../components/maps/EditorSelect.jsx'
 import EditorTips from '../components/maps/EditorTips.jsx'
 import EditorViewScale from '../components/maps/EditorViewScale.jsx'
+import { SUB_EDITOR_BACK_LABEL } from '../components/maps/editorSubMenus.js'
 import { downloadJson } from '../export/downloadJson.js'
 import { resolveSpike3dAppearance } from '../spike3d/appearance.js'
 import { playClipSound } from '../audio/animationSounds.js'
@@ -84,49 +86,51 @@ const HORSE_CLIP_TABS = [{ id: 'move', label: 'Move', groupIds: ['horse'] }]
 const CHICKEN_CLIP_TABS = [{ id: 'move', label: 'Move', groupIds: ['chicken'] }]
 const CAT_CLIP_TABS = [{ id: 'move', label: 'Move', groupIds: ['cat'] }]
 
-const ANIMATION_MENUS = [
-  {
-    id: 'file',
-    label: 'File',
-    items: [
-      { id: 'saveRagdoll', label: 'Save Ragdoll Settings…' },
-      { id: 'loadRagdoll', label: 'Load Ragdoll Settings…' },
-      { id: 'defaultsRagdoll', label: 'Reset Ragdoll Defaults' },
-      { sep: true },
-      { id: 'saveAttachments', label: 'Save Attachment Settings…' },
-      { id: 'loadAttachments', label: 'Load Attachment Settings…' },
-      { id: 'defaultsAttachments', label: 'Reset Attachment Defaults' },
-      { sep: true },
-      { id: 'saveSounds', label: 'Save Animation Sounds…' },
-      { id: 'loadSounds', label: 'Load Animation Sounds…' },
-      { id: 'defaultsSounds', label: 'Reset Animation Sounds' },
-      { sep: true },
-      { id: 'back', label: 'Back to Menu' },
-    ],
-  },
-  {
-    id: 'view',
-    label: 'View',
-    items: [
-      { id: 'lockedIso', label: 'Locked iso' },
-      { id: 'loopOnce', label: 'Loop once-clips' },
-      { id: 'showSkeleton', label: 'Show skeleton' },
-      { id: 'tooltips', label: 'Tooltips' },
-      { sep: true },
-      { id: 'viewScale', label: 'View scale…' },
-    ],
-  },
-  {
-    id: 'playback',
-    label: 'Playback',
-    items: [
-      { id: 'playPause', label: 'Play / Pause' },
-      { id: 'restart', label: 'Restart' },
-      { sep: true },
-      { id: 'ragdoll', label: 'Ragdoll / Reset pose' },
-    ],
-  },
-]
+function animationMenus(backLabel) {
+  return [
+    {
+      id: 'file',
+      label: 'File',
+      items: [
+        { id: 'saveRagdoll', label: 'Save Ragdoll Settings…' },
+        { id: 'loadRagdoll', label: 'Load Ragdoll Settings…' },
+        { id: 'defaultsRagdoll', label: 'Reset Ragdoll Defaults' },
+        { sep: true },
+        { id: 'saveAttachments', label: 'Save Attachment Settings…' },
+        { id: 'loadAttachments', label: 'Load Attachment Settings…' },
+        { id: 'defaultsAttachments', label: 'Reset Attachment Defaults' },
+        { sep: true },
+        { id: 'saveSounds', label: 'Save Animation Sounds…' },
+        { id: 'loadSounds', label: 'Load Animation Sounds…' },
+        { id: 'defaultsSounds', label: 'Reset Animation Sounds' },
+        { sep: true },
+        { id: 'back', label: backLabel },
+      ],
+    },
+    {
+      id: 'view',
+      label: 'View',
+      items: [
+        { id: 'lockedIso', label: 'Locked iso' },
+        { id: 'loopOnce', label: 'Loop once-clips' },
+        { id: 'showSkeleton', label: 'Show skeleton' },
+        { id: 'tooltips', label: 'Tooltips' },
+        { sep: true },
+        { id: 'viewScale', label: 'View scale…' },
+      ],
+    },
+    {
+      id: 'playback',
+      label: 'Playback',
+      items: [
+        { id: 'playPause', label: 'Play / Pause' },
+        { id: 'restart', label: 'Restart' },
+        { sep: true },
+        { id: 'ragdoll', label: 'Ragdoll / Reset pose' },
+      ],
+    },
+  ]
+}
 
 function defaultHairFor(species, gender) {
   return appearanceData.defaultHair?.[`${species}-${gender}`] ?? appearanceData.defaultHair?.[gender] ?? 'short'
@@ -178,7 +182,13 @@ function ClipGroup({ group, open, onToggle, selected, onSelect }) {
   )
 }
 
-export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewScale }) {
+export default function AnimationViewerScreen({
+  onBack,
+  backLabel = SUB_EDITOR_BACK_LABEL,
+  viewScale = 100,
+  onViewScale,
+}) {
+  const menus = useMemo(() => animationMenus(backLabel), [backLabel])
   const animationSets = useMemo(() => listAnimationSets(), [])
   // Starts on the set the starting species (human) uses, as picking a species does below.
   const [animSetId, setAnimSetId] = useState(() => animationSetIdForSpecies('human'))
@@ -573,7 +583,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
     <div ref={shellRef} className="me-screen ed-shell av-screen">
       <EditorTips rootRef={shellRef} enabled={showTooltips} />
       <EditorMenuBar
-        menus={ANIMATION_MENUS}
+        menus={menus}
         onAction={onMenuAction}
         checks={{
           lockedIso,
@@ -585,7 +595,10 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
 
       <div className="me-toolbar ed-toolbar av-view-bar">
         <div className="me-toolbar-row">
-          <span className="me-text av-view-bar-label">View</span>
+          <strong className="ess-title">Animation Viewer</strong>
+          <button type="button" className="me-button" title={backLabel} onClick={() => onBack?.()}>
+            {backLabel}
+          </button>
           <div className="ed-toolbar-end">
             <label className="me-check" title="Lock the camera to the isometric board angle">
               <input type="checkbox" checked={lockedIso} onChange={(e) => setLockedIso(e.target.checked)} />
@@ -615,11 +628,11 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
         <aside className="ed-assets me-palette">
           <div className="ed-panel-head">
             <span>Palette</span>
-            <select
+            <EditorSelect
               className="me-select av-anim-set-select"
               value={animSetId}
               aria-label="Animation set"
-              title="Body-type catalogue: Humanoid, Monster, or Horse"
+              title="Body-type catalogue: Humanoid, Monster, Horse, Chicken, or Cat"
               onChange={(event) => setAnimSetId(event.target.value)}
             >
               {animationSets.map((set) => (
@@ -627,7 +640,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   {set.label}
                 </option>
               ))}
-            </select>
+            </EditorSelect>
           </div>
           <div className="ed-asset-tabs" role="tablist" aria-label="Clip set">
             {clipTabs.map((tab) => (
@@ -767,25 +780,25 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   <p className="me-text">Procedural cat · idle / walk / run / sit / lick / stretch</p>
                 ) : (
                   <div className="av-dock-model-fields">
-                    <select className="me-select" value={species} aria-label="Species" onChange={(e) => setSpecies(e.target.value)}>
+                    <EditorSelect className="me-select" value={species} aria-label="Species" onChange={(e) => setSpecies(e.target.value)}>
                       {SPECIES.map((id) => (
                         <option key={id} value={id}>
                           {id}
                         </option>
                       ))}
-                    </select>
-                    <select className="me-select" value={gender} aria-label="Gender" onChange={(e) => setGender(e.target.value)}>
+                    </EditorSelect>
+                    <EditorSelect className="me-select" value={gender} aria-label="Gender" onChange={(e) => setGender(e.target.value)}>
                       <option value="male">male</option>
                       <option value="female">female</option>
-                    </select>
-                    <select className="me-select" value={hairStyle} aria-label="Hair" onChange={(e) => setHairStyle(e.target.value)}>
+                    </EditorSelect>
+                    <EditorSelect className="me-select" value={hairStyle} aria-label="Hair" onChange={(e) => setHairStyle(e.target.value)}>
                       {HAIR_STYLES.map((id) => (
                         <option key={id} value={id}>
                           {id}
                         </option>
                       ))}
-                    </select>
-                    <select
+                    </EditorSelect>
+                    <EditorSelect
                       className="me-select"
                       value={division}
                       aria-label="Uniform"
@@ -797,7 +810,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                           {id}
                         </option>
                       ))}
-                    </select>
+                    </EditorSelect>
                   </div>
                 )}
               </div>
@@ -1156,9 +1169,9 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   </button>
                 </div>
                 <p className="me-text av-ragdoll-note">
-                  Body and action SFX for the selected clip. Random % is the chance each trigger plays (chicken
-                  defaults are sparse). Preview always plays. Weapon fire stays on the weapon; object sounds in the
-                  Object Editor.
+                  Body and action SFX for the selected clip. Random % is the chance each trigger plays (chicken /
+                  cat defaults are sparse — catIdle meows at the Random % shown). Preview always plays. Weapon fire
+                  stays on the weapon; object sounds in the Object Editor.
                 </p>
                 {soundLoadError ? <p className="me-text av-ragdoll-error">{soundLoadError}</p> : null}
                 <div className="av-ragdoll-field" title="Sound played when this clip starts (and on looping gait ticks)">
@@ -1171,7 +1184,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                   <div className="av-ragdoll-field-label">
                     <span>Sound event</span>
                   </div>
-                  <select
+                  <EditorSelect
                     className="me-select"
                     value={selectedSound}
                     disabled={!selected}
@@ -1183,7 +1196,7 @@ export default function AnimationViewerScreen({ onBack, viewScale = 100, onViewS
                         {ev.label}
                       </option>
                     ))}
-                  </select>
+                  </EditorSelect>
                 </label>
                 <div className="av-ragdoll-field" title="Chance this sound plays each time the clip triggers (0 = never, 100 = always)">
                   <div className="av-ragdoll-field-label">

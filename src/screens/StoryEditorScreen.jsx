@@ -109,7 +109,7 @@ export default function StoryEditorScreen({ onBack, askConfirm = null }) {
       toolbar={
         <>
           <button type="button" className="me-button" onClick={discardAndBack}>
-            {dirty ? 'Back (discard changes)' : 'Back to Map'}
+            {dirty ? 'Back (discard changes)' : 'Back to Editor'}
           </button>
           <button type="button" className="me-button" disabled={!canEditStory || !dirty || empty.length > 0} onClick={save}>
             Save Wording

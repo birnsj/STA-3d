@@ -11,7 +11,7 @@ import {
  * Procedural horse for spike3d (exploration mount). Body units match HumanoidModel scale
  * so a saddle socket sits at a readable height under an officer.
  *
- * One shared albedo PNG (`/art/models/creatures/horse.png`); each mesh's UVs sit in an atlas panel.
+ * Separate albedo PNG per coat (`/art/models/creatures/horse-{coat}.png`); each mesh's UVs sit in an atlas panel.
  */
 
 const RAD = 20

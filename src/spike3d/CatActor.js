@@ -23,15 +23,16 @@ function wrapAngle(radians) {
  * Same actor pattern as ChickenActor (travel yaw, sparse idle fidgets, clip sounds).
  */
 export class CatActor {
-  constructor(id, host) {
+  constructor(id, host, { coat = 'orange' } = {}) {
     this.id = id
     this.host = host
     this.scene = host.scene
     this._lastSeen = performance.now()
+    this._coat = coat
 
     this.root = new THREE.Group()
     this.root.name = `spike_cat_${id}`
-    this.body = new CatModel({ height: CAT_HEIGHT })
+    this.body = new CatModel({ height: CAT_HEIGHT, coat })
     this.root.add(this.body.root)
     this.shadow = createContactShadow({ width: CAT_HEIGHT * 1.15, depth: CAT_HEIGHT * 0.75 })
     this.root.add(this.shadow)
@@ -82,14 +83,18 @@ export class CatActor {
     if (this.shadow) this.shadow.visible = Boolean(visible)
   }
 
-  setPose({ position, facing, gait, idlePose }) {
+  setPose({ position, facing, gait, idlePose, coat }) {
     this._lastSeen = performance.now()
+    if (coat != null && coat !== this._coat) {
+      this._coat = coat
+      this.body.setCoat?.(coat)
+    }
     const nextGait = gait === 'run' || gait === 'walk' ? gait : 'idle'
     const nextIdle = nextGait === 'idle' ? idlePose ?? null : null
     const soundClip = soundClipForPose(nextGait, nextIdle)
     if (soundClip !== this._soundClip) {
       this._soundClip = soundClip
-      const gap = soundClip === 'catIdle' ? 2800 : soundClip === 'catWalk' ? 300 : 80
+      const gap = soundClip === 'catIdle' ? 1800 : soundClip === 'catWalk' ? 300 : 80
       playClipSound(soundClip, { minGapMs: gap })
     }
     this._gait = nextGait
@@ -172,7 +177,8 @@ export class CatActor {
     if (this._gait === 'walk') playClipSound('catWalk', { minGapMs: 300 })
     else if (this._gait === 'run') playClipSound('catRun', { minGapMs: 180 })
     else if (this._gait === 'idle' && !this._fidget && !this._authoredIdlePose) {
-      playClipSound('catIdle', { minGapMs: 4000 })
+      // Sparse meows — chance from animationSounds.json / Viewer Random %.
+      playClipSound('catIdle', { minGapMs: 2800 })
     }
 
     const diff = wrapAngle(this._yawTarget - this._yaw)

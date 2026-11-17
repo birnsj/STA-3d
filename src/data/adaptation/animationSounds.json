@@ -4,7 +4,8 @@
     "Split: weapon fire (phaser / disruptor / punch as attackSound) lives on the weapon in weapons.json — not on fire clips.",
     "Animation defaults are body / action only (footsteps, melee impact, get-hit, falls, dodges, cloth).",
     "Chicken / cat actions use species-prefixed clip names so humanoid idle/walk are not overwritten.",
-    "defaultChances: clip → 0–100 play chance when triggered (100 = always). Chicken defaults are sparse.",
+    "defaultChances: clip → 0–100 play chance when triggered (100 = always). Chicken / cat defaults are sparse.",
+    "Cat: catIdle → catMeow (Random %); sit → purr; lick → mew. Edit under Animation Viewer → Sounds.",
     "Viewer overrides are saved as animation-sound-settings.json."
   ],
   "events": [
@@ -88,11 +89,11 @@
     "scratch": 35,
     "scatter": 100,
 
-    "catIdle": 10,
-    "catWalk": 6,
-    "catRun": 12,
-    "sit": 45,
-    "lick": 40,
-    "stretch": 35
+    "catIdle": 22,
+    "catWalk": 8,
+    "catRun": 14,
+    "sit": 50,
+    "lick": 55,
+    "stretch": 40
   }
 }

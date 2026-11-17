@@ -252,12 +252,12 @@ export default function CharacterLibraryScreen({
         onAction={onMenuAction}
       />
       <div className="me-toolbar">
-        <strong className="cl-title">Character Library</strong>
+        <strong className="ess-title">Character Library</strong>
         <button type="button" className="me-button is-primary" onClick={onCreate} disabled={!canSaveAuthoredCharacters}>
           Create
         </button>
         <button type="button" className="me-button" onClick={onBack}>
-          Back to Map
+          Back to Editor
         </button>
         {!canSaveAuthoredCharacters && (
           <span className="me-text">Pool Save/Delete needs the Vite DEV server (read-only here).</span>

@@ -28,7 +28,7 @@ export function minimapWorldFromCombat(enemies, bystanders = []) {
       character: enemy.character,
       position: enemy.position,
       condition: enemy.condition,
-      disposition: 'hostile',
+      disposition: 'enemy',
       awareness: {},
     }
   }
@@ -39,7 +39,7 @@ export function minimapWorldFromCombat(enemies, bystanders = []) {
       character: bystander.character,
       position: bystander.position,
       condition: bystander.condition,
-      disposition: bystander.hostile ? 'hostile' : 'neutral',
+      disposition: bystander.hostile ? 'enemy' : 'neutral',
       awareness: {},
     }
   }

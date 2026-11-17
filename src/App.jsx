@@ -247,7 +247,7 @@ function Views() {
       {view === 'spriteSheets' && (
         // Same as Dev Edit: always fill, even when Settings is Fit 16:9.
         <ScaledStage {...MENU_STAGE} settings={{ ...displaySettings, scaleMode: 'fill' }} titleTips={false}>
-          <SpriteSheetsScreen onBack={openMenu} />
+          <SpriteSheetsScreen onBack={openMenu} backLabel="Back to Menu" />
           {settingsLayer}
         </ScaledStage>
       )}
@@ -256,6 +256,7 @@ function Views() {
         <ScaledStage {...editorStageSize(editorViewScale)} settings={{ ...displaySettings, scaleMode: 'fill' }} titleTips={false}>
           <AnimationViewerScreen
             onBack={openMenu}
+            backLabel="Back to Menu"
             viewScale={editorViewScale}
             onViewScale={onEditorViewScale}
           />

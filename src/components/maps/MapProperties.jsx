@@ -176,8 +176,8 @@ export default function MapProperties({
             )}
           </EditorSelect>
         </label>
-        <label className="me-ambient" title="Ambient light: how dark the map is. Glowing tiles stay lit in the dark.">
-          Light
+        <label className="me-scale" title="Ambient light: how dark the map is. Glowing tiles stay lit in the dark.">
+          <span className="me-scale-label">Light</span>
           <input type="range" min="0" max={FULL_LIGHT} step="5" value={map.ambient ?? FULL_LIGHT} aria-label="Ambient light" onChange={(event) => onAmbient(Number(event.target.value))} />
           <span className="me-ambient-value">{map.ambient ?? FULL_LIGHT}%</span>
         </label>
@@ -188,11 +188,8 @@ export default function MapProperties({
           value={map.ambientColour || DEFAULT_AMBIENT_COLOUR}
           onChange={(colour) => onAmbientColour?.(colour)}
         />
-        <label
-          className="me-ambient"
-          title="Orbit the 3D key light (Play). Same control as World Generation → Sun."
-        >
-          Sun
+        <label className="me-scale" title="Orbit the 3D key light (Play).">
+          <span className="me-scale-label">Sun</span>
           <input
             type="range"
             min="0"
@@ -228,11 +225,8 @@ export default function MapProperties({
             setBoardSunSettings({ colour })
           }}
         />
-        <label
-          className="me-ambient"
-          title="Cast shadow strength in Play. 100% is the previous full strength."
-        >
-          Shadow
+        <label className="me-scale" title="Cast shadow strength in Play. 100% is the previous full strength.">
+          <span className="me-scale-label">Shadow</span>
           <input
             type="range"
             min="0"
