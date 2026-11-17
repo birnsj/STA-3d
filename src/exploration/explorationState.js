@@ -16,7 +16,6 @@ import { combatAction, endCombat, MODE, requestCombat, startCombat } from './com
 import { createAmbientState, tickAmbientAnimals } from './ambientAnimals.js'
 import {
   createMountState,
-  dismountAll,
   dismountHorse,
   horseById,
   mountHorse,

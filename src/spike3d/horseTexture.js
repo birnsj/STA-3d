@@ -9,29 +9,29 @@
  */
 
 import * as THREE from 'three'
+import {
+  HORSE_COATS,
+  HORSE_COAT_CYCLE,
+  horseCoatForSpawnIndex,
+  horseCoatLabel,
+  horseCoatOf,
+  normalizeHorseCoatId,
+} from '../data/adaptation/exploration/animalCoats.js'
+
+export {
+  HORSE_COATS,
+  HORSE_COAT_CYCLE,
+  horseCoatForSpawnIndex,
+  horseCoatLabel,
+  horseCoatOf,
+  normalizeHorseCoatId,
+}
 
 /** Bump when replacing coat PNG files so caches refresh. */
 const HORSE_TEX_VERSION = 3
 
 /** Fallback coat while the atlas loads (matches prior flat horse). */
-export const HORSE_FALLBACK_COLOUR = 0xb89068
-
-export const HORSE_COATS = Object.freeze({
-  white: Object.freeze({ id: 'white', label: 'White', fallback: 0xf4f1ea }),
-  bay: Object.freeze({ id: 'bay', label: 'Bay', fallback: 0xc49262 }),
-  chestnut: Object.freeze({ id: 'chestnut', label: 'Chestnut', fallback: 0xe09060 }),
-  palomino: Object.freeze({ id: 'palomino', label: 'Palomino', fallback: 0xf0d898 }),
-  grey: Object.freeze({ id: 'grey', label: 'Grey', fallback: 0xe8e4dc }),
-  black: Object.freeze({ id: 'black', label: 'Black', fallback: 0x5a5450 }),
-})
-
-/** Each spawn index gets a different coat; further horses wrap. */
-export const HORSE_COAT_CYCLE = Object.freeze(['white', 'bay', 'chestnut', 'palomino', 'grey', 'black'])
-
-export function normalizeHorseCoatId(coatId) {
-  if (coatId && HORSE_COATS[coatId]) return coatId
-  return 'bay'
-}
+export const HORSE_FALLBACK_COLOUR = HORSE_COATS.bay.fallback
 
 export function horseTextureUrl(coatId) {
   return `/art/models/creatures/horse-${normalizeHorseCoatId(coatId)}.png?v=${HORSE_TEX_VERSION}`
@@ -39,20 +39,6 @@ export function horseTextureUrl(coatId) {
 
 /** @deprecated Prefer horseTextureUrl(coatId). Kept for older call sites. */
 export const HORSE_TEXTURE_URL = horseTextureUrl('bay')
-
-export function horseCoatOf(coatId) {
-  return HORSE_COATS[normalizeHorseCoatId(coatId)]
-}
-
-export function horseCoatLabel(coatId) {
-  return horseCoatOf(coatId).label
-}
-
-/** Coat id for spawn index 0..n (Horse Spawn marker order). */
-export function horseCoatForSpawnIndex(index) {
-  const i = Math.max(0, Math.floor(Number(index) || 0))
-  return HORSE_COAT_CYCLE[i % HORSE_COAT_CYCLE.length]
-}
 
 const U0 = 0
 const U1 = 0.5

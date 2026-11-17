@@ -4,10 +4,14 @@
 import { AMBIENT_CREATURES } from '../data/adaptation/exploration/ambientCreatures.js'
 import { canAct, getMembers } from './partyControl.js'
 import { distance, isClear, planRoute, slide } from './navigation.js'
-import { defaultRoamForCreature, getRoamProfile, resolveAuthoredRoam, tickRoam } from './roam.js'
+import {
+  catCoatForSpawnIndex,
+  chickenCoatForSpawnIndex,
+  normalizeCatCoatId,
+  normalizeChickenCoatId,
+} from '../data/adaptation/exploration/animalCoats.js'
+import { getRoamProfile, resolveAuthoredRoam, tickRoam } from './roam.js'
 import { normalizeDisposition } from './dispositions.js'
-import { catCoatForSpawnIndex, normalizeCatCoatId } from '../spike3d/catTexture.js'
-import { chickenCoatForSpawnIndex, normalizeChickenCoatId } from '../spike3d/chickenTexture.js'
 
 /** Fallback flee tuning when Disposition is Afraid but the roam profile has no scatter block. */
 const AFRAID_SCATTER = Object.freeze({

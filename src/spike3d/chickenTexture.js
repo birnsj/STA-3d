@@ -8,7 +8,24 @@
  */
 
 import * as THREE from 'three'
+import {
+  CHICKEN_COATS,
+  CHICKEN_COAT_CYCLE,
+  chickenCoatForSpawnIndex,
+  chickenCoatLabel,
+  chickenCoatOf,
+  normalizeChickenCoatId,
+} from '../data/adaptation/exploration/animalCoats.js'
 import { applyAtlasUvs } from './horseTexture.js'
+
+export {
+  CHICKEN_COATS,
+  CHICKEN_COAT_CYCLE,
+  chickenCoatForSpawnIndex,
+  chickenCoatLabel,
+  chickenCoatOf,
+  normalizeChickenCoatId,
+}
 
 const CHICKEN_TEX_VERSION = 1
 
@@ -16,32 +33,7 @@ export function chickenTextureUrl(coatId) {
   return `/art/models/creatures/chicken-${normalizeChickenCoatId(coatId)}.png?v=${CHICKEN_TEX_VERSION}`
 }
 
-export const CHICKEN_FALLBACK_COLOUR = 0xf0c832
-
-export const CHICKEN_COATS = Object.freeze({
-  yellow: Object.freeze({ id: 'yellow', label: 'Yellow', fallback: 0xf0c832 }),
-  white: Object.freeze({ id: 'white', label: 'White', fallback: 0xf2eee6 }),
-})
-
-export const CHICKEN_COAT_CYCLE = Object.freeze(['yellow', 'white'])
-
-export function normalizeChickenCoatId(coatId) {
-  if (coatId && CHICKEN_COATS[coatId]) return coatId
-  return 'yellow'
-}
-
-export function chickenCoatOf(coatId) {
-  return CHICKEN_COATS[normalizeChickenCoatId(coatId)]
-}
-
-export function chickenCoatLabel(coatId) {
-  return chickenCoatOf(coatId).label
-}
-
-export function chickenCoatForSpawnIndex(index) {
-  const i = Math.max(0, Math.floor(Number(index) || 0))
-  return CHICKEN_COAT_CYCLE[i % CHICKEN_COAT_CYCLE.length]
-}
+export const CHICKEN_FALLBACK_COLOUR = CHICKEN_COATS.yellow.fallback
 
 const U0 = 0
 const U1 = 0.5

@@ -8,7 +8,24 @@
  */
 
 import * as THREE from 'three'
+import {
+  CAT_COATS,
+  CAT_COAT_CYCLE,
+  catCoatForSpawnIndex,
+  catCoatLabel,
+  catCoatOf,
+  normalizeCatCoatId,
+} from '../data/adaptation/exploration/animalCoats.js'
 import { applyAtlasUvs } from './horseTexture.js'
+
+export {
+  CAT_COATS,
+  CAT_COAT_CYCLE,
+  catCoatForSpawnIndex,
+  catCoatLabel,
+  catCoatOf,
+  normalizeCatCoatId,
+}
 
 const CAT_TEX_VERSION = 3
 
@@ -16,36 +33,7 @@ export function catTextureUrl(coatId) {
   return `/art/models/creatures/cat-${normalizeCatCoatId(coatId)}.png?v=${CAT_TEX_VERSION}`
 }
 
-export const CAT_FALLBACK_COLOUR = 0xc48a3a
-
-export const CAT_COATS = Object.freeze({
-  orange: Object.freeze({ id: 'orange', label: 'Orange', fallback: 0xc48a3a }),
-  tabby: Object.freeze({ id: 'tabby', label: 'Tabby', fallback: 0xaa825a }),
-  grey: Object.freeze({ id: 'grey', label: 'Grey', fallback: 0xa0a0a5 }),
-  black: Object.freeze({ id: 'black', label: 'Black', fallback: 0x373432 }),
-  white: Object.freeze({ id: 'white', label: 'White', fallback: 0xf0eee8 }),
-  calico: Object.freeze({ id: 'calico', label: 'Calico', fallback: 0xd29650 }),
-})
-
-export const CAT_COAT_CYCLE = Object.freeze(['orange', 'tabby', 'grey', 'black', 'white', 'calico'])
-
-export function normalizeCatCoatId(coatId) {
-  if (coatId && CAT_COATS[coatId]) return coatId
-  return 'orange'
-}
-
-export function catCoatOf(coatId) {
-  return CAT_COATS[normalizeCatCoatId(coatId)]
-}
-
-export function catCoatLabel(coatId) {
-  return catCoatOf(coatId).label
-}
-
-export function catCoatForSpawnIndex(index) {
-  const i = Math.max(0, Math.floor(Number(index) || 0))
-  return CAT_COAT_CYCLE[i % CAT_COAT_CYCLE.length]
-}
+export const CAT_FALLBACK_COLOUR = CAT_COATS.orange.fallback
 
 const U0 = 0
 const U1 = 0.5
