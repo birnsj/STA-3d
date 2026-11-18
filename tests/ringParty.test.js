@@ -112,7 +112,7 @@ describe('Ring party band (Prototype)', () => {
     }
   })
 
-  it('Fish ranks the party on Fitness + Security when someone has a rod', () => {
+  it('Fish ranks the party on Fitness + Security when the party has a rod', () => {
     const map = createBlankMap({ name: 'Fish Ring', width: 12, height: 12 })
     map.tiles[4][4] = 'water'
     map.tiles[4][5] = 'floor'
@@ -129,23 +129,11 @@ describe('Ring party band (Prototype)', () => {
     })
     const other = makeCharacter({ id: 'beta', name: 'beta', attributes: { fitness: 7 }, disciplines: { security: 1 } })
     let state = createExplorationState(map, [angler, other], 1, { enemiesActive: false })
-    const alpha = state.party.members.alpha
+    // The rod sits in the party bag, not on any one member.
     state = {
       ...state,
       itemInstances: { ...state.itemInstances, rod1: { id: 'rod1', itemId: 'fishingRod', quantity: 1 } },
-      party: {
-        ...state.party,
-        members: {
-          ...state.party.members,
-          alpha: {
-            ...alpha,
-            character: {
-              ...alpha.character,
-              inventory: { ...(alpha.character.inventory ?? { slots: {}, bag: [] }), bag: ['rod1'] },
-            },
-          },
-        },
-      },
+      partyInventory: { bag: [...state.partyInventory.bag, 'rod1'] },
     }
     const spotId = Object.keys(state.fishing.spots)[0]
     assert.ok(spotId)
@@ -154,6 +142,8 @@ describe('Ring party band (Prototype)', () => {
     const entries = byId(view)
     assert.equal(entries.alpha?.available, true)
     assert.equal(entries.alpha?.best, true)
-    assert.equal(entries.beta?.available, false)
+    // Rod is party-shared: beta can Fish as well as alpha.
+    assert.equal(entries.beta?.available, true)
+    assert.equal(entries.beta?.best, false)
   })
 })

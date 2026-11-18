@@ -4,7 +4,6 @@ export const DEFAULT_FISH_IDS = Object.freeze(['fishMinnow', 'fishTrout', 'fishS
 
 const DEFAULT_DIFFICULTY = 2
 const DEFAULT_SIZE = 1
-const DEFAULT_RESPAWN = 45
 
 export function clampDifficulty(value) {
   if (!Number.isFinite(value)) return DEFAULT_DIFFICULTY
@@ -14,11 +13,6 @@ export function clampDifficulty(value) {
 export function clampSize(value) {
   if (!Number.isFinite(value)) return DEFAULT_SIZE
   return Math.min(2, Math.max(0.5, Math.round(value * 100) / 100))
-}
-
-export function clampRespawnSeconds(value) {
-  if (!Number.isFinite(value)) return DEFAULT_RESPAWN
-  return Math.min(600, Math.max(5, Math.round(value)))
 }
 
 export function normalizeCatchPool(raw) {
@@ -32,7 +26,6 @@ export function authoredFishingSpotFields(raw) {
     fishable: raw.fishable !== false,
     difficulty: clampDifficulty(raw.difficulty),
     size: clampSize(raw.size),
-    respawnSeconds: clampRespawnSeconds(raw.respawnSeconds),
     catchPool: normalizeCatchPool(raw.catchPool),
   }
 }

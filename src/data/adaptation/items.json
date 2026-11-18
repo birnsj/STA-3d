@@ -41,6 +41,7 @@
     "dimension": "#9ab6ff"
   },
   "equipSlotsNote": "Approved for the exploration inventory UI (2026-10-17): body, sidearm, scanner, communicator. null = carried in the bag, not equipped.",
+  "sharedNote": "shared: true = party inventory (designer 2026-11-17): fishing rod, caught fish, keys, quest items. Lives in state.partyInventory.bag; any member may use it. Personal bag/slots stay for worn and carried gear.",
   "statDisplay": {
     "note": "Display order and labels for stats. 'bands' turns a numeric value into a word on screen; the number stays the tuning value. Weapon stats (severity, range) are not kept here: combat/weapons.json owns them, linked by itemId, and the display reads them from there.",
     "order": [
@@ -332,6 +333,7 @@
         "mission"
       ],
       "equipSlot": null,
+      "shared": true,
       "sourceType": "original",
       "statsSourceType": "adaptation"
     },
@@ -1471,6 +1473,7 @@
       "description": "A simple rod for catching fish from shore or shallow water.",
       "tags": ["fishing", "tool"],
       "equipSlot": null,
+      "shared": true,
       "sourceType": "original",
       "statsSourceType": "adaptation"
     },
@@ -1483,6 +1486,7 @@
       "description": "A small freshwater fish.",
       "tags": ["food", "fish"],
       "equipSlot": null,
+      "shared": true,
       "sourceType": "original",
       "statsSourceType": "adaptation"
     },
@@ -1495,6 +1499,7 @@
       "description": "A speckled freshwater trout.",
       "tags": ["food", "fish"],
       "equipSlot": null,
+      "shared": true,
       "sourceType": "original",
       "statsSourceType": "adaptation"
     },
@@ -1507,6 +1512,7 @@
       "description": "A silver salmon.",
       "tags": ["food", "fish"],
       "equipSlot": null,
+      "shared": true,
       "sourceType": "original",
       "statsSourceType": "adaptation"
     },
@@ -1519,6 +1525,7 @@
       "description": "A sturdy freshwater bass.",
       "tags": ["food", "fish"],
       "equipSlot": null,
+      "shared": true,
       "sourceType": "original",
       "statsSourceType": "adaptation"
     }

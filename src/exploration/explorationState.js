@@ -14,7 +14,7 @@ import { tickWorld } from './awarenessTick.js'
 import { applyScenarioTiles, attemptChallenge, challengeFor, createScenario, INTERACT_RANGE, withMap } from './challengeObjects.js'
 import { combatAction, endCombat, MODE, requestCombat, startCombat } from './combatLink.js'
 import { createAmbientState, tickAmbientAnimals } from './ambientAnimals.js'
-import { catchFish, createFishingState, startFishing, tickFishing } from './fishingSpots.js'
+import { cancelFishing, createFishingState, fishRoll, startFishing, tickFishing } from './fishingSpots.js'
 import {
   createMountState,
   dismountHorse,
@@ -29,7 +29,7 @@ import {
 } from './mount.js'
 import { canAct, createPartyState, getMembers, partyReducer } from './partyControl.js'
 import { createPartyKnowledge, updatePartyKnowledge } from './partyKnowledge.js'
-import { scanArea, scanChallenge, scanDestructible, scanGroundItem, scanNpc } from './partyScan.js'
+import { scanArea, scanChallenge, scanDestructible, scanFishingSpot, scanGroundItem, scanNpc } from './partyScan.js'
 import { askNpc } from './partySocial.js'
 import { addLogEntry, createMissionLog, logObjectiveChanges } from './missionLog.js'
 import { foughtNpcIds, isMissionFailed, mustSurviveIds, updateObjectives } from './missionObjectives.js'
@@ -165,7 +165,7 @@ export function createExplorationState(map, characters, seed = 0, { enemiesActiv
     hazardClock: 0,
     // The last challenge attempt, for the interaction panel (attemptChallenge).
     lastTask: null,
-    // Latest fishing splash roll (fishingSpots.js): { key, memberId, spotId, success, successes, difficulty, splashSeconds, momentumSaved }.
+    // Latest fishing roll (fishingSpots.js): { key, memberId, spotId, success, successes, difficulty, momentumSaved, fishId, granted }.
     lastFishing: null,
     // The conversation open now (conversation/conversationRuntime.js), or null.
     conversation: null,
@@ -379,6 +379,8 @@ function reduceExploration(state, action) {
     // { memberId, objectId }: that character scans one challenge object (partyScan.js).
     case 'scanChallenge':
       return state.mode === MODE.COMBAT ? state : scanChallenge(state, action.memberId, action.objectId)
+    case 'scanFishingSpot':
+      return state.mode === MODE.COMBAT ? state : scanFishingSpot(state, action.memberId, action.spotId)
     // { memberId, instanceId }: that character scans one ground inventory prop (partyScan.js).
     case 'scanGroundItem':
       return state.mode === MODE.COMBAT ? state : scanGroundItem(state, action.memberId, action.instanceId)
@@ -474,7 +476,7 @@ function reduceExploration(state, action) {
       if (next !== state) playItemPickup(category)
       return next
     }
-    // { spotId, memberId }: begin fishing at a Fishing Spot (fishingSpots.js). Walks to shore when needed.
+    // { spotId, memberId }: Fish from a ripple (fishingSpots.js). Walks to shore when needed; dice window rolls separately.
     case 'startFishing': {
       if (state.mode === MODE.COMBAT) return state
       const memberId = action.memberId ?? state.party.leaderId
@@ -486,9 +488,13 @@ function reduceExploration(state, action) {
       }
       return next
     }
-    // { spotId }: catch during the splash window.
-    case 'catchFish':
-      return state.mode === MODE.COMBAT ? state : catchFish(state, { spotId: action.spotId })
+    // { spotId, memberId, purchase }: cast roll from the fishing dice window.
+    case 'fishRoll':
+      return state.mode === MODE.COMBAT
+        ? state
+        : fishRoll(state, { spotId: action.spotId, memberId: action.memberId, purchase: action.purchase })
+    case 'cancelFishing':
+      return state.mode === MODE.COMBAT ? state : cancelFishing(state, action.spotId)
     default: {
       // Party orders are frozen while combat runs: the combat screen gives the orders then.
       if (state.mode === MODE.COMBAT) return state

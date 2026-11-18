@@ -228,6 +228,18 @@ function moveSelection(state, target, fresh) {
   return { ...state, members }
 }
 
+// Walk specific members to a point (e.g. the angler to a shore tile). Unlike moveSelection, ignores who is selected.
+function moveMembersTo(state, ids, target) {
+  const list = (ids ?? []).filter((id) => state.members[id] && canAct(state.members[id]))
+  if (!list.length || !target) return state
+  let members = { ...state.members }
+  for (const id of list) {
+    const member = members[id]
+    members[id] = pointOrder(state.map, member, target, distance(member.position, target) > MOVE.runDistance)
+  }
+  return { ...state, members }
+}
+
 function stopSelection(state) {
   let members = null
   for (const id of state.memberIds) {
@@ -588,8 +600,11 @@ export function partyReducer(state, action) {
     case 'setSpacing':
       return { ...state, spacing: action.spacing }
     // target: a world point in tiles. fresh: a new click or press (false while the mouse is held and dragged).
+    // memberIds: when set, only those characters walk (fishing shore approach); otherwise the selection moves as a group.
     case 'moveTo':
-      return moveSelection(state, action.target, action.fresh !== false)
+      return action.memberIds?.length
+        ? moveMembersTo(state, action.memberIds, action.target)
+        : moveSelection(state, action.target, action.fresh !== false)
     // Clear move / follow orders for the selection (and anyone still following them). Used when a gamepad stick releases.
     case 'stopMove':
       return stopSelection(state)

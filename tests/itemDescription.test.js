@@ -36,7 +36,8 @@ describe('item description resolution', () => {
       const hidden = groundItemInfo(state, 'item-9')
       assert.equal(hidden.title, 'Renamed drop', itemId)
       assert.equal(hidden.tips.includes(catalogue), false, itemId)
-      const scanned = groundItemInfo({ ...state, objectScans: { 'item-9': { success: true, memberId: 'alpha' } } }, 'item-9')
+      // Readings show only on the Scan button's hover (includeScan), never on the plain side card.
+      const scanned = groundItemInfo({ ...state, objectScans: { 'item-9': { success: true, memberId: 'alpha' } } }, 'item-9', { includeScan: true })
       assert.equal(scanned.title, 'Renamed drop', itemId)
       assert.equal(scanned.tips.includes(catalogue), true, itemId)
     }
@@ -50,7 +51,7 @@ describe('item description resolution', () => {
     try {
       assert.equal(groundItemViews(state)[0].description, 'Edited catalogue text.')
       assert.equal(new GroundItem('item-9').view(state).description, 'Edited catalogue text.')
-      const card = groundItemInfo({ ...state, objectScans: { 'item-9': { success: true, memberId: 'alpha' } } }, 'item-9')
+      const card = groundItemInfo({ ...state, objectScans: { 'item-9': { success: true, memberId: 'alpha' } } }, 'item-9', { includeScan: true })
       assert.equal(card.title, 'Field kit')
       assert.ok(card.tips.includes('Edited catalogue text.'))
       assert.equal(card.tips.includes(original), false)

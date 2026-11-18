@@ -5,8 +5,12 @@ import { getCharacterWeapons } from '../src/combat/weaponSystem.js'
 import { getEquippedItems } from '../src/rules/equipment.js'
 import {
   canPlaceAt,
+  canReceiveItem,
+  PARTY_BAG_CAPACITY,
   dropItem,
   equipItem,
+  grantItemToMember,
+  partyOwnsItemId,
   pickupItem,
   resetInstanceIds,
   seedMemberInventory,
@@ -58,7 +62,12 @@ describe('seedPartyInventory', () => {
     assert.ok(inventory.slots.sidearm)
     assert.ok(inventory.slots.scanner)
     assert.ok(inventory.slots.communicator)
-    assert.ok(inventory.bag.length >= 1, 'medkit and mission object in bag')
+    assert.ok(inventory.bag.some((id) => state.itemInstances[id]?.itemId === 'medkit'), 'medkit in personal bag')
+    assert.ok(
+      state.partyInventory.bag.some((id) => state.itemInstances[id]?.itemId === 'missionObject'),
+      'mission object in party bag',
+    )
+    assert.ok(!inventory.bag.some((id) => state.itemInstances[id]?.itemId === 'missionObject'))
     const equippedIds = getEquippedItems(state.party.members.a.character).map((item) => item.id)
     assert.ok(equippedIds.includes('phaserType2'))
     assert.ok(!equippedIds.includes('medkit'), 'bag items are not equipped')
@@ -143,19 +152,117 @@ describe('slot swaps', () => {
 
 describe('bag cells', () => {
   it('drops onto the cell under the pointer instead of the first open cell', () => {
-    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }] })])
+    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }, { itemId: 'hypospray' }] })])
     const bag = state.party.members.a.character.inventory.bag
     const medkitId = bag.find((id) => state.itemInstances[id].itemId === 'medkit')
-    const missionId = bag.find((id) => state.itemInstances[id].itemId === 'missionObject')
-    state = transferItem(state, { instanceId: missionId, toMemberId: 'a', toBagIndex: 4 })
+    const hypoId = bag.find((id) => state.itemInstances[id].itemId === 'hypospray')
+    state = transferItem(state, { instanceId: hypoId, toMemberId: 'a', toBagIndex: 4 })
     const placed = state.party.members.a.character.inventory.bag
     assert.equal(placed[0], medkitId)
     assert.equal(placed[1] ?? null, null)
-    assert.equal(placed[4], missionId)
+    assert.equal(placed[4], hypoId)
     state = transferItem(state, { instanceId: medkitId, toMemberId: 'a', toBagIndex: 4 })
     const swapped = state.party.members.a.character.inventory.bag
-    assert.equal(swapped[0], missionId)
+    assert.equal(swapped[0], hypoId)
     assert.equal(swapped[4], medkitId)
+  })
+})
+
+describe('party shared inventory', () => {
+  it('seeds missionObject in the party bag and keeps personal gear personal', () => {
+    const state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }] })])
+    assert.ok(partyOwnsItemId(state, 'missionObject'))
+    assert.ok(state.partyInventory.bag.some((id) => state.itemInstances[id]?.itemId === 'missionObject'))
+    assert.ok(state.party.members.a.character.inventory.bag.some((id) => state.itemInstances[id]?.itemId === 'medkit'))
+  })
+
+  it('picks shared ground items into the party bag', () => {
+    let state = partyState([makeCharacter({ id: 'a', equipment: [] })])
+    const missionId = state.partyInventory.bag.find((id) => state.itemInstances[id]?.itemId === 'missionObject')
+    state = dropItem(state, { instanceId: missionId, position: { x: 2, y: 2 } })
+    assert.ok(state.groundItems[missionId])
+    state = pickupItem(state, { instanceId: missionId, memberId: 'a' })
+    assert.ok(!state.groundItems[missionId])
+    assert.ok(state.partyInventory.bag.includes(missionId))
+    assert.ok(!state.party.members.a.character.inventory.bag.includes(missionId))
+  })
+
+  it('grants a fishing rod into the party bag', () => {
+    let state = partyState([makeCharacter({ id: 'a', equipment: [] })])
+    const result = grantItemToMember(state, 'a', 'fishingRod')
+    assert.equal(result.ok, true)
+    state = result.state
+    assert.ok(partyOwnsItemId(state, 'fishingRod'))
+    assert.ok(state.partyInventory.bag.includes(result.instanceId))
+    assert.ok(!state.party.members.a.character.inventory.bag.includes(result.instanceId))
+  })
+
+  it('moves shared items between party-bag cells and swaps on an occupied cell', () => {
+    let state = partyState([makeCharacter({ id: 'a', equipment: [] })])
+    const rod = grantItemToMember(state, 'a', 'fishingRod')
+    state = rod.state
+    const missionId = state.partyInventory.bag.find((id) => state.itemInstances[id].itemId === 'missionObject')
+    const rodId = rod.instanceId
+    const missionCell = state.partyInventory.bag.indexOf(missionId)
+    const rodCell = state.partyInventory.bag.indexOf(rodId)
+    state = transferItem(state, { instanceId: rodId, toPartyBag: true, toBagIndex: missionCell })
+    assert.equal(state.partyInventory.bag[missionCell], rodId)
+    assert.equal(state.partyInventory.bag[rodCell], missionId)
+    state = transferItem(state, { instanceId: rodId, toPartyBag: true, toBagIndex: 9 })
+    assert.equal(state.partyInventory.bag[9], rodId)
+    assert.equal(state.partyInventory.bag[missionCell] ?? null, null)
+  })
+
+  it('a shared item dropped on a personal slot, bag cell or member still lands in the party bag', () => {
+    let state = partyState([makeCharacter({ id: 'a', equipment: [] }), makeCharacter({ id: 'b', equipment: [] })])
+    const missionId = state.partyInventory.bag[0]
+    const before = state
+    // Already in the party bag: personal targets are a no-op, never a move into a personal bag.
+    state = transferItem(state, { instanceId: missionId, toMemberId: 'b', toBagIndex: 3 })
+    assert.equal(state, before)
+    state = transferItem(state, { instanceId: missionId, toMemberId: 'a', toSlot: 'sidearm' })
+    assert.equal(state, before)
+    state = dropItem(state, { instanceId: missionId, position: { x: 2, y: 2 } })
+    state = transferItem(state, { instanceId: missionId, toMemberId: 'b', toBagIndex: 3 })
+    assert.ok(state.partyInventory.bag.includes(missionId))
+    assert.ok(!state.party.members.b.character.inventory.bag.includes(missionId))
+  })
+
+  it('canReceiveItem gates shared items on party-bag room and personal items on the member bag', () => {
+    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }] })])
+    const medkitId = state.party.members.a.character.inventory.bag.find((id) => state.itemInstances[id].itemId === 'medkit')
+    const missionId = state.partyInventory.bag[0]
+    assert.equal(canReceiveItem(state, 'a', medkitId), true)
+    assert.equal(canReceiveItem(state, 'a', missionId), true)
+    // Put the mission object on the ground, then fill every party-bag cell with other items.
+    state = dropItem(state, { instanceId: missionId, position: { x: 2, y: 2 } })
+    assert.ok(state.groundItems[missionId])
+    assert.equal(canReceiveItem(state, 'a', missionId), true)
+    const full = Array.from({ length: PARTY_BAG_CAPACITY }, (_, i) => `fill-${i}`)
+    state = { ...state, partyInventory: { bag: full } }
+    assert.equal(canReceiveItem(state, 'a', missionId), false)
+    assert.equal(canReceiveItem(state, 'a', medkitId), true)
+    // Pickup with a full party bag leaves the item on the ground.
+    const stuck = pickupItem(state, { instanceId: missionId, memberId: 'a' })
+    assert.equal(stuck, state)
+    assert.ok(stuck.groundItems[missionId])
+  })
+
+  it('does not mint instances for shared items that overflow the party bag', () => {
+    const rods = Array.from({ length: PARTY_BAG_CAPACITY + 3 }, () => ({ itemId: 'fishingRod' }))
+    const state = partyState([makeCharacter({ id: 'a', equipment: rods })])
+    const issued = Object.values(state.itemInstances).filter((entry) => entry.itemId === 'fishingRod')
+    assert.equal(issued.length, PARTY_BAG_CAPACITY)
+    assert.equal(state.partyInventory.bag.filter(Boolean).length, PARTY_BAG_CAPACITY)
+    assert.equal(Object.keys(state.itemInstances).length, state.partyInventory.bag.length)
+  })
+
+  it('refuses to place personal gear in the party bag', () => {
+    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }] })])
+    const medkitId = state.party.members.a.character.inventory.bag.find((id) => state.itemInstances[id].itemId === 'medkit')
+    const before = state
+    state = transferItem(state, { instanceId: medkitId, toPartyBag: true })
+    assert.equal(state, before)
   })
 })
 
@@ -232,20 +339,20 @@ describe('ground drop and pickup', () => {
   it('validates an occupied bag swap and preserves the ground support', () => {
     const tiles = Array.from({ length: 8 }, () => Array(8).fill('floor'))
     tiles[3][3] = 'crate'
-    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }] })], {
+    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }, { itemId: 'hypospray' }] })], {
       width: 8,
       height: 8,
       tiles,
       stackOver: {},
     })
     const medkitId = Object.keys(state.itemInstances).find((id) => state.itemInstances[id].itemId === 'medkit')
-    const missionId = Object.keys(state.itemInstances).find((id) => state.itemInstances[id].itemId === 'missionObject')
+    const hypoId = Object.keys(state.itemInstances).find((id) => state.itemInstances[id].itemId === 'hypospray')
     const support = { kind: 'tile', tile: { x: 3, y: 3 } }
     state = dropItem(state, { instanceId: medkitId, position: { x: 3.5, y: 3.5 }, support })
-    const missionIndex = state.party.members.a.character.inventory.bag.indexOf(missionId)
-    state = transferItem(state, { instanceId: medkitId, toMemberId: 'a', toBagIndex: missionIndex })
-    assert.equal(state.party.members.a.character.inventory.bag[missionIndex], medkitId)
-    assert.deepEqual(state.groundItems[missionId]?.support, support)
+    const hypoIndex = state.party.members.a.character.inventory.bag.indexOf(hypoId)
+    state = transferItem(state, { instanceId: medkitId, toMemberId: 'a', toBagIndex: hypoIndex })
+    assert.equal(state.party.members.a.character.inventory.bag[hypoIndex], medkitId)
+    assert.deepEqual(state.groundItems[hypoId]?.support, support)
   })
 
   it('transferItem from the ground into another member bag (world drop-on-figure)', () => {
@@ -263,9 +370,9 @@ describe('ground drop and pickup', () => {
 
   it('fills the tile under the drop and places the next item on a neighbouring tile', () => {
     assert.deepEqual(snapItemPosition({ x: 2.04, y: 2.11 }), { x: 2.03125, y: 2.125 })
-    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }, { itemId: 'missionObject' }] })])
+    let state = partyState([makeCharacter({ id: 'a', equipment: [{ itemId: 'medkit' }] })])
     const medkitId = Object.keys(state.itemInstances).find((id) => state.itemInstances[id].itemId === 'medkit')
-    const missionId = Object.keys(state.itemInstances).find((id) => state.itemInstances[id].itemId === 'missionObject')
+    const missionId = state.partyInventory.bag.find((id) => state.itemInstances[id].itemId === 'missionObject')
     state = dropItem(state, { instanceId: medkitId, position: { x: 2.04, y: 2.11 } })
     assert.deepEqual(state.groundItems[medkitId].position, { x: 2.5, y: 2.5 })
     state = dropItem(state, { instanceId: missionId, position: { x: 2.4, y: 1.2 } })

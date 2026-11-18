@@ -67,6 +67,8 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
   const [notice, setNotice] = useState(null)
   // Remounts the board (re-centring the camera) whenever a different map is loaded.
   const [boardKey, setBoardKey] = useState(0)
+  // One auto-open of the most recent map when Dev Edit starts (skipped when none, or if the user already edited).
+  const autoloadDoneRef = useRef(false)
   useEffect(() => {
     listMaps()
       .then((entries) => {
@@ -120,6 +122,35 @@ export default function useMapDocument({ askConfirm, askText, setStatus }) {
     setStatus(message)
     setBoardKey((key) => key + 1)
   }
+
+  // After the maps/ list arrives, open the top Open Recent entry once (same list File → Open Recent uses).
+  useEffect(() => {
+    if (autoloadDoneRef.current || !maps.length) return
+    const lastId = recentMaps[0]?.id
+    if (!lastId || !maps.some((entry) => entry.id === lastId)) {
+      autoloadDoneRef.current = true
+      return
+    }
+    autoloadDoneRef.current = true
+    const operation = beginMapDocumentOperation(guardRef.current)
+    loadMap(lastId)
+      .then((loaded) => {
+        if (!isMapDocumentOperationCurrent(guardRef.current, operation)) return
+        noteMapDocumentChange(guardRef.current)
+        setHistory(createMapHistory(loaded))
+        setGenerated(false)
+        setCleanMap(loaded)
+        setFileId(lastId)
+        setDirty(false)
+        setStatus(`Loaded ${loaded.name}.`)
+        setBoardKey((key) => key + 1)
+        setRecentMaps(noteRecentMap({ id: lastId, name: loaded.name }))
+      })
+      .catch((error) => {
+        setRecentMaps(removeRecentMap(lastId))
+        setStatus(`Could not load ${lastId}: ${error.message}`)
+      })
+  }, [maps, recentMaps, setStatus])
 
   const onNew = async () => {
     const operation = beginMapDocumentOperation(guardRef.current)

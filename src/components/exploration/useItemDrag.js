@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { playItemPickup } from '../../audio/uiSounds.js'
-import { bagFreeSlots, canPlaceAt, resolveItem } from '../../rules/inventory.js'
+import { canPlaceAt, canReceiveItem, resolveItem } from '../../rules/inventory.js'
 import { zOf } from '../../rules/placement.js'
 import { inventoryDropAt, syncInventoryGhostPosition, worldGrabOffset } from './inventoryDrag.js'
 
@@ -70,12 +70,12 @@ export default function useItemDrag({ state, dispatch }) {
       itemId: resolved?.def.id ?? null,
       boardPoint,
     })
-    // Prefer giving the item to a party member under the pointer (green ring) when their bag has room.
+    // Prefer giving the item to a party member under the pointer (green ring) when it will fit: their own bag,
+    // or the party bag for a shared item (canReceiveItem).
     let dropMemberId = null
     const memberId = helpers?.memberAt?.(clientX, clientY) ?? null
-    if (memberId) {
-      const member = exploreStateRef.current.party?.members?.[memberId]
-      if (member?.character?.inventory && bagFreeSlots(member.character) > 0) dropMemberId = memberId
+    if (memberId && dragging?.instanceId && canReceiveItem(exploreStateRef.current, memberId, dragging.instanceId)) {
+      dropMemberId = memberId
     }
     // support / z come from canPlaceAt (placement.js); floor drops leave them null / 0.
     // boardPoint goes with the drop: the resolved corner sits on a tile edge, and a second snap without the
@@ -213,15 +213,21 @@ export default function useItemDrag({ state, dispatch }) {
             from?.location === 'bag' &&
             from.memberId === invDrop.memberId &&
             (invDrop.bagIndex == null || from.bagIndex === invDrop.bagIndex)
+          const samePartyBag =
+            invDrop.kind === 'partyBag' &&
+            from?.location === 'partyBag' &&
+            (invDrop.bagIndex == null || from.bagIndex === invDrop.bagIndex)
           const sameSlot =
             invDrop.kind === 'slot' && from?.location === 'slot' && from.memberId === invDrop.memberId && from.slot === invDrop.slot
-          if (!sameBag && !sameSlot) {
+          if (!sameBag && !samePartyBag && !sameSlot) {
             dispatch({
               type: 'transferItem',
               instanceId,
-              toMemberId: invDrop.memberId,
+              toMemberId: invDrop.memberId ?? null,
               toSlot: invDrop.kind === 'slot' ? invDrop.slot : null,
-              toBagIndex: invDrop.kind === 'bag' ? (invDrop.bagIndex ?? null) : null,
+              toBagIndex:
+                invDrop.kind === 'bag' || invDrop.kind === 'partyBag' ? (invDrop.bagIndex ?? null) : null,
+              toPartyBag: invDrop.kind === 'partyBag',
               // Grab chirp already played when the drag began; drop plays on successful place.
               skipPickupSound: true,
               playDropSound: true,

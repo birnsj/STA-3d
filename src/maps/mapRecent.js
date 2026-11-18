@@ -1,4 +1,4 @@
-// Recent maps for Dev Edit File → Open Recent (localStorage; presentation only).
+// Recent maps for Dev Edit: File → Open Recent, and auto-load of the last map when the editor opens (localStorage).
 
 const STORAGE_KEY = 'sta.mapEditor.recentMaps'
 const MAX_RECENT = 10

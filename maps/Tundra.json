@@ -196,11 +196,11 @@
   },
   "groundItemPlacements": [
     {
-      "id": "stackBoxGreen1",
-      "itemId": "stackBoxGreen",
+      "id": "fishingRod1",
+      "itemId": "fishingRod",
       "position": [
-        30.5,
-        19.5
+        33,
+        21
       ]
     }
   ],

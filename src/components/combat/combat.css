@@ -426,11 +426,24 @@
   animation: unit-ring-pulse 1.2s ease-in-out infinite;
 }
 
+/* Softer pulse for a successful Scan reading (hover the button for the card). */
+.unit-ring-button.is-pulsing.is-pulse-dim circle {
+  animation: unit-ring-pulse-dim 1.8s ease-in-out infinite;
+}
+
 @keyframes unit-ring-pulse {
   50% {
     stroke: var(--yellow);
     stroke-width: 2.5;
     filter: drop-shadow(0 0 4px rgba(255, 204, 51, 0.85));
+  }
+}
+
+@keyframes unit-ring-pulse-dim {
+  50% {
+    stroke: rgba(255, 204, 51, 0.55);
+    stroke-width: 1.75;
+    filter: drop-shadow(0 0 2px rgba(255, 204, 51, 0.35));
   }
 }
 
@@ -440,6 +453,10 @@
   .unit-ring-roll.is-pulsing .unit-ring-roll-band {
     animation: none;
     stroke: var(--yellow);
+  }
+
+  .unit-ring-button.is-pulsing.is-pulse-dim circle {
+    stroke: rgba(255, 204, 51, 0.55);
   }
 }
 

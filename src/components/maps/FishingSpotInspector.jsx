@@ -57,20 +57,8 @@ export default function FishingSpotInspector({
           />
           <span className="me-text">{Number(spot.size ?? 1).toFixed(2)}</span>
         </label>
-        <label className="me-field">
-          Respawn (seconds)
-          <input
-            className="me-name"
-            type="number"
-            min={5}
-            max={600}
-            step={1}
-            value={spot.respawnSeconds ?? 45}
-            onChange={(event) => onChange({ respawnSeconds: Number(event.target.value) })}
-          />
-        </label>
         <fieldset className="me-fieldset">
-          <legend>Catch pool</legend>
+          <legend>Fish species (a catch is picked at random from these)</legend>
           {fishItems.length === 0 && <p className="me-text">No fish items in the catalogue yet.</p>}
           {fishItems.map((item) => (
             <label key={item.id} className="me-check">

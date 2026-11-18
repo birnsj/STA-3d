@@ -6,9 +6,13 @@ Open design decisions for the designer. Each entry separates what the book says 
 
 ## Open
 
-### Fishing catch skill and roll (implemented 2026-11-17)
+### Fishing ring catch (implemented 2026-11-17)
 
-Book: no fishing rule; Security includes survival (Core p.92); Fitness is physical (p.89). Prototype: Fitness + Security. Passive splash-window scaling around reference skill 11, plus an automatic 2d20 roll when the splash starts (Difficulty = spot difficulty). Success widens the window / Catch button and can save Momentum; failure keeps the skill window. Player still clicks Catch. Tuning in `fishing.json` is first-pass — open for review (attribute pairing, focuses, whether success should auto-catch, bought dice). Where: `src/exploration/fishingSpots.js`, `fishing.json`, `docs/prototype-rules.md` (Exploration).
+Book: no fishing rule; Security includes survival (Core p.92); Fitness is physical (p.89). Prototype (designer 2026-11-17): ripple ring → Scan + Fish + party band → Fish opens the dice window → Fitness + Security roll → success puts shared fish in the party bag; no rod dims Fish ("no rod."); ripple stays. Open for review: attribute pairing, focuses, whether a failed roll should have a cooldown. Where: `src/exploration/fishingSpots.js`, `FishingRollWindow.jsx`, `fishing.json`, `docs/prototype-rules.md` (Exploration).
+
+### Party shared inventory (implemented 2026-11-17)
+
+Designer direction: fishing rod, keys, quest items, and caught fish are party inventory — anyone may use them; personal inventory stays for worn/carried gear. **Implemented:** catalogue `shared: true` (`items.json`); `state.partyInventory.bag` (12 cells); seed/pickup/grant/transfer route shared items there; Inventory panel Party section; fishing catch grants into the party bag. Playtest `missionObject` seeds in the party bag. Open: pickup/drop authority polish, more shared catalogue items, keys. Where: `rules/inventory.js`, `InventoryPanel.jsx`, `fishingSpots.js`, `docs/prototype-rules.md` (Exploration inventory / Fishing).
 
 ### Outdoor horse mount (implemented 2026-11-14)
 
@@ -86,7 +90,7 @@ The expansion was built from the approved plan before the designer answered its 
 
 **Decided for this phase:** floating inventory over exploration (not full-screen); STA-aligned slots `body`, `sidearm`, `scanner`, `communicator` plus a carried bag (not a ten-slot fantasy layout); one continuous cursor-as-item drag across inventory, equipment slots, characters, and the world; a drop uses the picture's pixel size as its footprint (designer 2026-10-22); session-only inventory/ground state; window position in localStorage. Open with B or the Formation panel button. Where: `src/rules/inventory.js`, `InventoryPanel.jsx`, `docs/prototype-rules.md` (Equipment).
 
-**Implementer picks, for review:** bag capacity 24; bag weapons unusable until equipped; one playtest `missionObject` seeded on the lead character; world props use `worldImage` (inventory uses `icon`); ground items and challenge objects show name tags only on mouseover (designer request 2026-10-17); ground items keep a larger grab hit area; Pick Up ring remains as a secondary path (left-drag grabs directly).
+**Implementer picks, for review:** personal bag capacity 48 (6×8); party bag capacity 12; bag weapons unusable until equipped; one playtest `missionObject` seeded in the party bag; world props use `worldImage` (inventory uses `icon`); ground items and challenge objects show name tags only on mouseover (designer request 2026-10-17); ground items keep a larger grab hit area; Pick Up ring remains as a secondary path (left-drag grabs directly).
 
 **Elevated surfaces (implemented 2026-10-22):** same drag lifecycle places items on opt-in tile/item surfaces with derived Z; `stackOver` for crate-on-crate; no free elevation field; shelves/racks deferred until art exists. Where: `src/rules/placement.js`, `docs/world-objects.md`.
 

@@ -8,8 +8,12 @@ import {
   BAG_COLS,
   BAG_VISIBLE_ROWS,
   EQUIP_SLOTS,
+  PARTY_BAG_CAPACITY,
+  PARTY_BAG_VISIBLE_ROWS,
   canEquipToSlot,
   emptyInventory,
+  emptyPartyInventory,
+  isSharedInstance,
   resolveItem,
 } from '../../rules/inventory.js'
 import CombatPortrait from '../combat/CombatPortrait.jsx'
@@ -25,7 +29,7 @@ const SLOT_LABELS = {
   communicator: 'Communicator',
 }
 
-const DEFAULT_SIZE = { width: 320, height: 440 }
+const DEFAULT_SIZE = { width: 320, height: 520 }
 const MARGIN = 8
 // Clear of the left party rail (same inset as the character sheet).
 const DEFAULT_LEFT = 8 + 178 + 12
@@ -69,21 +73,22 @@ function itemTipTarget(target) {
   return target.closest('[data-item-tip]')
 }
 
-function ItemCell({ def, quantity, selected, invalid, dimmed, onPointerDown, bagDrop = null }) {
+function ItemCell({ def, quantity, selected, invalid, dimmed, onPointerDown, bagDrop = null, partyBagDrop = null }) {
   const filled = Boolean(def)
   const draggable = Boolean(def && onPointerDown)
+  const cellDrop = partyBagDrop ? 'partyBag' : bagDrop ? 'bag' : undefined
   // Divs, not disabled buttons: empty cells must not eat clicks, and buttons fight pointer-drag in Electron.
   // Filled cells always take hits across the full box — pointer-events:none punched through to the map SVG.
   // Bag cells are always hit targets so a drop lands on that cell, not the first open one.
   // A carried cell is its own tip target. Equipped cells sit inside the slot that owns data-item-tip.
   return (
     <div
-      className={`inventory-item-cell${selected ? ' is-selected' : ''}${invalid ? ' is-invalid' : ''}${dimmed ? ' is-dimmed' : ''}${filled ? ' is-filled' : ' is-empty'}${draggable ? ' is-draggable' : ''}${bagDrop ? ' is-bag-cell' : ''}`}
-      data-inventory-drop={bagDrop ? 'bag' : undefined}
+      className={`inventory-item-cell${selected ? ' is-selected' : ''}${invalid ? ' is-invalid' : ''}${dimmed ? ' is-dimmed' : ''}${filled ? ' is-filled' : ' is-empty'}${draggable ? ' is-draggable' : ''}${cellDrop ? ' is-bag-cell' : ''}`}
+      data-inventory-drop={cellDrop}
       data-member-id={bagDrop?.memberId}
-      data-bag-index={bagDrop ? bagDrop.bagIndex : undefined}
-      data-item-tip={bagDrop && def ? def.id : undefined}
-      data-item-qty={bagDrop && def ? quantity : undefined}
+      data-bag-index={partyBagDrop ? partyBagDrop.bagIndex : bagDrop ? bagDrop.bagIndex : undefined}
+      data-item-tip={cellDrop && def ? def.id : undefined}
+      data-item-qty={cellDrop && def ? quantity : undefined}
       onPointerDown={
         draggable
           ? (event) => {
@@ -311,6 +316,11 @@ export default function InventoryPanel({
   }
 
   const bagCells = Array.from({ length: BAG_CAPACITY }, (_, index) => inventory.bag[index] ?? null)
+  const partyBag = state.partyInventory ?? emptyPartyInventory()
+  const partyBagCells = Array.from({ length: PARTY_BAG_CAPACITY }, (_, index) => partyBag.bag[index] ?? null)
+  const draggingShared = Boolean(drag?.instanceId && isSharedInstance(state, drag.instanceId))
+  const partyBagDropActive = Boolean(drag && draggingShared)
+  const personalBagDropActive = Boolean(drag && !draggingShared)
 
   return (
     <div
@@ -338,7 +348,7 @@ export default function InventoryPanel({
           <button
             key={entry.id}
             type="button"
-            className={`inventory-party-card${entry.id === member.id ? ' is-selected' : ''}${drag ? ' is-drop-target' : ''}`}
+            className={`inventory-party-card${entry.id === member.id ? ' is-selected' : ''}${personalBagDropActive ? ' is-drop-target' : ''}`}
             data-inventory-drop="party"
             data-member-id={entry.id}
             onClick={() => onViewMember(entry.id)}
@@ -368,7 +378,38 @@ export default function InventoryPanel({
       </div>
 
       <div
-        className={`inventory-bag${drag ? ' is-drop-target' : ''}`}
+        className={`inventory-bag inventory-party-bag${partyBagDropActive ? ' is-drop-target' : ''}${drag && !draggingShared ? ' is-invalid-target' : ''}`}
+        style={{ '--bag-cols': BAG_COLS, '--bag-visible-rows': PARTY_BAG_VISIBLE_ROWS }}
+        data-inventory-drop="partyBag"
+      >
+        <p className="inventory-bag-label">Party</p>
+        <div className="inventory-bag-scroll">
+          <div className="inventory-bag-grid">
+            {partyBagCells.map((instanceId, index) => {
+              const resolved = instanceId ? resolveItem(state, instanceId) : null
+              return (
+                <ItemCell
+                  key={instanceId ?? `party-empty-${index}`}
+                  def={resolved?.def}
+                  quantity={resolved?.instance.quantity ?? 1}
+                  selected={drag?.instanceId === instanceId}
+                  dimmed={Boolean(drag && instanceId && drag.instanceId === instanceId)}
+                  invalid={Boolean(drag && !draggingShared)}
+                  partyBagDrop={{ bagIndex: index }}
+                  onPointerDown={
+                    resolved
+                      ? (event) => beginItemDrag(event, { instanceId, location: 'partyBag', bagIndex: index })
+                      : undefined
+                  }
+                />
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`inventory-bag${personalBagDropActive ? ' is-drop-target' : ''}`}
         style={{ '--bag-cols': BAG_COLS, '--bag-visible-rows': BAG_VISIBLE_ROWS }}
         data-inventory-drop="bag"
         data-member-id={member.id}

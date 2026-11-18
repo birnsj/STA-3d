@@ -28,6 +28,7 @@ import { ActionsToggle, ExplorationActionButtons, ExplorationPartyBar, Formation
 import {
   destructibleInfo,
   destructibleMenuButtons,
+  fishingSpotInfo,
   fishingSpotMenuButtons,
   groundItemInfo,
   groundItemMenuButtons,
@@ -39,6 +40,7 @@ import {
   objectMenuButtons,
   ringPartyBand,
 } from '../components/exploration/explorationRings.js'
+import { FishingPreRollWindow, FishingResultWindow } from '../components/exploration/FishingRollWindow.jsx'
 import ExplorationSetup from '../components/exploration/ExplorationSetup.jsx'
 import useExplorationFootsteps from '../components/exploration/useExplorationFootsteps.js'
 import useExplorationKeys from '../components/exploration/useExplorationKeys.js'
@@ -65,11 +67,13 @@ import { recommendPartyAction } from '../exploration/partyActions.js'
 import { objectFor } from '../world/objects.js'
 import { activeHazards, isStanding } from '../world/environment.js'
 import { hazardChallengeId, isHazardChallengeId } from '../world/EnvironmentalHazard.js'
-import { FISHING_PHASE, fishingShoreTile, fishingSpotViews } from '../exploration/fishingSpots.js'
+import { fishingReadyToRoll, fishingSpotById, fishingSpotViews } from '../exploration/fishingSpots.js'
 import { canMountHorse, horseById } from '../exploration/mount.js'
 import { canAct, getMembers } from '../exploration/partyControl.js'
 import { isVisibleToParty } from '../exploration/partyKnowledge.js'
-import { bagFreeSlots, groundItemViews } from '../rules/inventory.js'
+import { fishingScanId } from '../exploration/partyScan.js'
+import { isDestructibleScanned } from '../world/destructibleScan.js'
+import { canReceiveItem, groundItemViews } from '../rules/inventory.js'
 import { groundItemFor } from '../world/GroundItem.js'
 import { weatherFor } from '../maps/mapWeather.js'
 import { npcButtonPerformer } from '../exploration/ringParty.js'
@@ -195,6 +199,9 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   // UI state: floating inventory (I, also B); position remembered in localStorage.
   const [inventoryOpen, setInventoryOpen] = useState(false)
   const [inventoryViewId, setInventoryViewId] = useState(null)
+  // UI state: fishing dice window ({ spotId, memberId }) after Roll, or result after fishRoll.
+  const [fishingRoll, setFishingRoll] = useState(null)
+  const [fishingResultOpen, setFishingResultOpen] = useState(false)
   // UI state: dragging an item between the inventory panel and the world (see useItemDrag).
   const {
     itemDrag,
@@ -306,18 +313,6 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     .filter(Boolean)
   const hazardInReachIds = hazardChallenges.filter((object) => object.membersInRange(party).length > 0).map((object) => object.id)
   const fishingViews = fishingSpotViews(state)
-  const fishingReachableIds = fishingViews
-    .filter((spot) =>
-      getMembers(party).some((member) => {
-        if (!canAct(member)) return false
-        return Math.hypot(member.position.x - spot.position.x, member.position.y - spot.position.y) <= INTERACT_RANGE
-      }),
-    )
-    .map((spot) => spot.id)
-  const catchSpotRaw = Object.values(state.fishing?.spots ?? {}).find((spot) => spot.phase === FISHING_PHASE.splash && spot.visible !== false) ?? null
-  const catchSpot = catchSpotRaw
-    ? { ...catchSpotRaw, catchEase: catchSpotRaw.catchEase ?? fishingViews.find((view) => view.id === catchSpotRaw.id)?.catchEase ?? 1 }
-    : null
   const inReachIds = [...objectsInReach(state, party.memberIds).map((definition) => definition.id), ...hazardInReachIds]
   // An object whose approaches are all still locked can be clicked too, to see what it would take.
   const reachableIds = inReachIds.filter((id) => challengeFor(state, id).listedActions(state).length > 0)
@@ -332,7 +327,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     .filter((record) => isStanding(record) && record.attackable)
     .map((record) => ({ id: record.id, name: record.name, position: record.position }))
   // An object's panel or a conversation is open: other rings and the action buttons stay closed meanwhile.
-  const panelOpen = Boolean(openId) || talking
+  const panelOpen = Boolean(openId) || talking || Boolean(fishingRoll && !fishingRoll.pending) || fishingResultOpen
   const talkable = talking ? [] : npcsInTalkRange(state, party.memberIds)
   // UI state: talking to an NPC, now or once the party has walked over (see useTalkTo).
   const { talkError, talkTo, talkWhenInReach, cancelPendingTalk } = useTalkTo({ state, dispatch, talkable, onOpened: closeInteraction })
@@ -394,11 +389,10 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     closeMenu,
     closeAllMenus,
   } = useRingMenus()
+  // UI state: Fish armed on the open ripple ring (clears when the ring closes or another ripple opens).
+  const [fishingAction, setFishingAction] = useResettableState(null, menuFishingId)
   // UI state: whether the open NPC's Info card shows; the NPC whose Attack is waiting for confirmation.
   const [npcInfoOpen, setNpcInfoOpen] = useState(false)
-  // Destructible Structure / hazard card beside the ring (off by default so explosives don't cover the board).
-  // Closed again whenever a different destructible's ring opens.
-  const [destructibleInfoOpen, setDestructibleInfoOpen] = useResettableState(false, menuDestructibleId)
   const [confirmAttackId, setConfirmAttackId] = useState(null)
   // UI state, for the open NPC or object ring (ringKey): the button last hovered and the member picked on its party band.
   // Opening another ring starts both afresh.
@@ -492,11 +486,11 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       return (
         ordered.find((id) => {
           const member = party.members[id]
-          return member && canAct(member) && bagFreeSlots(member.character) > 0
+          return member && canAct(member) && canReceiveItem(state, id, instanceId)
         }) ?? null
       )
     },
-    [party.leaderId, party.members, party.selectedIds, state.groundItems],
+    [party.leaderId, party.members, party.selectedIds, state],
   )
 
   const requestPickupGroundItem = useCallback(
@@ -552,14 +546,14 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       return
     }
     const member = party.members[pendingPickup.memberId]
-    if (!member || !canAct(member) || bagFreeSlots(member.character) < 1) {
+    if (!member || !canAct(member) || !canReceiveItem(state, pendingPickup.memberId, pendingPickup.instanceId)) {
       setPendingPickup(null)
       return
     }
     if (!groundItemFor(pendingPickup.instanceId).inPickupRange({ groundItems: state.groundItems }, member.position)) return
     setPendingPickup(null)
     dispatch({ type: 'pickupItem', instanceId: pendingPickup.instanceId, memberId: pendingPickup.memberId })
-  }, [dispatch, party.members, pendingPickup, state.groundItems, state.lastCombat?.id])
+  }, [dispatch, party.members, pendingPickup, state])
   useEffect(() => {
     if (!pendingMount) return
     if (pendingMount.combatId !== (state.lastCombat?.id ?? null)) {
@@ -580,6 +574,31 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     setPendingMount(null)
     dispatch({ type: 'mountHorse', memberId: pendingMount.memberId, horseId: pendingMount.horseId })
   }, [dispatch, party.members, pendingMount, state, state.lastCombat?.id])
+  // Pending Fish walk: open the dice window once the angler reaches the shore.
+  useEffect(() => {
+    if (!fishingRoll?.pending) return
+    if (!fishingReadyToRoll(state, fishingRoll.spotId, fishingRoll.memberId)) return
+    setFishingRoll({
+      spotId: fishingRoll.spotId,
+      memberId: fishingRoll.memberId,
+      baselineKey: fishingRoll.baselineKey ?? state.lastFishing?.key ?? null,
+    })
+  }, [fishingRoll, state])
+  // After fishRoll lands a new lastFishing, show the result window.
+  useEffect(() => {
+    if (!fishingRoll || fishingRoll.pending) return
+    const last = state.lastFishing
+    if (!last?.result || last.spotId !== fishingRoll.spotId) return
+    if (last.key === fishingRoll.baselineKey) return
+    setFishingRoll(null)
+    setFishingResultOpen(true)
+  }, [fishingRoll, state.lastFishing])
+  // The approach was abandoned (blocked path, angler down): drop the pending walk so the ring can open again.
+  useEffect(() => {
+    if (!fishingRoll?.pending) return
+    if (fishingSpotById(state, fishingRoll.spotId)?.session) return
+    setFishingRoll(null)
+  }, [fishingRoll, state])
   /* eslint-enable react/set-state-in-effect */
   const setLeader = useCallback((id) => dispatch({ type: 'setLeader', id }), [dispatch])
   const setFormation = useCallback((formationId) => dispatch({ type: 'setFormation', formationId }), [dispatch])
@@ -603,10 +622,15 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     setPendingPickup(null)
     setPendingMount(null)
     dispatch({ type: 'clearPendingMount' })
+    setFishingRoll((current) => {
+      if (current) dispatch({ type: 'cancelFishing', spotId: current.spotId })
+      return null
+    })
+    setFishingResultOpen(false)
     setLogOpen(false)
     setInventoryOpen(false)
     if (talking) dispatch({ type: 'conversationLeave' })
-  }, [cancelPendingTalk, clearItemDrag, closeAllMenus, closeInteraction, dispatch, talking])
+  }, [cancelPendingTalk, clearItemDrag, closeAllMenus, closeInteraction, dispatch, itemDragRef, talking])
 
   const toggleSheet = useCallback(() => setSheetOpen((open) => !open), [])
   const toggleInventory = useCallback(() => {
@@ -651,9 +675,14 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
     cancelPendingTalk()
     setPendingPickup(null)
     setPendingMount(null)
+    if (fishingRoll) {
+      dispatch({ type: 'cancelFishing', spotId: fishingRoll.spotId })
+      setFishingRoll(null)
+    }
+    setFishingResultOpen(false)
   }
 
-  // Gamepad: left stick / D-pad move the party; right stick pans (useCamera); A Catch or re-follow; B Esc; X sheet; Y bag; LB/RB party; Start log; Select mount.
+  // Gamepad: left stick / D-pad move the party; right stick pans (useCamera); A re-follow; B Esc; X sheet; Y bag; LB/RB party; Start log; Select mount.
   useGamepadMove({
     enabled: beamPhase === 'done' && !inCombat && !talking,
     getLeaderPosition: () => party.members[party.leaderId]?.position ?? null,
@@ -663,10 +692,6 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   useGamepadActions({
     enabled: beamPhase === 'done' && !inCombat,
     onConfirm: () => {
-      if (catchSpot) {
-        dispatch({ type: 'catchFish', spotId: catchSpot.id })
-        return
-      }
       requestCameraFollow()
     },
     onCancel: escapeExploration,
@@ -713,6 +738,10 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
   const menuGroundItem =
     menuGroundItemId && !inCombat && !panelOpen ? (groundViews.find((view) => view.id === menuGroundItemId) ?? null) : null
   const menuHorse = menuHorseId && !inCombat && !panelOpen ? horseById(state, menuHorseId) : null
+  const menuFishingSpot =
+    menuFishingId && !inCombat && !fishingRoll && !fishingResultOpen && fishingViews.some((spot) => spot.id === menuFishingId)
+      ? menuFishingId
+      : null
   const ringKey = menuNpc
     ? `npc:${menuNpc.id}`
     : menuObject
@@ -723,10 +752,16 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           ? `ground:${menuGroundItem.id}`
           : menuHorse
             ? `horse:${menuHorse.id}`
-            : null
+            : menuFishingSpot
+              ? `fishing:${menuFishingSpot}`
+              : null
+  // hoveredRingButton is the button LAST hovered (the party band keeps showing it so the player can move onto the band
+  // to pick someone); scanReadingHover is true only while the pointer is actually on Scan (readings card).
   const hoveredRingButton = ringHover?.key === ringKey ? ringHover.buttonId : null
+  const scanReadingHover = ringHover?.key === ringKey && ringHover.over === true && ringHover.buttonId === 'scan'
   const pickedId = ringPick?.key === ringKey ? ringPick.memberId : null
-  const hoverRingButton = (buttonId) => setRingHover({ key: ringKey, buttonId })
+  const hoverRingButton = (buttonId) => setRingHover({ key: ringKey, buttonId, over: true })
+  const leaveRingButton = () => setRingHover((current) => (current ? { ...current, over: false } : current))
   const pickRingMember = (memberId) => setRingPick({ key: ringKey, memberId: memberId === pickedId ? null : memberId })
   const attackNpc = (npc, attackerId) =>
     dispatch({ type: 'attackNpc', npcId: npc.id, targetId: attackerId ?? (party.selectedIds.includes(party.leaderId) ? party.leaderId : party.selectedIds[0]) })
@@ -737,10 +772,9 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       walkToNpc(menuNpc)
       talkWhenInReach(menuNpc.id)
     },
-    // The card opens to show the result.
+    // First success locks the target; readings stay on the pulsing Scan button hover.
     scan: (memberId) => {
       dispatch({ type: 'scanNpc', memberId, npcId: menuNpc.id })
-      setNpcInfoOpen(true)
     },
     info: () => setNpcInfoOpen((open) => !open),
     // Attacking someone who wouldn't fight anyway asks first.
@@ -762,15 +796,23 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
         button.onClick?.()
       },
     }))
-  // Party band: only members within interact range of the NPC (ringParty.js); slices with no shot at a task stay
-  // visible but unavailable.
-  const npcBand = menuNpc ? ringPartyBand(state, { npcId: menuNpc.id }, npcButtons, hoveredRingButton, pickedId, pickRingMember) : null
+  // Party band: hide on Scan once the party has a successful reading (hover tip only).
+  const npcScanned = Boolean(menuNpc && state.npcScans?.[menuNpc.id]?.success)
+  const npcBandHover = hoveredRingButton === 'scan' && npcScanned ? null : hoveredRingButton
+  const npcBand = menuNpc && npcBandHover ? ringPartyBand(state, { npcId: menuNpc.id }, npcButtons, npcBandHover, pickedId, pickRingMember) : null
   const npcMenu = menuNpc && {
     npcId: menuNpc.id,
-    info: npcInfoOpen ? npcInfo(state, menuNpc) : null,
+    // Scan readings appear on the side card while hovering Scan after a success; Info still toggles the known card.
+    info:
+      npcScanned && scanReadingHover
+        ? npcInfo(state, menuNpc, { includeScan: true })
+        : npcInfoOpen
+          ? npcInfo(state, menuNpc)
+          : null,
     buttons: npcButtons,
     party: npcBand,
     onButtonHover: hoverRingButton,
+    onButtonLeave: leaveRingButton,
   }
   const confirmAttackNpc = confirmAttackId && !inCombat ? world.npcs[confirmAttackId] : null
   const menuMember = menuMemberId && !inCombat && party.memberIds.includes(menuMemberId) && !party.members[menuMemberId].beaming ? party.members[menuMemberId] : null
@@ -824,9 +866,12 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       pickedId,
     ).map((button) => ({
       ...button,
-      pulse: !objectAction && button.enabled && button.id !== 'scan',
+      // Approaches pulse until one is chosen; Scan uses a dim pulse after a successful reading.
+      pulse: button.id === 'scan' ? button.pulse : !objectAction && button.enabled,
     }))
-  const objectBandHover = objectAction ?? (hoveredRingButton === 'scan' ? 'scan' : null)
+  const objectScanned = Boolean(menuObject && isDestructibleScanned(state.objectScans, menuObject))
+  const objectBandHover =
+    objectAction ?? (hoveredRingButton === 'scan' && !objectScanned ? 'scan' : null)
   const objectBand =
     objectButtons?.length > 0 && objectBandHover
       ? ringPartyBand(state, { objectId: menuObject }, objectButtons, objectBandHover, pickedId, pickRingMember)
@@ -845,34 +890,41 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
         fire: (memberId) => dispatch({ type: 'fireOnObject', memberId, objectId: menuDestructible.id }),
         scan: (memberId) => {
           dispatch({ type: 'scanDestructible', memberId, objectId: menuDestructible.id })
-          setDestructibleInfoOpen(true)
         },
-        toggleInfo: () => setDestructibleInfoOpen((open) => !open),
       },
       pickedId,
-      destructibleInfoOpen,
     )
-  const destructibleBand = menuDestructible
-    ? ringPartyBand(state, { destructibleId: menuDestructible.id }, destructibleButtons, hoveredRingButton ?? 'fire', pickedId, pickRingMember)
-    : null
-  const destructibleHover = hoveredRingButton ?? 'fire'
+  const destructibleScanned = Boolean(menuDestructible && isDestructibleScanned(state.objectScans, menuDestructible.id))
+  const destructibleHover =
+    hoveredRingButton === 'scan' && destructibleScanned ? null : hoveredRingButton ?? 'fire'
+  const destructibleBand =
+    menuDestructible && destructibleHover
+      ? ringPartyBand(state, { destructibleId: menuDestructible.id }, destructibleButtons, destructibleHover, pickedId, pickRingMember)
+      : null
   const destructibleMenu = menuDestructible && {
     position: menuDestructible.position,
     buttons: destructibleButtons,
-    info: destructibleInfoOpen ? destructibleInfo(state, menuDestructible.id) : null,
-    // Fire: only members with a shot. Scan: only those in tricorder range who can scan now.
+    // Structure / hazards show on the side card while hovering Scan after a successful reading.
+    info:
+      destructibleScanned && scanReadingHover
+        ? destructibleInfo(state, menuDestructible.id, { includeScan: true })
+        : null,
+    // Fire: only members with a shot. Scan before a reading: who can scan. After a success, Scan has no band.
     party: destructibleBand && {
       ...destructibleBand,
       slices: destructibleBand.slices.filter((slice) => (destructibleHover === 'fire' || destructibleHover === 'scan' ? slice.available : true)),
     },
     onButtonHover: hoverRingButton,
+    onButtonLeave: leaveRingButton,
   }
   const objectMenu = menuObject && {
     objectId: menuObject,
     // A hazard's ring opens on its anchor tile (the board only knows the challenge objects' positions).
     ...(isHazardChallengeId(menuObject) && hazardAnchor?.id === menuObject ? { position: hazardAnchor.position } : {}),
     buttons: objectButtons,
-    info: objectInfo(state, menuObject),
+    info: objectInfo(state, menuObject, {
+      includeScan: objectScanned && scanReadingHover,
+    }),
     // Once every approach is spent (the panel is still showing the last roll) only the dice stay above the object.
     party: objectBand && {
       ...objectBand,
@@ -881,39 +933,81 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       roll: objectBandHover !== 'scan' && objectPicked && objectRoll ? { ...objectRoll, pulse: objectRoll.enabled } : null,
     },
     onButtonHover: hoverRingButton,
+    onButtonLeave: leaveRingButton,
     slotRef: openId ? setRollSlot : undefined,
   }
-  // Ring opens from any click on a visible ripple; Fish itself still needs reach + rod (canStartFishing).
-  const menuFishing = menuFishingId && !inCombat && fishingViews.some((spot) => spot.id === menuFishingId) ? menuFishingId : null
+  // Ring opens from any click on a visible ripple. Fish → pick who casts → Roll arc above them (like challenges).
+  const menuFishing = menuFishingSpot
+  const beginFishing = (spotId, memberId) => {
+    if (!memberId || !spotId) return
+    setFishingAction(null)
+    closeMenu('fishing')
+    const baselineKey = state.lastFishing?.key ?? null
+    if (fishingReadyToRoll(state, spotId, memberId)) {
+      setFishingRoll({ spotId, memberId, baselineKey })
+      return
+    }
+    dispatch({ type: 'startFishing', spotId, memberId })
+    setFishingRoll({ spotId, memberId, pending: true, baselineKey })
+  }
   const fishingButtons =
     menuFishing &&
     fishingSpotMenuButtons(
       state,
       menuFishing,
       {
-        fish: (memberId) => {
-          closeMenu('fishing')
-          dispatch({ type: 'startFishing', spotId: menuFishing, memberId })
-        },
-        goTo: () => {
-          closeMenu('fishing')
-          const leader = party.members[party.leaderId]
-          const target = fishingShoreTile(state, menuFishing, leader?.position) ?? fishingViews.find((spot) => spot.id === menuFishing)?.position
-          if (target) dispatch({ type: 'moveTo', target, fresh: true })
+        scan: (memberId) => dispatch({ type: 'scanFishingSpot', memberId, spotId: menuFishing }),
+        // Arm Fish: pick a character on the band, then Roll above them.
+        fish: () => {
+          setFishingAction('fish')
+          setRingPick(null)
         },
       },
       pickedId,
+      fishingAction,
     )
+  // Band while hovering Fish (or Scan before a reading), or while Fish is armed. After a successful Scan the party
+  // band stays off — readings are on the pulsing Scan tip only.
+  const fishingScanned = Boolean(menuFishing && isDestructibleScanned(state.objectScans, fishingScanId(menuFishing)))
+  const fishingBandHover =
+    fishingAction === 'fish'
+      ? 'fish'
+      : hoveredRingButton === 'fish'
+        ? 'fish'
+        : hoveredRingButton === 'scan' && !fishingScanned
+          ? 'scan'
+          : null
   const fishingBand =
-    fishingButtons?.length > 0
-      ? ringPartyBand(state, { fishingId: menuFishing }, fishingButtons, hoveredRingButton === 'fish' ? 'fish' : null, pickedId, pickRingMember)
+    fishingButtons?.length > 0 && fishingBandHover
+      ? ringPartyBand(state, { fishingId: menuFishing }, fishingButtons, fishingBandHover, pickedId, pickRingMember)
       : null
+  const fishingSlices = fishingBand?.slices.filter((slice) => slice.available) ?? []
+  const fishingPicked = fishingAction === 'fish' && fishingSlices.some((slice) => slice.picked)
+  const fishingCaster = fishingPicked ? party.members[pickedId] : null
   const fishingMenu = menuFishing && {
     fishingId: menuFishing,
     position: fishingViews.find((spot) => spot.id === menuFishing)?.position,
     buttons: fishingButtons,
-    party: fishingBand,
+    info: fishingSpotInfo(state, menuFishing, {
+      includeScan: fishingScanned && scanReadingHover,
+    }),
+    party: fishingBand && {
+      ...fishingBand,
+      slices: fishingAction === 'fish' || fishingBandHover === 'scan' ? fishingSlices : fishingBand.slices,
+      pulse: fishingAction === 'fish' && !fishingPicked,
+      roll:
+        fishingAction === 'fish' && fishingPicked && fishingCaster
+          ? {
+              icon: 'roll',
+              title: `Roll: ${fishingCaster.character.name} casts (Fitness + Security).`,
+              enabled: true,
+              pulse: true,
+              onClick: () => beginFishing(menuFishing, pickedId),
+            }
+          : null,
+    },
     onButtonHover: hoverRingButton,
+    onButtonLeave: leaveRingButton,
   }
   // Name tags hide while that object's ring is open (pointer often stays over the prop).
   const hiddenTagIds = [
@@ -950,19 +1044,23 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
       },
       pickedId,
     )
+  const groundItemScanned = Boolean(menuGroundItem && isDestructibleScanned(state.objectScans, menuGroundItem.id))
   const groundItemBand =
-    menuGroundItem && hoveredRingButton === 'scan'
+    menuGroundItem && hoveredRingButton === 'scan' && !groundItemScanned
       ? ringPartyBand(state, { groundItemId: menuGroundItem.id }, groundItemButtons, 'scan', pickedId, pickRingMember)
       : null
   const groundItemMenu = menuGroundItem && {
     position: menuGroundItem.position,
     buttons: groundItemButtons,
-    info: groundItemInfo(state, menuGroundItem.id),
+    info: groundItemInfo(state, menuGroundItem.id, {
+      includeScan: groundItemScanned && scanReadingHover,
+    }),
     party: groundItemBand && {
       ...groundItemBand,
       slices: groundItemBand.slices.filter((slice) => slice.available),
     },
     onButtonHover: hoverRingButton,
+    onButtonLeave: leaveRingButton,
   }
   const requestRideHorse = (horseId) => {
     if (beamPhase !== 'done') return
@@ -1067,10 +1165,7 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           onInteract={toggleObjectMenu}
           hazards={hazardChallenges.filter((object) => hazardInReachIds.includes(object.id)).map((object) => ({ id: object.id, position: object.position() }))}
           fishingSpots={fishingViews}
-          fishingReachableIds={fishingReachableIds}
           onFishingSpot={toggleFishingMenu}
-          catchSpot={catchSpot ? { id: catchSpot.id, position: catchSpot.position } : null}
-          onCatchFish={(spotId) => dispatch({ type: 'catchFish', spotId })}
           destructibles={destructibleViews}
           environment={state.environment}
           lastObjectShot={state.lastObjectShot ?? null}
@@ -1206,6 +1301,26 @@ function Exploration({ state, dispatch, savedCharacters, onExit, onOutro }) {
           onClose={closeInteraction}
           onRecommend={updateRecommendation}
           dev={debugOpen}
+        />
+      )}
+      {fishingRoll && !fishingRoll.pending && (
+        <FishingPreRollWindow
+          key={`${fishingRoll.spotId}:${fishingRoll.memberId}`}
+          state={state}
+          spotId={fishingRoll.spotId}
+          memberId={fishingRoll.memberId}
+          dispatch={dispatch}
+          onCancel={() => {
+            dispatch({ type: 'cancelFishing', spotId: fishingRoll.spotId })
+            setFishingRoll(null)
+          }}
+        />
+      )}
+      {fishingResultOpen && state.lastFishing?.result && (
+        <FishingResultWindow
+          state={state}
+          lastFishing={state.lastFishing}
+          onContinue={() => setFishingResultOpen(false)}
         />
       )}
       {/* The Formation panel stays while a challenge or conversation is open (that panel ends above it). */}

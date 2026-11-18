@@ -130,10 +130,7 @@ export default function PixiExplorationBoard(props) {
     environment = null,
     hazards = [],
     fishingSpots = [],
-    fishingReachableIds = [],
     onFishingSpot = () => {},
-    catchSpot = null,
-    onCatchFish = null,
     destructibles = [],
     onDestructible = () => {},
     groundItems = [],
@@ -1177,21 +1174,8 @@ export default function PixiExplorationBoard(props) {
         {debug && <NpcDebugOverlay world={world} party={state} />}
         {debug && <DebugOverlay state={state} />}
         {menuPosition && (
-          <UnitActionRing position={menuPosition} buttons={menu.buttons} info={menu.info ?? null} party={menu.party ?? null} onButtonHover={menu.onButtonHover} slotRef={menu.slotRef} placement="top" prominent />
+          <UnitActionRing position={menuPosition} buttons={menu.buttons} info={menu.info ?? null} party={menu.party ?? null} onButtonHover={menu.onButtonHover} onButtonLeave={menu.onButtonLeave} slotRef={menu.slotRef} placement="top" prominent />
         )}
-        {catchSpot && onCatchFish && (() => {
-          const at = project(catchSpot.position)
-          const ease = Number.isFinite(catchSpot.catchEase) ? catchSpot.catchEase : 1
-          const width = Math.round(96 * ease)
-          const height = Math.round(36 * ease)
-          return (
-            <foreignObject x={at.x - width / 2} y={at.y - height - 28} width={width} height={height} className="explore-catch-fo">
-              <button type="button" className="explore-catch-btn" onClick={(event) => { event.stopPropagation(); onCatchFish(catchSpot.id) }}>
-                Catch
-              </button>
-            </foreignObject>
-          )
-        })()}
         {box && (
           <rect
             className="explore-select-box"

@@ -19,6 +19,9 @@ export const BAG_ROWS = 8
 export const BAG_CAPACITY = BAG_COLS * BAG_ROWS
 // How many bag rows stay visible in the inventory window; the rest scroll.
 export const BAG_VISIBLE_ROWS = 4
+// Party-shared bag (quest items, keys, fishing rod). Smaller than personal; first-pass capacity.
+export const PARTY_BAG_CAPACITY = 12
+export const PARTY_BAG_VISIBLE_ROWS = 2
 export { ITEM_CELL_PX, ITEM_GRID, snapItemPosition } from './itemGrid.js'
 
 let nextInstanceSeq = 1
@@ -39,6 +42,20 @@ export const emptySlots = () => Object.fromEntries(EQUIP_SLOTS.map((slot) => [sl
 
 export function emptyInventory() {
   return { slots: emptySlots(), bag: [] }
+}
+
+export function emptyPartyInventory() {
+  return { bag: [] }
+}
+
+/** Catalogue flag: fishing rod, keys, quest items — party bag, usable by anyone. */
+export function isSharedItem(itemId) {
+  return getItemById(itemId)?.shared === true
+}
+
+export function isSharedInstance(state, instanceId) {
+  const instance = getInstance(state, instanceId)
+  return instance ? isSharedItem(instance.itemId) : false
 }
 
 export const getInstance = (state, instanceId) => state.itemInstances?.[instanceId] ?? null
@@ -86,6 +103,9 @@ function withMemberCharacter(state, memberId, character) {
 
 function findOwner(state, instanceId) {
   if (state.groundItems?.[instanceId]) return { kind: 'ground', instanceId }
+  const partyBag = state.partyInventory?.bag ?? []
+  const partyIndex = partyBag.indexOf(instanceId)
+  if (partyIndex >= 0) return { kind: 'partyBag', bagIndex: partyIndex, instanceId }
   for (const memberId of state.party.memberIds) {
     const inventory = state.party.members[memberId].character.inventory
     if (!inventory) continue
@@ -106,6 +126,11 @@ function takeInstance(state, instanceId) {
     delete groundItems[instanceId]
     return { state: resolveGroundSupports({ ...state, groundItems }), owner: { ...owner, instanceId } }
   }
+  if (owner.kind === 'partyBag') {
+    const bag = [...(state.partyInventory?.bag ?? [])]
+    bag[owner.bagIndex] = null
+    return { state: { ...state, partyInventory: { bag } }, owner: { ...owner, instanceId } }
+  }
   const member = state.party.members[owner.memberId]
   const inventory = { ...member.character.inventory, slots: { ...member.character.inventory.slots }, bag: [...member.character.inventory.bag] }
   if (owner.kind === 'slot') inventory.slots[owner.slot] = null
@@ -122,11 +147,19 @@ export function bagFreeSlots(character) {
   return Math.max(0, BAG_CAPACITY - bagUsedCount(character.inventory?.bag))
 }
 
-function firstFreeBagIndex(bag) {
-  for (let index = 0; index < BAG_CAPACITY; index += 1) {
+export function partyBagFreeSlots(state) {
+  return Math.max(0, PARTY_BAG_CAPACITY - bagUsedCount(state.partyInventory?.bag))
+}
+
+function firstFreeBagIndex(bag, capacity = BAG_CAPACITY) {
+  for (let index = 0; index < capacity; index += 1) {
     if (!bag[index]) return index
   }
   return -1
+}
+
+function firstFreePartyBagIndex(bag) {
+  return firstFreeBagIndex(bag, PARTY_BAG_CAPACITY)
 }
 
 // Bag cells keep their index, including holes, so a drop lands on the cell under the pointer.
@@ -141,6 +174,7 @@ export function canEquipToSlot(state, instanceId, slot) {
   if (!EQUIP_SLOTS.includes(slot)) return { ok: false, reason: 'Unknown slot.' }
   const resolved = resolveItem(state, instanceId)
   if (!resolved) return { ok: false, reason: 'Unknown item.' }
+  if (resolved.def.shared) return { ok: false, reason: 'Party items stay in the party bag.' }
   if (resolved.def.equipSlot !== slot) return { ok: false, reason: `Does not fit the ${slot} slot.` }
   return { ok: true }
 }
@@ -184,28 +218,42 @@ export function canPlaceAt(
   })
 }
 
+// Mint a fresh shared instance into the first free party-bag cell. Mutates the two working copies the seeders own.
+// An overflow item is simply not issued (no orphan instance).
+function mintPartyItem(itemInstances, partyBag, itemId) {
+  const free = firstFreePartyBagIndex(partyBag)
+  if (free < 0) return false
+  const id = freshInstanceId(itemInstances)
+  itemInstances[id] = { id, itemId, quantity: 1 }
+  partyBag[free] = id
+  return true
+}
+
 // Expand one member's flat equipment list into instances/slots/bag (used for transporter beam-in mid-mission).
+// Shared catalogue items go into partyInventory, not the personal bag.
 export function seedMemberInventory(state, memberId, { grantMissionObject = false } = {}) {
   const member = state.party.members[memberId]
   if (!member || member.character.inventory) return state
-  let itemInstances = { ...state.itemInstances }
+  const itemInstances = { ...state.itemInstances }
   const inventory = emptyInventory()
+  const partyBag = [...(state.partyInventory?.bag ?? [])]
   for (const entry of member.character.equipment ?? []) {
     const def = getItemById(entry.itemId)
     if (!def) continue
+    if (def.shared) {
+      mintPartyItem(itemInstances, partyBag, def.id)
+      continue
+    }
     const id = freshInstanceId(itemInstances)
     itemInstances[id] = { id, itemId: def.id, quantity: 1 }
     const slot = def.equipSlot
     if (slot && EQUIP_SLOTS.includes(slot) && !inventory.slots[slot]) inventory.slots[slot] = id
     else if (inventory.bag.length < BAG_CAPACITY) inventory.bag.push(id)
   }
-  if (grantMissionObject && getItemById('missionObject') && inventory.bag.length < BAG_CAPACITY) {
-    const id = freshInstanceId(itemInstances)
-    itemInstances[id] = { id, itemId: 'missionObject', quantity: 1 }
-    inventory.bag.push(id)
-  }
+  if (grantMissionObject && getItemById('missionObject')) mintPartyItem(itemInstances, partyBag, 'missionObject')
+  const next = { ...state, itemInstances, partyInventory: { bag: partyBag } }
   const character = syncEquippedEquipment({ ...member.character, inventory }, itemInstances)
-  return withMemberCharacter({ ...state, itemInstances }, memberId, character)
+  return withMemberCharacter(next, memberId, character)
 }
 
 // Place authored map groundItemPlacements into session groundItems (mapFormat.js). Skips unknown itemIds and
@@ -295,10 +343,12 @@ export function seedGroundItemPlacements(state, placements = []) {
   return { ...next, itemInstances, groundItems }
 }
 
-// Expand each party member's flat equipment into instances, slots, and bag. Adds one missionObject to the lead bag.
+// Expand each party member's flat equipment into instances, slots, and bag.
+// Shared items (mission object, fishing rod, …) go in partyInventory; playtest seeds one missionObject there.
 export function seedPartyInventory(state) {
-  let itemInstances = { ...(state.itemInstances ?? {}) }
-  let next = { ...state, itemInstances, groundItems: { ...(state.groundItems ?? {}) } }
+  const itemInstances = { ...(state.itemInstances ?? {}) }
+  const partyBag = []
+  const next = { ...state, itemInstances, groundItems: { ...(state.groundItems ?? {}) } }
   const members = { ...next.party.members }
 
   for (const memberId of next.party.memberIds) {
@@ -307,6 +357,10 @@ export function seedPartyInventory(state) {
     for (const entry of member.character.equipment ?? []) {
       const def = getItemById(entry.itemId)
       if (!def) continue
+      if (def.shared) {
+        mintPartyItem(itemInstances, partyBag, def.id)
+        continue
+      }
       const id = freshInstanceId(itemInstances)
       itemInstances[id] = { id, itemId: def.id, quantity: 1 }
       const slot = def.equipSlot
@@ -317,25 +371,14 @@ export function seedPartyInventory(state) {
     members[memberId] = { ...member, character }
   }
 
-  // Playtest seed: one mission object on the lead character's bag when space allows.
-  const leaderId = next.party.leaderId
-  if (leaderId && getItemById('missionObject')) {
-    const leader = members[leaderId]
-    if (leader.character.inventory.bag.length < BAG_CAPACITY) {
-      const id = freshInstanceId(itemInstances)
-      itemInstances[id] = { id, itemId: 'missionObject', quantity: 1 }
-      leader.character = {
-        ...leader.character,
-        inventory: { ...leader.character.inventory, bag: [...leader.character.inventory.bag, id] },
-      }
-      members[leaderId] = { ...leader, character: leader.character }
-    }
-  }
+  // Playtest seed: one mission object in the party bag when space allows.
+  if (getItemById('missionObject')) mintPartyItem(itemInstances, partyBag, 'missionObject')
 
   return {
     ...next,
     itemInstances,
     groundItems: {},
+    partyInventory: { bag: partyBag },
     party: { ...next.party, members },
   }
 }
@@ -464,6 +507,8 @@ function swapGroundAndBag(state, owner, to) {
 }
 
 export function moveToBag(state, { memberId, instanceId, toIndex = null }) {
+  // Shared items never sit in a personal bag — route them to the party bag (ignore personal cell index).
+  if (isSharedInstance(state, instanceId)) return moveToPartyBag(state, { instanceId })
   const member = state.party.members[memberId]
   if (!member?.character.inventory) return state
   const owner = findOwner(state, instanceId)
@@ -508,7 +553,48 @@ export function moveToBag(state, { memberId, instanceId, toIndex = null }) {
   return writeInventory(next, memberId, inventory)
 }
 
-export function transferItem(state, { instanceId, toMemberId, toSlot = null, toBagIndex = null }) {
+/** Move an item into the party bag. Only shared catalogue items are accepted. */
+export function moveToPartyBag(state, { instanceId, toIndex = null }) {
+  if (!isSharedInstance(state, instanceId)) return state
+  const owner = findOwner(state, instanceId)
+  if (!owner) return state
+  const index = toIndex == null ? null : Number(toIndex)
+  if (index != null && (!Number.isInteger(index) || index < 0 || index >= PARTY_BAG_CAPACITY)) return state
+  if (index == null && owner.kind === 'partyBag') return state
+  if (index != null && owner.kind === 'partyBag' && owner.bagIndex === index) return state
+
+  const destBag = state.partyInventory?.bag ?? []
+  const occupant = index == null ? null : destBag[index] ?? null
+  if (occupant && occupant === instanceId) return state
+  if (occupant && !isSharedInstance(state, occupant)) return state
+  if (!occupant && index == null && partyBagFreeSlots(state) < 1) return state
+
+  if (occupant && owner.kind === 'partyBag') {
+    const bag = [...destBag]
+    bag[owner.bagIndex] = occupant
+    bag[index] = instanceId
+    return { ...state, partyInventory: { bag } }
+  }
+
+  const placeIndex = index == null ? firstFreePartyBagIndex(destBag) : index
+  if (placeIndex < 0) return state
+  const taken = takeInstance(state, instanceId)
+  if (!taken) return state
+  let next = taken.state
+  let bag = [...(next.partyInventory?.bag ?? [])]
+  if (occupant) {
+    const free = firstFreePartyBagIndex(bag)
+    if (free < 0) return state
+    bag = assignBagIndex(bag, free, occupant)
+  }
+  bag = assignBagIndex(bag, placeIndex, instanceId)
+  return { ...next, partyInventory: { bag } }
+}
+
+export function transferItem(state, { instanceId, toMemberId = null, toSlot = null, toBagIndex = null, toPartyBag = false }) {
+  if (toPartyBag) return moveToPartyBag(state, { instanceId, toIndex: toBagIndex })
+  // Shared items always land in the party bag, even if the drop target was a personal slot/bag/card.
+  if (isSharedInstance(state, instanceId)) return moveToPartyBag(state, { instanceId })
   const target = state.party.members[toMemberId]
   if (!target?.character.inventory) return state
   if (toSlot) {
@@ -632,6 +718,8 @@ export function dropItem(state, { instanceId, position, support = undefined, boa
 export function pickupItem(state, { instanceId, memberId }) {
   const ground = state.groundItems?.[instanceId]
   if (!ground || ground.pickable === false) return state
+  // Shared items go to the party bag whoever walks over; moveToPartyBag refuses when it is full.
+  if (isSharedInstance(state, instanceId)) return moveToPartyBag(state, { instanceId })
   const member = state.party.members[memberId]
   if (!member?.character.inventory || bagFreeSlots(member.character) < 1) return state
   const free = firstFreeBagIndex(member.character.inventory.bag)
@@ -648,11 +736,21 @@ export function pickupItem(state, { instanceId, memberId }) {
   return withMemberCharacter(next, memberId, character)
 }
 
-/** Create a fresh instance of itemId and put it in the member's bag. Full bag → refuse (same as pickup). */
+/** Create a fresh instance of itemId. Shared items go in the party bag; others in the member's bag. */
 export function grantItemToMember(state, memberId, itemId) {
   const def = getItemById(itemId)
+  if (!def) return { state, ok: false, reason: 'Cannot grant item.' }
+  if (def.shared) {
+    const bag = [...(state.partyInventory?.bag ?? [])]
+    const free = firstFreePartyBagIndex(bag)
+    if (free < 0) return { state, ok: false, reason: 'Party inventory is full.' }
+    const id = freshInstanceId(state.itemInstances)
+    const itemInstances = { ...state.itemInstances, [id]: { id, itemId: def.id, quantity: 1 } }
+    const next = { ...state, itemInstances, partyInventory: { bag: assignBagIndex(bag, free, id) } }
+    return { state: next, ok: true, instanceId: id }
+  }
   const member = state.party.members[memberId]
-  if (!def || !member?.character?.inventory) return { state, ok: false, reason: 'Cannot grant item.' }
+  if (!member?.character?.inventory) return { state, ok: false, reason: 'Cannot grant item.' }
   if (bagFreeSlots(member.character) < 1) return { state, ok: false, reason: 'Inventory is full.' }
   const free = firstFreeBagIndex(member.character.inventory.bag)
   if (free < 0) return { state, ok: false, reason: 'Inventory is full.' }
@@ -665,6 +763,22 @@ export function grantItemToMember(state, memberId, itemId) {
   }
   const character = syncEquippedEquipment({ ...member.character, inventory }, itemInstances)
   return { state: withMemberCharacter({ ...state, itemInstances }, memberId, character), ok: true, instanceId: id }
+}
+
+/** True when the party bag holds an instance of this catalogue id. */
+export function partyOwnsItemId(state, itemId) {
+  return (state.partyInventory?.bag ?? []).some((instanceId) => instanceId && getInstance(state, instanceId)?.itemId === itemId)
+}
+
+/**
+ * Whether picking up / receiving this item can succeed for memberId: a shared item needs party-bag room
+ * (any member can carry it for the party), anything else needs room in that member's own bag.
+ * Mirrors the checks inside pickupItem / transferItem so UI gates agree with the reducer.
+ */
+export function canReceiveItem(state, memberId, instanceId) {
+  if (isSharedInstance(state, instanceId)) return partyBagFreeSlots(state) > 0
+  const member = state.party?.members?.[memberId]
+  return Boolean(member?.character?.inventory) && bagFreeSlots(member.character) > 0
 }
 
 export function groundItemViews(state, { hideInstanceId = null } = {}) {

@@ -8,11 +8,12 @@ import { challengeFor } from '../../exploration/challengeObjects.js'
 import { previewObjectShot } from '../../exploration/explorationEnvironment.js'
 import { canScan, canScanNpc, scanRadius } from '../../exploration/partyScan.js'
 import { canDismount, canDismountHorse, canMountHorse, horseById, isMounted } from '../../exploration/mount.js'
-import { canStartFishing, fishingSpotById, hasFishingRod } from '../../exploration/fishingSpots.js'
-import { challengeScanner, destructibleScanner, destructibleShooter, groundItemScanner, npcButtonPerformer, ringPartyView } from '../../exploration/ringParty.js'
+import { fishingSpotById, partyHasFishingRod } from '../../exploration/fishingSpots.js'
+import { fishingScanId } from '../../exploration/partyScan.js'
+import { challengeScanner, destructibleScanner, destructibleShooter, fishingPerformer, fishingScanner, groundItemScanner, npcButtonPerformer, ringPartyView } from '../../exploration/ringParty.js'
 import { canAct } from '../../exploration/partyControl.js'
 import { getEquippedItems } from '../../rules/equipment.js'
-import { bagFreeSlots, resolveItem } from '../../rules/inventory.js'
+import { canReceiveItem, isSharedInstance, resolveItem } from '../../rules/inventory.js'
 import { groundItemFor } from '../../world/GroundItem.js'
 import itemsData from '../../data/adaptation/items.json'
 import { getFaction } from '../../rules/factions.js'
@@ -20,6 +21,16 @@ import { conditionSummary, getProtection, isDefeated, normalizeCondition } from 
 import { destructibleScanCard, isDestructibleScanned } from '../../world/destructibleScan.js'
 
 const NOT_BUILT = 'Not built yet.'
+
+// Tooltip lines for a ring's Scan button after a successful scan (UnitActionRing button.details).
+// Scan readings show only while hovering that pulsing button — never on the side card.
+function infoToDetails(info) {
+  if (!info) return []
+  const rows = (info.rows ?? []).filter(Boolean).map(([label, value]) => `${label}: ${value}`)
+  return [...rows, ...(info.tips ?? [])]
+}
+
+// Scan-hover payload builders (includeScan: true). Side cards use includeScan: false so readings stay on the button tip.
 
 // A party member's radial menu (right-click; left-click only selects): Scan, Use, Switch, Search,
 // First Aid, Attack, Inventory, Sneak and Beam Out, each for that character only. Use, Search, First Aid and Attack
@@ -90,13 +101,14 @@ export function objectMenuButtons(state, objectId, actions, activeId = null, pic
   const view = challenge.view(state.scenario)
   const scanner = challengeScanner(state, objectId, pickedId)
   const scanned = isDestructibleScanned(state.objectScans, objectId)
-  const scanTitle = !scanner
-    ? 'Scan: select a character first.'
-    : scanner.check.possible
-      ? scanned
-        ? `${scanner.member.character.name} scans the ${view.name} again (Reason + Science): refresh its readings.`
-        : `${scanner.member.character.name} scans the ${view.name} (Reason + Science): read its current state.`
-      : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
+  const canScanNow = Boolean(scanner?.check.possible)
+  const scanTitle = scanned
+    ? 'Scanned by the party — hover for tricorder readings.'
+    : !scanner
+      ? 'Scan: select a character first.'
+      : canScanNow
+        ? `${scanner.member.character.name} scans the ${view.name} (Reason + Science): read its current state.`
+        : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
   const approaches = challenge.listedActions(state).map(({ action, available, reason }) => ({
     id: action.id,
     label: action.label,
@@ -111,56 +123,99 @@ export function objectMenuButtons(state, objectId, actions, activeId = null, pic
       id: 'scan',
       label: 'Scan',
       icon: 'scan',
-      enabled: Boolean(scanner?.check.possible),
+      enabled: scanned || canScanNow,
+      pulse: scanned ? 'dim' : false,
       title: scanTitle,
-      onClick: () => actions.scan(scanner.member.id),
+      ...(scanned ? { details: infoToDetails(objectInfo(state, objectId, { includeScan: true })) } : {}),
+      onClick: canScanNow ? () => actions.scan(scanner.member.id) : undefined,
       keepOpen: true,
     },
     ...approaches,
   ]
 }
 
-// Fishing Spot ring (left-click the ripple): Fish + Go To (same pattern as a ground item's Pick Up + Go To).
-// One button alone collapses the prominent frame to a single wedge — Go To keeps a proper arc.
-// actions: { fish(memberId), goTo }; pickedId: who is chosen on the party band.
-export function fishingSpotMenuButtons(state, spotId, actions, pickedId = null) {
+// Fishing Spot ring (left-click the ripple): Scan + Fish, with the party band above (like a challenge object).
+// Fish arms the cast (pick a member, then Roll on the outer arc); Scan fires immediately.
+// actions: { scan(memberId), fish() }; fishingAction: 'fish' when the cast is armed; pickedId: band pick.
+export function fishingSpotMenuButtons(state, spotId, actions, pickedId = null, fishingAction = null) {
   const spot = fishingSpotById(state, spotId)
-  if (!spot || !spot.visible) return []
-  const member =
-    (pickedId && state.party.members[pickedId] && canAct(state.party.members[pickedId]) ? state.party.members[pickedId] : null) ||
-    state.party.members[state.party.leaderId]
-  const memberId = member?.id
-  const check = memberId ? canStartFishing(state, spotId, memberId) : { ok: false, reason: 'Select a character first.' }
-  const hasRod = memberId ? hasFishingRod(state, memberId) : false
+  if (!spot || spot.visible === false) return []
+  const scanner = fishingScanner(state, spotId, pickedId)
+  const scanned = isDestructibleScanned(state.objectScans, fishingScanId(spotId))
+  const canScanNow = Boolean(scanner?.check.possible)
+  const scanTitle = scanned
+    ? 'Scanned by the party — hover for difficulty and catch notes.'
+    : !scanner
+      ? 'Scan: select a character first.'
+      : canScanNow
+        ? `${scanner.member.character.name} scans the fishing spot (Reason + Science).`
+        : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
+  const performer = fishingPerformer(state, spotId, pickedId)
+  const check = performer?.check ?? { ok: false, reason: 'Select a character first.' }
+  const hasRod = partyHasFishingRod(state)
+  const canArm = Boolean(spot.fishable && hasRod && check.ok)
   const title = !spot.fishable
     ? 'Fish: this spot is not fishable.'
     : !hasRod
-      ? `Fish: ${member?.character?.name ?? 'Character'} needs a fishing rod.`
-      : check.ok
-        ? `Fish: ${member.character.name} casts from the shore.`
-        : `Fish: ${check.reason}`
+      ? 'Fish: no rod.'
+      : fishingAction === 'fish'
+        ? 'Fish: pick who casts, then Roll above them.'
+        : canArm
+          ? 'Fish: choose who casts from the shore (Fitness + Security).'
+          : `Fish: ${check.reason}`
   return [
+    {
+      id: 'scan',
+      label: 'Scan',
+      icon: 'scan',
+      enabled: scanned || canScanNow,
+      pulse: scanned ? 'dim' : false,
+      title: scanTitle,
+      ...(scanned ? { details: infoToDetails(fishingSpotInfo(state, spotId, { includeScan: true })) } : {}),
+      onClick: canScanNow ? () => actions.scan(scanner.member.id) : undefined,
+      keepOpen: true,
+    },
     {
       id: 'fish',
       label: 'Fish',
       icon: 'interact',
-      enabled: Boolean(check.ok),
+      enabled: canArm || fishingAction === 'fish',
+      active: fishingAction === 'fish',
       title,
-      onClick: () => actions.fish(memberId),
-    },
-    {
-      id: 'goTo',
-      label: 'Go To',
-      icon: 'move',
-      enabled: true,
-      title: 'Walk the selected characters to the shore by this ripple.',
-      onClick: actions.goTo,
+      keepOpen: true,
+      onClick: () => actions.fish(),
+      pulse: !fishingAction && canArm,
     },
   ]
 }
 
-// The card beside a challenge object's ring: name / type / state always; authored description after a successful scan.
-export function objectInfo(state, objectId) {
+// Card beside a Fishing Spot ring / Scan hover. includeScan: tricorder difficulty & catch (Scan button tip only).
+export function fishingSpotInfo(state, spotId, { includeScan = false } = {}) {
+  const spot = fishingSpotById(state, spotId)
+  if (!spot) return null
+  const scan = state.objectScans?.[fishingScanId(spotId)]
+  const scanned = isDestructibleScanned(state.objectScans, fishingScanId(spotId))
+  const rows = [['Type', 'Fishing Spot']]
+  const tips = []
+  if (includeScan && scanned) {
+    rows.push(['Difficulty', String(spot.difficulty)])
+    if (spot.catchPool?.length) {
+      rows.push(['Catch', spot.catchPool.map((id) => id.replace(/^fish/, '')).join(', ')])
+    }
+    tips.push('Ripples mark fishable water. Cast from the shore with a fishing rod.')
+    if (scan?.success) tips.push(`Scanned by ${state.party.members[scan.memberId]?.character.name ?? 'the away team'}.`)
+  } else if (scan && !scan.success) {
+    tips.push('Scan failed: no clear readings. Scan again to retry.')
+  } else if (!scanned) {
+    tips.push('Scan to learn how hard it is to catch here.')
+  } else {
+    tips.push('Hover Scan for tricorder readings.')
+  }
+  return { title: 'Fishing Spot', rows, tips }
+}
+
+// Card beside a challenge object's ring / Scan hover. includeScan: authored description (Scan button tip only).
+export function objectInfo(state, objectId, { includeScan = false } = {}) {
   const challenge = challengeFor(state, objectId)
   if (!challenge) return null
   const view = challenge.view(state.scenario)
@@ -171,21 +226,24 @@ export function objectInfo(state, objectId) {
     ['State', view.stateLabel || view.state || '—'],
   ]
   const tips = []
-  if (scanned && view.description) tips.push(view.description)
-  else if (!scanned) tips.push('Scan for a tricorder reading of its current state.')
-  if (scan?.success) {
-    tips.push(`Scanned by ${state.party.members[scan.memberId]?.character.name ?? 'the away team'}.`)
-  } else if (scan) {
+  if (includeScan && scanned) {
+    if (view.description) tips.push(view.description)
+    if (scan?.success) tips.push(`Scanned by ${state.party.members[scan.memberId]?.character.name ?? 'the away team'}.`)
+  } else if (scan && !scan.success) {
     tips.push('Scan failed: no clear readings. Scan again to retry.')
+  } else if (!scanned) {
+    tips.push('Scan for a tricorder reading of its current state.')
+  } else {
+    tips.push('Hover Scan for tricorder readings.')
   }
   return { title: view.name, rows, tips }
 }
 
 // A destructible object's radial menu (left click on it; designer request 2026-10-12): Fire, by the member picked on the
 // band or else the best shot; Scan (designer request 2026-10-17: hazards and countermeasures); Sabotage and Defuse are
-// shown but not built yet. fire(memberId) / scan(memberId) open those actions.
-// infoOpen: whether the Structure / hazards card beside the ring is showing (toggled by Scan once scanned).
-export function destructibleMenuButtons(state, objectId, actions, pickedId = null, infoOpen = false) {
+// shown but not built yet. fire(memberId) / scan(memberId) open those actions. After a success, Scan pulses and hover
+// shows the reading — no second scan, no side card.
+export function destructibleMenuButtons(state, objectId, actions, pickedId = null) {
   const record = state.environment.destructibles[objectId]
   const shooterId = destructibleShooter(state, objectId, pickedId)
   const preview = shooterId ? previewObjectShot(state, shooterId, objectId) : previewObjectShot(state, pickedId ?? state.party.selectedIds[0] ?? state.party.leaderId, objectId)
@@ -196,15 +254,14 @@ export function destructibleMenuButtons(state, objectId, actions, pickedId = nul
     : `Fire: ${preview.reason ?? 'nobody has a shot.'}`
   const scanner = destructibleScanner(state, objectId, pickedId)
   const scanned = isDestructibleScanned(state.objectScans, objectId)
-  const scanTitle = !scanner
-    ? 'Scan: select a character first.'
-    : !scanner.check.possible
-      ? `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
-      : scanned
-        ? infoOpen
-          ? 'Hide the Structure and hazard card.'
-          : 'Show the Structure and hazard card (Scan again to refresh readings).'
-        : `${scanner.member.character.name} scans the ${record.name} (Reason + Science): the hazards it may release and how to counteract them.`
+  const canScanNow = Boolean(scanner?.check.possible)
+  const scanTitle = scanned
+    ? 'Scanned by the party — hover for Structure, hazards and countermeasures.'
+    : !scanner
+      ? 'Scan: select a character first.'
+      : canScanNow
+        ? `${scanner.member.character.name} scans the ${record.name} (Reason + Science): the hazards it may release and how to counteract them.`
+        : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
   const unbuilt = (id, label, icon) => ({ id, label, icon, enabled: false, title: `${label}: ${NOT_BUILT}` })
   return [
     { id: 'fire', label: 'Fire', icon: 'attack', enabled: Boolean(shooterId), title: fireTitle, onClick: () => actions.fire(shooterId) },
@@ -212,13 +269,11 @@ export function destructibleMenuButtons(state, objectId, actions, pickedId = nul
       id: 'scan',
       label: 'Scan',
       icon: 'scan',
-      enabled: Boolean(scanner?.check.possible) || scanned,
-      active: infoOpen,
+      enabled: scanned || canScanNow,
+      pulse: scanned ? 'dim' : false,
       title: scanTitle,
-      onClick: () => {
-        if (scanned) actions.toggleInfo()
-        else if (scanner?.check.possible) actions.scan(scanner.member.id)
-      },
+      ...(scanned ? { details: infoToDetails(destructibleInfo(state, objectId, { includeScan: true })) } : {}),
+      onClick: canScanNow ? () => actions.scan(scanner.member.id) : undefined,
       keepOpen: true,
     },
     unbuilt('sabotage', 'Sabotage', 'sabotage'),
@@ -226,15 +281,18 @@ export function destructibleMenuButtons(state, objectId, actions, pickedId = nul
   ]
 }
 
-// The card beside a destructible's ring: Structure always; hazards and countermeasures after a successful scan.
-export function destructibleInfo(state, objectId) {
+// Destructible Structure card / Scan hover. includeScan: hazards and countermeasures (Scan tip only).
+export function destructibleInfo(state, objectId, { includeScan = false } = {}) {
   const record = state.environment.destructibles[objectId]
-  const card = destructibleScanCard(record, { scanned: isDestructibleScanned(state.objectScans, objectId) })
+  const scanned = isDestructibleScanned(state.objectScans, objectId)
+  const card = destructibleScanCard(record, { scanned: includeScan && scanned })
   const scan = state.objectScans?.[objectId]
-  if (scan?.success) {
+  if (includeScan && scan?.success) {
     card.tips.push(`Scanned by ${state.party.members[scan.memberId]?.character.name ?? 'the away team'}.`)
-  } else if (scan) {
+  } else if (scan && !scan.success) {
     card.tips.push('Scan failed: no clear readings. Scan again to retry.')
+  } else if (scanned && !includeScan) {
+    card.tips.push('Hover Scan for tricorder readings.')
   }
   return card
 }
@@ -266,12 +324,30 @@ export function npcMenuButtons(state, npc, inTalkRange, infoOpen, actions, picke
   const canTalk = controllerFor(npc).canTalk(npc)
   const talkTitle = !conversationIdFor(npc) ? `${npc.name} has nothing to say.` : !up ? `${npc.name} can't talk now.` : inTalkRange ? `Talk to ${npc.name}.` : `Walk over to ${npc.name} and talk.`
   const scanner = npcScanner(state, npc.id, pickedId)
-  const scanTitle = !scanner ? 'Scan: select a character first.' : scanner.check.possible ? `${scanner.member.character.name} scans ${npc.name} (Reason + Science): condition and equipment.` : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
+  const scanned = Boolean(state.npcScans?.[npc.id]?.success)
+  const canScanNow = Boolean(scanner?.check.possible)
+  const scanTitle = scanned
+    ? 'Scanned by the party — hover for condition, Protection and equipment.'
+    : !scanner
+      ? 'Scan: select a character first.'
+      : canScanNow
+        ? `${scanner.member.character.name} scans ${npc.name} (Reason + Science): condition and equipment.`
+        : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
   const attacker = state.party.members[npcButtonPerformer(state, npc.id, 'attack', pickedId)]
   const unbuilt = (id, label, icon) => ({ id, label, icon, enabled: false, title: `${label}: ${NOT_BUILT}` })
   return [
-    { id: 'talk', label: 'Talk', icon: 'talk', enabled: canTalk, title: talkTitle, onClick: actions.talk },
-    { id: 'scan', label: 'Scan', icon: 'scan', enabled: Boolean(scanner?.check.possible), title: scanTitle, onClick: () => actions.scan(scanner.member.id) },
+    { id: 'talk', label: 'Talk', enabled: canTalk, icon: 'talk', title: talkTitle, onClick: actions.talk },
+    {
+      id: 'scan',
+      label: 'Scan',
+      icon: 'scan',
+      enabled: scanned || canScanNow,
+      pulse: scanned ? 'dim' : false,
+      title: scanTitle,
+      ...(scanned ? { details: infoToDetails(npcInfo(state, npc, { includeScan: true })) } : {}),
+      onClick: canScanNow ? () => actions.scan(scanner.member.id) : undefined,
+      keepOpen: true,
+    },
     { id: 'info', label: 'Info', icon: 'info', enabled: true, active: infoOpen, title: infoOpen ? 'Hide what the party knows about them.' : `What the party knows about ${npc.name}.`, onClick: actions.info, keepOpen: true },
     unbuilt('useItem', 'Use Item', 'useItem'),
     unbuilt('firstAid', 'First Aid', 'firstAid'),
@@ -308,8 +384,8 @@ export function ringPartyBand(state, target, buttons, hoveredId, pickedId, onPic
 }
 const AWARENESS_ORDER = [STATE.UNAWARE, STATE.SUSPICIOUS, STATE.INVESTIGATING, STATE.ALERTED, STATE.COMBAT_READY]
 
-// The card beside an NPC's ring: what the party can see, plus their condition and equipment once a scan has succeeded.
-export function npcInfo(state, npc) {
+// Card beside an NPC's ring / Scan hover. includeScan: condition, Protection, equipment (Scan tip only).
+export function npcInfo(state, npc, { includeScan = false } = {}) {
   const { character } = npc
   const factionName = (npc.faction && npc.faction !== character.faction?.id ? getFaction(npc.faction)?.name : character.faction?.name) ?? 'Unknown'
   const noticed = state.party.memberIds.map((id) => npc.awareness[id]?.state ?? STATE.UNAWARE).sort((a, b) => AWARENESS_ORDER.indexOf(b) - AWARENESS_ORDER.indexOf(a))[0]
@@ -321,7 +397,7 @@ export function npcInfo(state, npc) {
   ]
   const scan = state.npcScans?.[npc.id]
   const tips = []
-  if (scan?.success) {
+  if (includeScan && scan?.success) {
     const condition = normalizeCondition(npc.condition)
     rows.push(['Condition', conditionSummary(character, condition) || 'Unhurt'])
     rows.push(['Protection', `Stun ${getProtection(character, { injuryType: 'stun' }).value} / Deadly ${getProtection(character, { injuryType: 'deadly' }).value}`])
@@ -329,8 +405,10 @@ export function npcInfo(state, npc) {
     rows.push(['Equipment', gear.length ? gear.join(', ') : 'None'])
     tips.push(`Scanned by ${state.party.members[scan.memberId]?.character.name ?? 'the away team'}.`)
     tips.push(`In a fight it starts scanned, with the trait ${SCAN_TRAIT.name}: your attacks on it are easier.`)
-  } else if (scan) {
+  } else if (scan && !scan.success) {
     tips.push('Scan failed: no clear readings. Scan again to retry.')
+  } else if (scan?.success) {
+    tips.push('Hover Scan for tricorder readings.')
   } else {
     tips.push('Scan them for their condition and equipment.')
   }
@@ -368,9 +446,11 @@ export function groundItemMenuButtons(state, instanceId, actions, pickedId = nul
   const pickable = view?.pickable !== false && state.groundItems?.[instanceId]?.pickable !== false
   const inPickupRange = item.membersInPickupRange(state)
   const orderedIds = [...new Set([state.party.leaderId, ...state.party.selectedIds])].filter(Boolean)
+  const shared = isSharedInstance(state, instanceId)
+  const fits = (id) => Boolean(state.party.members[id]) && canReceiveItem(state, id, instanceId)
   const pickerId =
-    orderedIds.find((id) => inPickupRange.some((member) => member.id === id) && bagFreeSlots(state.party.members[id].character) > 0) ??
-    orderedIds.find((id) => state.party.members[id] && bagFreeSlots(state.party.members[id].character) > 0) ??
+    orderedIds.find((id) => inPickupRange.some((member) => member.id === id) && fits(id)) ??
+    orderedIds.find((id) => fits(id)) ??
     null
   const picker = pickerId ? state.party.members[pickerId] : null
   const canGrabNow = Boolean(pickerId && inPickupRange.some((member) => member.id === pickerId))
@@ -378,29 +458,32 @@ export function groundItemMenuButtons(state, instanceId, actions, pickedId = nul
   const reason = !pickable
     ? 'This item cannot be picked up.'
     : !picker
-      ? 'Select a character with bag space first.'
-      : bagFreeSlots(picker.character) < 1
-        ? `${picker.character.name}'s bag is full.`
-        : canGrabNow
-          ? `${picker.character.name} picks up the ${name}.`
-          : `${picker.character.name} walks over and picks up the ${name}.`
+      ? shared
+        ? 'The party bag is full.'
+        : 'Select a character with bag space first.'
+      : canGrabNow
+        ? `${picker.character.name} picks up the ${name}.`
+        : `${picker.character.name} walks over and picks up the ${name}.`
   const scanner = groundItemScanner(state, instanceId, pickedId)
   const scanned = isDestructibleScanned(state.objectScans, instanceId)
-  const scanTitle = !scanner
-    ? 'Scan: select a character first.'
-    : scanner.check.possible
-      ? scanned
-        ? `${scanner.member.character.name} scans the ${name} again (Reason + Science): refresh its readings.`
-        : `${scanner.member.character.name} scans the ${name} (Reason + Science): identify it and read its catalogue entry.`
-      : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
+  const canScanNow = Boolean(scanner?.check.possible)
+  const scanTitle = scanned
+    ? 'Scanned by the party — hover for catalogue readings.'
+    : !scanner
+      ? 'Scan: select a character first.'
+      : canScanNow
+        ? `${scanner.member.character.name} scans the ${name} (Reason + Science): identify it and read its catalogue entry.`
+        : `Scan (${scanner.member.character.name}): ${scanner.check.reason}`
   return [
     {
       id: 'scan',
       label: 'Scan',
       icon: 'scan',
-      enabled: Boolean(scanner?.check.possible),
+      enabled: scanned || canScanNow,
+      pulse: scanned ? 'dim' : false,
       title: scanTitle,
-      onClick: () => actions.scan(scanner.member.id),
+      ...(scanned ? { details: infoToDetails(groundItemInfo(state, instanceId, { includeScan: true })) } : {}),
+      onClick: canScanNow ? () => actions.scan(scanner.member.id) : undefined,
       keepOpen: true,
     },
     {
@@ -483,8 +566,8 @@ export function horseMenuButtons(state, horseId, actions) {
   ]
 }
 
-// The card beside a ground item's ring: name / category always; catalogue description after a successful scan.
-export function groundItemInfo(state, instanceId) {
+// Card beside a ground item's ring / Scan hover. includeScan: catalogue description (Scan tip only).
+export function groundItemInfo(state, instanceId, { includeScan = false } = {}) {
   const resolved = resolveItem(state, instanceId)
   const view = groundItemFor(instanceId).view(state)
   if (!view && !resolved) return null
@@ -495,12 +578,15 @@ export function groundItemInfo(state, instanceId) {
   const scanned = isDestructibleScanned(state.objectScans, instanceId)
   const rows = [['Category', category]]
   const tips = []
-  if (scanned && resolved?.def.description) tips.push(resolved.def.description)
-  else if (!scanned) tips.push('Scan for a tricorder reading of this item.')
-  if (scan?.success) {
-    tips.push(`Scanned by ${state.party.members[scan.memberId]?.character.name ?? 'the away team'}.`)
-  } else if (scan) {
+  if (includeScan && scanned) {
+    if (resolved?.def.description) tips.push(resolved.def.description)
+    if (scan?.success) tips.push(`Scanned by ${state.party.members[scan.memberId]?.character.name ?? 'the away team'}.`)
+  } else if (scan && !scan.success) {
     tips.push('Scan failed: no clear readings. Scan again to retry.')
+  } else if (!scanned) {
+    tips.push('Scan for a tricorder reading of this item.')
+  } else {
+    tips.push('Hover Scan for tricorder readings.')
   }
   return { title: name, rows, tips }
 }

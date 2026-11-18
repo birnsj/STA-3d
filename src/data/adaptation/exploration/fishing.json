@@ -1,9 +1,8 @@
 {
   "notes": [
-    "Fishing catch (prototype adaptation, 2026-11-17). Book: no fishing rule; Security covers survival (Core p.92); Fitness is physical prowess (p.89); focuses Survival / Animal Handling / Athletics appear in lifepath lists. Prototype: Fitness + Security, Difficulty = the spot's authored difficulty.",
-    "Passive window: splashSecondsFor scales by fishing skill (Fitness + Security) around referenceSkill, like sneak.json. First-pass tuning.",
-    "Roll: when the splash starts the angler rolls the task (2d20, no bought dice). Success lengthens the Catch window further and can save Momentum; failure keeps the skill-scaled window. The player still clicks Catch (or presses A).",
-    "Equipment: a fishing rod is already required to start (canStartFishing). The splash roll does not re-check inventory (prepareTask only sees equipped items, and the rod lives in the bag)."
+    "Fishing (prototype adaptation, 2026-11-17). Book: no fishing rule; Security covers survival (Core p.92); Fitness is physical prowess (p.89). Prototype: Fitness + Security at the spot's authored Difficulty.",
+    "Ring flow (designer 2026-11-17): click the ripple → Scan + Fish with party band. Fish opens the standard dice window (bonus d20s allowed, same as challenges). Success grants a shared fish into the party bag. Failure leaves the ripple. No Go To / Catch button / deplete / relocate.",
+    "Rod: party bag (shared: true). Without a rod Fish is dim and titled 'Fish: no rod.'."
   ],
   "task": {
     "attribute": "fitness",
@@ -12,14 +11,5 @@
     "focuses": ["Survival", "Animal Handling", "Athletics", "Survival Training"],
     "tags": ["survival", "physical"]
   },
-  "referenceSkill": 11,
-  "window": {
-    "perPoint": 0.1,
-    "minFactor": 0.75,
-    "maxFactor": 1.75
-  },
-  "rollSuccess": {
-    "windowFactor": 1.4,
-    "extraSeconds": 1.0
-  }
+  "referenceSkill": 11
 }

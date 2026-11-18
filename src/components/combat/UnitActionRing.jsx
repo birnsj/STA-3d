@@ -229,11 +229,12 @@ function buttonTip(button) {
 
 // One button on a ring, at angle (degrees) on the ring's arc of radius around (0, layout.centreY); its label curves
 // along the arc below it.
-function RingButton({ button, layout, angle, radius, iconScale, fontSize, onButtonHover }) {
+function RingButton({ button, layout, angle, radius, iconScale, fontSize, onButtonHover, onButtonLeave }) {
   const x = Math.cos(angle / DEGREES) * radius
   const y = layout.centreY + Math.sin(angle / DEGREES) * radius
   const below = belowSign(angle)
-  const classes = ['unit-ring-button', `is-${button.tone ?? button.id}`, !button.enabled && 'is-disabled', button.active && 'is-active', button.pulse && 'is-pulsing']
+  const pulseClass = button.pulse === 'dim' ? 'is-pulsing is-pulse-dim' : button.pulse ? 'is-pulsing' : null
+  const classes = ['unit-ring-button', `is-${button.tone ?? button.id}`, !button.enabled && 'is-disabled', button.active && 'is-active', pulseClass]
   return (
     <g
       className={classes.filter(Boolean).join(' ')}
@@ -244,6 +245,7 @@ function RingButton({ button, layout, angle, radius, iconScale, fontSize, onButt
       data-ui-sound={button.enabled ? '' : undefined}
       onClick={button.enabled ? button.onClick : undefined}
       onPointerEnter={onButtonHover && (() => onButtonHover(button.id))}
+      onPointerLeave={onButtonLeave && (() => onButtonLeave(button.id))}
       data-tip={buttonTip(button)}
     >
       {button.pressed && <circle key={`ripple-${button.pressed}`} className="unit-ring-ripple" r={layout.buttonR} />}
@@ -264,10 +266,11 @@ function RingButton({ button, layout, angle, radius, iconScale, fontSize, onButt
 // button plays its press once per key (Auto Combat showing the AI's choice); details: extra lines in the button's tooltip
 // (e.g. an attack's TN, Severity and Threat), kept off the ring so every ring has the same size and spacing; info: { title, rows: [[label, value]], tips?: [text] } or null. placement: 'around' or 'top'
 // (see LAYOUTS); prominent: framed by a panel band along the arc. party (prominent rings only): the away team in a
-// band outside the buttons (PartyBand); onButtonHover(buttonId): the pointer moved onto a button. slotRef: a callback ref
+// band outside the buttons (PartyBand); onButtonHover(buttonId): the pointer moved onto a button; onButtonLeave(buttonId):
+// it moved off (optional; exploration uses it so Scan readings show only while the pointer is on the button). slotRef: a callback ref
 // given the element of a slot above the ring (world-scaled with it), which other UI fills through a portal (the
 // interaction panel's Roll button and dice).
-export default function UnitActionRing({ position, buttons, info, onPointerEnter, onPointerLeave, placement = 'around', prominent = false, party = null, onButtonHover, slotRef }) {
+export default function UnitActionRing({ position, buttons, info, onPointerEnter, onPointerLeave, placement = 'around', prominent = false, party = null, onButtonHover, onButtonLeave, slotRef }) {
   const layout = LAYOUTS[placement]
   const centre = project(position)
   // Label font sizes as in combat.css (.unit-ring-button text; smaller on prominent rings).
@@ -316,6 +319,7 @@ export default function UnitActionRing({ position, buttons, info, onPointerEnter
           iconScale={iconScale}
           fontSize={fontSize}
           onButtonHover={onButtonHover}
+          onButtonLeave={onButtonLeave}
         />
       ))}
       {slotRef && (

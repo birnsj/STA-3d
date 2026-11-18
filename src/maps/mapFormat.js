@@ -47,7 +47,7 @@
 // Fractional x/y are allowed for the 32×32 drop grid. name overrides the hover label; pickable/visible default true and
 // are left out on disk when true. on: { tile: [x, y] } or { placement: id } when elevated on a support surface; omitted
 // on the floor. Entries missing id get one on parse. Runtime drops never write back into the map file.
-// fishingSpots: [{ id, position: [x,y], fishable?, difficulty? 0–5, size? 0.5–2, respawnSeconds?, catchPool? [itemId] }] —
+// fishingSpots: [{ id, position: [x,y], fishable?, difficulty? 0–5, size? 0.5–2, catchPool? [itemId] }] —
 // water ripples (exploration/fishingSpots.js). Prefer water/shallows tiles; validateMap warns when not.
 // markers.horseSpawns: [x, y], [x, y, facing], or { position:[x,y]|x,y, facing?, roam?, disposition?, coat? } — Horse Spawn markers.
 // Play only spawns mounts from these (exploration/mount.js); empty means no horse. Facing degrees (0 = +x).
@@ -946,7 +946,6 @@ const serializeFishingSpot = (spot) => {
     ...(fields.fishable === false ? { fishable: false } : {}),
     ...(fields.difficulty !== 2 ? { difficulty: fields.difficulty } : {}),
     ...(fields.size !== 1 ? { size: fields.size } : {}),
-    ...(fields.respawnSeconds !== 45 ? { respawnSeconds: fields.respawnSeconds } : {}),
     ...(Array.isArray(spot.catchPool) && spot.catchPool.length ? { catchPool: [...fields.catchPool] } : {}),
   }
 }

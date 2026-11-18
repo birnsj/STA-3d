@@ -47,6 +47,17 @@ export function inventoryDropAt(clientX, clientY) {
   if (slot?.dataset.memberId && slot.dataset.slot) {
     return { kind: 'slot', memberId: slot.dataset.memberId, slot: slot.dataset.slot }
   }
+  // Party-shared bag cells (quest items, keys, fishing rod).
+  const partyBag = el.closest('[data-inventory-drop="partyBag"]')
+  if (partyBag) {
+    const raw = partyBag.dataset.bagIndex
+    const bagIndex = raw == null || raw === '' ? null : Number(raw)
+    return {
+      kind: 'partyBag',
+      bagIndex: Number.isInteger(bagIndex) ? bagIndex : null,
+    }
+  }
+  // Party-strip member card → that member's personal bag.
   const party = el.closest('[data-inventory-drop="party"]')
   if (party?.dataset.memberId) return { kind: 'bag', memberId: party.dataset.memberId }
   const bag = el.closest('[data-inventory-drop="bag"]')

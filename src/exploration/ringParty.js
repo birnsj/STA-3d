@@ -17,11 +17,11 @@ function preparePartyPreview(character, task, state, condition) {
   )
 }
 import { challengeFor, INTERACT_RANGE } from './challengeObjects.js'
-import { canStartFishing, FISHING_TASK, fishingSpotById } from './fishingSpots.js'
+import { canFishAtSpot, canStartFishing, FISHING_TASK, fishingSpotById } from './fishingSpots.js'
 import { previewObjectShot } from './explorationEnvironment.js'
 import { distance } from './navigation.js'
 import { getMembers } from './partyControl.js'
-import { canScanChallenge, canScanDestructible, canScanGroundItem, canScanNpc, SCAN_TASK } from './partyScan.js'
+import { canScanChallenge, canScanDestructible, canScanFishingSpot, canScanGroundItem, canScanNpc, SCAN_TASK } from './partyScan.js'
 import { canAskNpc, SOCIAL_KINDS } from './partySocial.js'
 import { groundItemFor } from '../world/GroundItem.js'
 
@@ -41,12 +41,11 @@ function bandMembers(state, target) {
     if (!npc) return []
     return members.filter((member) => !isDefeated(member.condition) && distance(member.position, npc.position) <= INTERACT_RANGE)
   }
+  // Fishing: every up member (they walk to shore from anywhere; Scan still gates on tricorder range).
   if (target.fishingId) {
     const spot = fishingSpotById(state, target.fishingId)
     if (!spot) return []
-    return members.filter(
-      (member) => !isDefeated(member.condition) && distance(member.position, spot.position) <= INTERACT_RANGE,
-    )
+    return members.filter((member) => !isDefeated(member.condition))
   }
   return members.filter((member) => !isDefeated(member.condition))
 }
@@ -113,13 +112,24 @@ export function ringPartyView(state, target, buttonId) {
           prepared: preparePartyPreview(member.character, SCAN_TASK, state, member.condition),
         })),
     )
+  } else if (target.fishingId && buttonId === 'scan') {
+    for (const member of members) blocked[member.id] = canScanFishingSpot(state, member.id, target.fishingId).reason
+    recommendation = recommendPerformers(
+      members
+        .filter((member) => !blocked[member.id])
+        .map((member) => ({
+          id: member.id,
+          prepared: preparePartyPreview(member.character, SCAN_TASK, state, member.condition),
+        })),
+    )
   } else if (target.fishingId && buttonId === 'fish') {
     const spot = fishingSpotById(state, target.fishingId)
+    // Rank Fitness + Security even with no rod so the band still shows who is suited; the Fish button itself
+    // is dimmed when the party bag has no rod (fishingSpotMenuButtons).
     for (const member of members) {
-      const check = canStartFishing(state, target.fishingId, member.id)
+      const check = canFishAtSpot(state, target.fishingId, member.id)
       blocked[member.id] = check.ok ? null : check.reason
     }
-    // Fitness + Security at the spot's Difficulty (fishing.json); ranks who should cast.
     const task = { ...FISHING_TASK, difficulty: spot?.difficulty ?? FISHING_TASK.difficulty }
     recommendation = recommendPerformers(
       members
@@ -213,6 +223,40 @@ export function groundItemScanner(state, instanceId, pickedId = null) {
     return fallback ? { member: party.members[fallback], check: canScanGroundItem(state, fallback, instanceId) } : null
   }
   return { member: party.members[id], check: canScanGroundItem(state, id, instanceId) }
+}
+
+// Who scans a Fishing Spot from its ring: picked when they can, else best Scan odds.
+export function fishingScanner(state, spotId, pickedId = null) {
+  const { party } = state
+  if (pickedId && canScanFishingSpot(state, pickedId, spotId).possible) {
+    return { member: party.members[pickedId], check: canScanFishingSpot(state, pickedId, spotId) }
+  }
+  const view = ringPartyView(state, { fishingId: spotId }, 'scan')
+  const id = view.bestIds[0] ?? view.members.find((entry) => entry.available)?.id ?? null
+  if (!id) {
+    const fallback = pickedId ?? party.selectedIds[0] ?? party.leaderId
+    return fallback ? { member: party.members[fallback], check: canScanFishingSpot(state, fallback, spotId) } : null
+  }
+  return { member: party.members[id], check: canScanFishingSpot(state, id, spotId) }
+}
+
+// Who fishes from a ripple's ring: picked when they can start (rod + shore), else the best by Fitness + Security.
+export function fishingPerformer(state, spotId, pickedId = null) {
+  const { party } = state
+  if (pickedId && canStartFishing(state, spotId, pickedId).ok) {
+    return { member: party.members[pickedId], check: canStartFishing(state, spotId, pickedId) }
+  }
+  const view = ringPartyView(state, { fishingId: spotId }, 'fish')
+  // Prefer someone who can actually cast (has rod); the band may still list suited members without a rod.
+  const id =
+    view.bestIds.find((memberId) => canStartFishing(state, spotId, memberId).ok) ??
+    view.members.find((entry) => entry.available && canStartFishing(state, spotId, entry.id).ok)?.id ??
+    null
+  if (!id) {
+    const fallback = pickedId ?? party.selectedIds[0] ?? party.leaderId
+    return fallback ? { member: party.members[fallback], check: canStartFishing(state, spotId, fallback) } : null
+  }
+  return { member: party.members[id], check: canStartFishing(state, spotId, id) }
 }
 
 // Who does an NPC ring button that has no performer of its own (Talk's checks, Attack's opening): the member picked on

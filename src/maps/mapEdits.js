@@ -698,9 +698,6 @@ export function updateFishingSpot(map, id, changes) {
       if (changes.catchPool != null) merged.catchPool = authoredFishingSpotFields({ catchPool: changes.catchPool }).catchPool
       if (changes.difficulty != null) merged.difficulty = authoredFishingSpotFields({ difficulty: changes.difficulty }).difficulty
       if (changes.size != null) merged.size = authoredFishingSpotFields({ size: changes.size }).size
-      if (changes.respawnSeconds != null) {
-        merged.respawnSeconds = authoredFishingSpotFields({ respawnSeconds: changes.respawnSeconds }).respawnSeconds
-      }
       if (changes.fishable != null) merged.fishable = changes.fishable !== false
       return merged
     }),

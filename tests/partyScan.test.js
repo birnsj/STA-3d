@@ -6,7 +6,15 @@ import { describe, it } from 'node:test'
 import scanData from '../src/data/adaptation/exploration/scan.json' with { type: 'json' }
 import { createExplorationState, explorationReducer } from '../src/exploration/explorationState.js'
 import { getEntityKnowledge, KNOWLEDGE } from '../src/exploration/partyKnowledge.js'
-import { canScan, canScanNpc, compassPoint, scanCooldown, scanRadius } from '../src/exploration/partyScan.js'
+import {
+  canScan,
+  canScanFishingSpot,
+  canScanNpc,
+  compassPoint,
+  fishingScanId,
+  scanCooldown,
+  scanRadius,
+} from '../src/exploration/partyScan.js'
 import { isHostile } from '../src/exploration/awareness.js'
 import { MODE } from '../src/exploration/combatLink.js'
 import { partyReducer } from '../src/exploration/partyControl.js'
@@ -118,24 +126,82 @@ describe('An NPC radial menu: Scan and Attack (Prototype)', () => {
     assert.equal(canScanNpc(far, 'alpha', npcId).possible, false)
   })
 
-  it('keeps a success through a later failed scan of the same NPC', () => {
+  it('locks a successful NPC scan for the whole party; a failure can be retried after cooldown', () => {
     let success = null
-    for (let seed = 0; seed < 200 && !success; seed++) {
+    let failure = null
+    for (let seed = 0; seed < 200 && !(success && failure); seed++) {
       const next = explorationReducer(start(seed), { type: 'scanNpc', memberId: 'alpha', npcId: npcIdOf(start(seed)) })
-      if (next.npcScans[npcIdOf(next)].success) success = next
+      const entry = next.npcScans[npcIdOf(next)]
+      if (entry.success) success ??= next
+      else failure ??= next
     }
-    assert.ok(success)
-    const npcId = npcIdOf(success)
-    for (let tries = 0; tries < 50; tries++) {
-      const ready = { ...success, world: { ...success.world, time: success.world.time + scanData.cooldownSeconds * (tries + 1) } }
-      const again = explorationReducer(ready, { type: 'scanNpc', memberId: 'alpha', npcId })
-      if (!again.npcScans[npcId].rolledSuccess) {
-        assert.equal(again.npcScans[npcId].success, true)
-        return
-      }
-      success = again
+    assert.ok(success && failure, 'found both a success and a failure')
+
+    const successNpcId = npcIdOf(success)
+    const withBetaGear = {
+      ...success,
+      world: { ...success.world, time: success.world.time + scanData.cooldownSeconds },
+      party: {
+        ...success.party,
+        members: {
+          ...success.party.members,
+          beta: {
+            ...success.party.members.beta,
+            character: scientist('beta', [{ itemId: 'scienceTricorder' }]),
+          },
+        },
+      },
     }
-    assert.fail('no failed rescan found')
+    assert.equal(canScanNpc(withBetaGear, 'alpha', successNpcId).reason, 'Already scanned by the party.')
+    assert.equal(canScanNpc(withBetaGear, 'beta', successNpcId).reason, 'Already scanned by the party.')
+    assert.equal(explorationReducer(withBetaGear, { type: 'scanNpc', memberId: 'beta', npcId: successNpcId }), withBetaGear)
+
+    const failNpcId = npcIdOf(failure)
+    const afterFail = {
+      ...failure,
+      world: { ...failure.world, time: failure.world.time + scanData.cooldownSeconds },
+    }
+    assert.equal(canScanNpc(afterFail, 'alpha', failNpcId).possible, true)
+  })
+
+  it('locks a successful Fishing Spot scan for the whole party; a failure can be retried', () => {
+    const map = testMap()
+    map.tiles[6][4] = 'water'
+    map.fishingSpots = [{ id: 'pond', position: { x: 4, y: 6 }, difficulty: 2, size: 1, fishable: true }]
+    let success = null
+    let failure = null
+    for (let seed = 0; seed < 200 && !(success && failure); seed++) {
+      const state = createExplorationState(map, team(), seed, { enemiesActive: false })
+      const next = explorationReducer(state, { type: 'scanFishingSpot', memberId: 'alpha', spotId: 'pond' })
+      const entry = next.objectScans[fishingScanId('pond')]
+      if (entry.success) success ??= next
+      else failure ??= next
+    }
+    assert.ok(success && failure, 'found both a success and a failure')
+
+    const afterSuccess = {
+      ...success,
+      world: { ...success.world, time: success.world.time + scanData.cooldownSeconds },
+      party: {
+        ...success.party,
+        members: {
+          ...success.party.members,
+          beta: {
+            ...success.party.members.beta,
+            character: scientist('beta', [{ itemId: 'scienceTricorder' }]),
+          },
+        },
+      },
+    }
+    assert.equal(canScanFishingSpot(afterSuccess, 'alpha', 'pond').reason, 'Already scanned by the party.')
+    assert.equal(canScanFishingSpot(afterSuccess, 'beta', 'pond').reason, 'Already scanned by the party.')
+    assert.equal(explorationReducer(afterSuccess, { type: 'scanFishingSpot', memberId: 'beta', spotId: 'pond' }), afterSuccess)
+
+    const afterFail = {
+      ...failure,
+      world: { ...failure.world, time: failure.world.time + scanData.cooldownSeconds },
+    }
+    assert.equal(canScanFishingSpot(afterFail, 'alpha', 'pond').possible, true)
   })
 
   it('Attack starts combat with that NPC as the enemy, even one who would never fight', () => {

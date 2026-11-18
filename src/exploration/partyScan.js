@@ -13,11 +13,30 @@ import { resolveStaTask, rollDice } from '../rules/taskResolver.js'
 import { augmentTaskContext, augmentTaskSpec } from '../ships/serviceEffects.js'
 import { getNpcs, isDown } from './awareness.js'
 import { challengeFor, TASK_SEED_OFFSET } from './challengeObjects.js'
+import { fishingSpotById } from './fishingSpots.js'
 import { locationReport } from './locationReport.js'
 import { distance } from './navigation.js'
 import { revealEntity } from './partyKnowledge.js'
 import { canAct } from './partyControl.js'
 import { groundItemFor } from '../world/GroundItem.js'
+import { isDestructibleScanned } from '../world/destructibleScan.js'
+
+/** objectScans key for a Fishing Spot (same card shape as ground / challenge scans). */
+export const fishingScanId = (spotId) => `fishing:${spotId}`
+
+// Which party members have already successfully scanned this target.
+export function memberHasScanned(entry, memberId) {
+  if (!entry || !memberId) return false
+  if (Array.isArray(entry.scannedBy)) return entry.scannedBy.includes(memberId)
+  return Boolean(entry.success && entry.memberId === memberId)
+}
+
+function nextScannedBy(previous, memberId, rolledSuccess) {
+  const prior =
+    previous?.scannedBy ?? (previous?.success && previous.memberId ? [previous.memberId] : [])
+  if (!rolledSuccess) return prior
+  return prior.includes(memberId) ? prior : [...prior, memberId]
+}
 
 export const SCAN_TASK = actionData.actions.find((action) => action.id === 'scan').task
 
@@ -65,7 +84,9 @@ export function compassPoint(from, to) {
 }
 
 // { possible, reason }: whether the member can scan this NPC now (as canScan, and the NPC within their tricorder's range).
+// A successful Scan locks the target for the whole party; a failure can be retried after cooldown.
 export function canScanNpc(state, memberId, npcId) {
+  if (state.npcScans?.[npcId]?.success) return { possible: false, reason: 'Already scanned by the party.' }
   const check = canScan(state, memberId)
   if (!check.possible) return check
   const member = state.party.members[memberId]
@@ -76,8 +97,11 @@ export function canScanNpc(state, memberId, npcId) {
   return { possible: true, reason: null }
 }
 
-// { possible, reason }: whether the member can scan this destructible now (tricorder range; already-scanned may retry).
+// { possible, reason }: whether the member can scan this destructible now (tricorder range). Success locks it for the party.
 export function canScanDestructible(state, memberId, objectId) {
+  if (isDestructibleScanned(state.objectScans, objectId)) {
+    return { possible: false, reason: 'Already scanned by the party.' }
+  }
   const check = canScan(state, memberId)
   if (!check.possible) return check
   const member = state.party.members[memberId]
@@ -88,8 +112,11 @@ export function canScanDestructible(state, memberId, objectId) {
   return { possible: true, reason: null }
 }
 
-// { possible, reason }: whether the member can scan this challenge object (tricorder range).
+// { possible, reason }: whether the member can scan this challenge object (tricorder range). Success locks it for the party.
 export function canScanChallenge(state, memberId, objectId) {
+  if (isDestructibleScanned(state.objectScans, objectId)) {
+    return { possible: false, reason: 'Already scanned by the party.' }
+  }
   const check = canScan(state, memberId)
   if (!check.possible) return check
   const member = state.party.members[memberId]
@@ -101,8 +128,11 @@ export function canScanChallenge(state, memberId, objectId) {
   return { possible: true, reason: null }
 }
 
-// { possible, reason }: whether the member can scan this ground inventory prop (tricorder range).
+// { possible, reason }: whether the member can scan this ground inventory prop (tricorder range). Success locks it for the party.
 export function canScanGroundItem(state, memberId, instanceId) {
+  if (isDestructibleScanned(state.objectScans, instanceId)) {
+    return { possible: false, reason: 'Already scanned by the party.' }
+  }
   const check = canScan(state, memberId)
   if (!check.possible) return check
   const member = state.party.members[memberId]
@@ -110,6 +140,21 @@ export function canScanGroundItem(state, memberId, instanceId) {
   if (!position) return { possible: false, reason: 'Nothing there to scan.' }
   const radius = scanRadius(member.character)
   if (distance(member.position, position) > radius) return { possible: false, reason: `Out of tricorder range (${radius} tiles).` }
+  return { possible: true, reason: null }
+}
+
+// { possible, reason }: whether the member can scan this Fishing Spot ripple (tricorder range). Success locks it for the party.
+export function canScanFishingSpot(state, memberId, spotId) {
+  if (isDestructibleScanned(state.objectScans, fishingScanId(spotId))) {
+    return { possible: false, reason: 'Already scanned by the party.' }
+  }
+  const check = canScan(state, memberId)
+  if (!check.possible) return check
+  const member = state.party.members[memberId]
+  const spot = fishingSpotById(state, spotId)
+  if (!spot || spot.visible === false) return { possible: false, reason: 'Nothing there to scan.' }
+  const radius = scanRadius(member.character)
+  if (distance(member.position, spot.position) > radius) return { possible: false, reason: `Out of tricorder range (${radius} tiles).` }
   return { possible: true, reason: null }
 }
 
@@ -133,15 +178,27 @@ export function scanNpc(state, memberId, npcId) {
     bonusMomentum: prepared.bonusMomentum,
   })
   const { resources } = saveMomentum(state.resources, savableMomentum(result))
-  // A success keeps what was learned even if a later scan of the same NPC fails.
+  // Party keeps any prior success; each member who succeeds is recorded in scannedBy (once each).
   const previous = state.npcScans?.[npcId]
   const success = result.success || Boolean(previous?.success)
+  const scannedBy = nextScannedBy(previous, memberId, result.success)
   return {
     ...state,
     resources,
     scenario: { ...state.scenario, taskCount: key + 1 },
     scanReadyAt: { ...state.scanReadyAt, [memberId]: state.world.time + scanData.cooldownSeconds },
-    npcScans: { ...state.npcScans, [npcId]: { key, memberId, success, rolledSuccess: result.success, successes: result.successes, difficulty: prepared.difficulty } },
+    npcScans: {
+      ...state.npcScans,
+      [npcId]: {
+        key,
+        memberId,
+        success,
+        rolledSuccess: result.success,
+        successes: result.successes,
+        difficulty: prepared.difficulty,
+        scannedBy,
+      },
+    },
     // Where the scanner and the NPC stood: the screen draws a ring around each (pixi/effects.js ScanView).
     lastTargetScan: {
       key,
@@ -174,6 +231,7 @@ export function scanDestructible(state, memberId, objectId) {
   const { resources } = saveMomentum(state.resources, savableMomentum(result))
   const previous = state.objectScans?.[objectId]
   const success = result.success || Boolean(previous?.success)
+  const scannedBy = nextScannedBy(previous, memberId, result.success)
   return {
     ...state,
     resources,
@@ -181,7 +239,15 @@ export function scanDestructible(state, memberId, objectId) {
     scanReadyAt: { ...state.scanReadyAt, [memberId]: state.world.time + scanData.cooldownSeconds },
     objectScans: {
       ...state.objectScans,
-      [objectId]: { key, memberId, success, rolledSuccess: result.success, successes: result.successes, difficulty: prepared.difficulty },
+      [objectId]: {
+        key,
+        memberId,
+        success,
+        rolledSuccess: result.success,
+        successes: result.successes,
+        difficulty: prepared.difficulty,
+        scannedBy,
+      },
     },
     lastTargetScan: {
       key,
@@ -216,6 +282,7 @@ export function scanChallenge(state, memberId, objectId) {
   const { resources } = saveMomentum(state.resources, savableMomentum(result))
   const previous = state.objectScans?.[objectId]
   const success = result.success || Boolean(previous?.success)
+  const scannedBy = nextScannedBy(previous, memberId, result.success)
   return {
     ...state,
     resources,
@@ -223,7 +290,15 @@ export function scanChallenge(state, memberId, objectId) {
     scanReadyAt: { ...state.scanReadyAt, [memberId]: state.world.time + scanData.cooldownSeconds },
     objectScans: {
       ...state.objectScans,
-      [objectId]: { key, memberId, success, rolledSuccess: result.success, successes: result.successes, difficulty: prepared.difficulty },
+      [objectId]: {
+        key,
+        memberId,
+        success,
+        rolledSuccess: result.success,
+        successes: result.successes,
+        difficulty: prepared.difficulty,
+        scannedBy,
+      },
     },
     lastTargetScan: {
       key,
@@ -231,6 +306,55 @@ export function scanChallenge(state, memberId, objectId) {
       objectId,
       origin: { x: member.position.x, y: member.position.y },
       targetOrigin: { x: position.x, y: position.y },
+      radius: scanRadius(member.character),
+    },
+  }
+}
+
+// The member scans a Fishing Spot. Success records objectScans[fishing:spotId] for the ripple's ring card.
+export function scanFishingSpot(state, memberId, spotId) {
+  if (!canScanFishingSpot(state, memberId, spotId).possible) return state
+  const member = state.party.members[memberId]
+  const spot = fishingSpotById(state, spotId)
+  const prepared = prepareScan(member, state)
+  if (!prepared.possible) return state
+
+  const key = state.scenario.taskCount
+  const random = seededRandomInt(deriveSeed(state.seed, TASK_SEED_OFFSET + key))
+  const result = resolveStaTask({
+    leader: { task: prepared.task, dice: rollDice(random, checkDicePurchase(state.resources).dice) },
+    difficulty: prepared.difficulty,
+    ignoreComplications: prepared.ignoreComplications,
+    bonusMomentum: prepared.bonusMomentum,
+  })
+  const { resources } = saveMomentum(state.resources, savableMomentum(result))
+  const scanId = fishingScanId(spotId)
+  const previous = state.objectScans?.[scanId]
+  const success = result.success || Boolean(previous?.success)
+  const scannedBy = nextScannedBy(previous, memberId, result.success)
+  return {
+    ...state,
+    resources,
+    scenario: { ...state.scenario, taskCount: key + 1 },
+    scanReadyAt: { ...state.scanReadyAt, [memberId]: state.world.time + scanData.cooldownSeconds },
+    objectScans: {
+      ...state.objectScans,
+      [scanId]: {
+        key,
+        memberId,
+        success,
+        rolledSuccess: result.success,
+        successes: result.successes,
+        difficulty: prepared.difficulty,
+        scannedBy,
+      },
+    },
+    lastTargetScan: {
+      key,
+      memberId,
+      objectId: scanId,
+      origin: { x: member.position.x, y: member.position.y },
+      targetOrigin: { x: spot.position.x, y: spot.position.y },
       radius: scanRadius(member.character),
     },
   }
@@ -256,6 +380,7 @@ export function scanGroundItem(state, memberId, instanceId) {
   const { resources } = saveMomentum(state.resources, savableMomentum(result))
   const previous = state.objectScans?.[instanceId]
   const success = result.success || Boolean(previous?.success)
+  const scannedBy = nextScannedBy(previous, memberId, result.success)
   return {
     ...state,
     resources,
@@ -263,7 +388,15 @@ export function scanGroundItem(state, memberId, instanceId) {
     scanReadyAt: { ...state.scanReadyAt, [memberId]: state.world.time + scanData.cooldownSeconds },
     objectScans: {
       ...state.objectScans,
-      [instanceId]: { key, memberId, success, rolledSuccess: result.success, successes: result.successes, difficulty: prepared.difficulty },
+      [instanceId]: {
+        key,
+        memberId,
+        success,
+        rolledSuccess: result.success,
+        successes: result.successes,
+        difficulty: prepared.difficulty,
+        scannedBy,
+      },
     },
     lastTargetScan: {
       key,
