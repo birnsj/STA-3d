@@ -57,7 +57,6 @@ import {
 import {
   canEditLayer,
   LAYER_LABELS,
-  layerOfSelection,
   layerOfTemplatePiece,
   layerOfTile,
   selectionPriority,
@@ -162,7 +161,7 @@ function cellAssemblyLayers(map, position, objectDefinitions) {
 // in front of the user, which clears the selection. suspended: a popup or full-screen editor is open, so the keys stand
 // aside. onObjectivePlaced(index): an objective sent here by the Objective Editor was placed (or cancelled), so it reopens.
 // itemGridSize: world-pixel snap for ground items (matches the toolbar guide grid; default 2 = play 32×32).
-// layers / setActiveLayer: editor layer state from useEditorLayers (visibility / lock / active).
+// layers: editor layer state from useEditorLayers (visibility / lock / active for selection priority).
 // beginStroke / endStroke: undo coalescing.
 export default function useEditorTools({
   map,
@@ -174,7 +173,6 @@ export default function useEditorTools({
   onObjectivePlaced,
   itemGridSize = 2,
   layers = null,
-  setActiveLayer = null,
   beginStroke = null,
   endStroke = null,
 }) {
@@ -398,7 +396,6 @@ export default function useEditorTools({
         if (!canEditLayer(layers, deleteLayer)) {
           return setStatus(`${LAYER_LABELS[deleteLayer] ?? deleteLayer} layer is locked or hidden.`)
         }
-        ensureActiveLayer(deleteLayer)
         edit(removeTemplatePiece(map, selectedTemplatePiece.id))
         setSelectedTemplatePieceId(null)
         setMovingTemplatePiece(false)
@@ -408,7 +405,6 @@ export default function useEditorTools({
       if ((event.key === 'Delete' || event.key === 'Backspace') && selectedGroundItem) {
         event.preventDefault()
         if (!canEditLayer(layers, 'furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
-        ensureActiveLayer('furniture')
         edit(removeGroundItem(map, selectedGroundItem.id))
         setSelectedGroundItemId(null)
         setMovingGroundItem(false)
@@ -418,7 +414,6 @@ export default function useEditorTools({
       if ((event.key === 'Delete' || event.key === 'Backspace') && selectedFishingSpot) {
         event.preventDefault()
         if (!canEditLayer(layers, 'markers')) return setStatus('Markers / Triggers layer is locked or hidden.')
-        ensureActiveLayer('markers')
         edit(removeFishingSpot(map, selectedFishingSpot.id))
         setSelectedFishingSpotId(null)
         setMovingFishingSpot(false)
@@ -534,13 +529,6 @@ export default function useEditorTools({
 
   const layerAllowsTool = (layerId) => canEditLayer(layers, layerId)
 
-  /** Switch the Layers / Assets active tab to match the brush or board pick (does not unlock/unhide). */
-  const ensureActiveLayer = (layerId) => {
-    if (!layerId || !setActiveLayer) return
-    if (!LAYER_LABELS[layerId]) return
-    if (layers?.active === layerId) return
-    setActiveLayer(layerId)
-  }
 
   const clearSelectionModes = () => {
     setPlacingObject(false)
@@ -590,17 +578,6 @@ export default function useEditorTools({
       setEditingPatrol(false)
       setSelectedWaypointIndex(null)
       setMovingWaypoint(false)
-    }
-    // Board pick / Delete target: flip Assets + Layers to the content's layer.
-    // Spawn markers stay on the Markers palette (not Characters / NPC tool).
-    if (isCharacterSpawnKind(candidate?.kind)) {
-      ensureActiveLayer('markers')
-    } else {
-      const pickLayer =
-        candidate?.layer ||
-        (candidate?.kind === 'templatePiece' ? layerOfTemplatePiece(candidate.templatePiece?.pieceId) : null) ||
-        layerOfSelection(candidate?.kind)
-      if (pickLayer) ensureActiveLayer(pickLayer)
     }
   }
 
@@ -807,10 +784,132 @@ export default function useEditorTools({
       setMovingTemplatePiece(false)
       return
     }
+    // Move must win over an active Template / Inventory / tile brush — those tools stay selected in the
+    // palette while Move is on, and previously stole the click so P/E/C markers could not be picked up.
+    if (moving) {
+      if (!first) return
+      // Click-to-place when already carrying; click-to-pick otherwise (not drag-drop).
+      if (moveFrom) {
+        placeMoved(position, boardPoint)
+        return
+      }
+      // Markers before sprite hits: Template Pieces often cover the floor cell a P/E/H/N marker sits on.
+      if (hasMarkers(map, position)) {
+        const markerLayers = markerLayersAt(map, position)
+        const blocked = markerLayers.find((layerId) => !layerAllowsTool(layerId))
+        if (blocked) {
+          return setStatus(
+            `${blocked === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`,
+          )
+        }
+        selectAt(position, boardPoint)
+        setMoveFrom({
+          x: position.x,
+          y: position.y,
+          markers: true,
+          challengeObject: null,
+          destructible: null,
+          groundItem: null,
+          templatePiece: null,
+        })
+        setStatus('Carrying markers. Click to place · Esc cancels.')
+        return
+      }
+      // Challenge C markers (furniture layer) before Template Pieces that cover the same cell.
+      const hitChallenge = objectDefinitions.find(
+        (definition) => definition.position[0] === position.x && definition.position[1] === position.y,
+      )
+      if (hitChallenge) {
+        if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
+        selectAt(position, boardPoint)
+        setMoveFrom({
+          x: position.x,
+          y: position.y,
+          markers: false,
+          challengeObject: hitChallenge.id,
+          destructible: null,
+          groundItem: null,
+          templatePiece: null,
+        })
+        setStatus(`Carrying ${hitChallenge.name ?? hitChallenge.id}. Click to place · Esc cancels.`)
+        return
+      }
+      const hitTemplate = boardPoint ? templatePieceAtBoard(map, boardPoint) : templatePieceAt(map, position, { cellPx: itemGridSize })
+      if (hitTemplate) {
+        const moveLayer = layerOfTemplatePiece(hitTemplate.pieceId)
+        if (!layerAllowsTool(moveLayer)) return setStatus(`${LAYER_LABELS[moveLayer] ?? moveLayer} layer is locked or hidden.`)
+        selectAt(position, boardPoint)
+        setMoveFrom({
+          x: position.x,
+          y: position.y,
+          templatePiece: hitTemplate.id,
+          markers: false,
+          challengeObject: null,
+          destructible: null,
+          groundItem: null,
+        })
+        setStatus(`Carrying ${hitTemplate.id}. Click to place · Esc cancels.`)
+        return
+      }
+      const hitItem = boardPoint ? groundItemAtBoard(map, boardPoint) : groundItemAt(map, position, { cellPx: itemGridSize })
+      if (hitItem) {
+        if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
+        selectAt(position, boardPoint)
+        setMoveFrom({
+          x: position.x,
+          y: position.y,
+          groundItem: hitItem.id,
+          markers: false,
+          challengeObject: null,
+          destructible: null,
+          templatePiece: null,
+        })
+        setStatus(`Carrying ${hitItem.id}. Click to place · Esc cancels.`)
+        return
+      }
+      const dest = destructibleAt(map, position)
+      if (dest) {
+        if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
+        selectAt(position, boardPoint)
+        setMoveFrom({
+          ...position,
+          markers: false,
+          challengeObject: null,
+          destructible: dest.id,
+          groundItem: null,
+          templatePiece: null,
+        })
+        setStatus(`Carrying ${dest.id}. Click to place · Esc cancels.`)
+        return
+      }
+      const tileId = map.tiles[position.y]?.[position.x]
+      if (tileId == null || isEmptyTile(tileId)) {
+        selectAt(position, boardPoint)
+        return
+      }
+      const assembly = cellAssemblyLayers(map, position, objectDefinitions)
+      const priority = selectionPriority(layers?.active)
+      const pick =
+        priority.find((layerId) => assembly.includes(layerId) && layerAllowsTool(layerId)) ??
+        assembly.find((layerId) => layerAllowsTool(layerId)) ??
+        assembly[0] ??
+        layerOfTile(tileId)
+      if (pick && !layerAllowsTool(pick)) return setStatus(`${LAYER_LABELS[pick] ?? pick} layer is locked or hidden.`)
+      selectAt(position, boardPoint)
+      setMoveFrom({
+        ...position,
+        markers: false,
+        challengeObject: null,
+        destructible: null,
+        groundItem: null,
+        templatePiece: null,
+      })
+      setStatus(`Carrying ${getTile(tileId)?.label ?? tileId}. Click to place · Esc cancels.`)
+      return
+    }
     if (tool?.startsWith('inventory:')) {
       if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
       if (first) {
-        ensureActiveLayer('furniture')
         onInventoryTool(position, tool.slice('inventory:'.length), boardPoint)
       }
       return
@@ -830,7 +929,6 @@ export default function useEditorTools({
       if (!layerAllowsTool(brushLayer)) {
         return setStatus(`${LAYER_LABELS[brushLayer] ?? brushLayer} layer is locked or hidden.`)
       }
-      if (first) ensureActiveLayer(brushLayer)
       const target = boardPoint ? templatePieceTargetAt(boardPoint, itemGridSize) : position
       const tipKey = templateTipKey(target, itemGridSize)
       // One place per guide-grid tip while dragging (same tip would otherwise spam-replace and advance the cycle).
@@ -853,7 +951,6 @@ export default function useEditorTools({
     if (tool === 'fishingSpot') {
       if (!first) return
       if (!layerAllowsTool('markers')) return setStatus('Markers / Triggers layer is locked or hidden.')
-      ensureActiveLayer('markers')
       const existing = fishingSpotAt(map, position)
       if (existing) {
         clearBoardSelection()
@@ -916,104 +1013,8 @@ export default function useEditorTools({
       setPlacingFromEditor(false)
       return
     }
-    if (moving) {
-      if (!first) return
-      // Click-to-place when already carrying; click-to-pick otherwise (not drag-drop).
-      if (moveFrom) {
-        placeMoved(position, boardPoint)
-        return
-      }
-      // Markers before sprite hits: Template Pieces often cover the floor cell a P/E/H/N marker sits on.
-      if (hasMarkers(map, position)) {
-        const markerLayers = markerLayersAt(map, position)
-        const blocked = markerLayers.find((layerId) => !layerAllowsTool(layerId))
-        if (blocked) {
-          return setStatus(
-            `${blocked === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`,
-          )
-        }
-        // Spawn markers → Markers palette; area labels → Markers; NPCs alone → Characters.
-        const onlySpawns =
-          markerLayers.includes('characters') &&
-          !npcAt(map, position) &&
-          CHARACTER_SPAWN_KINDS.some((kind) => (map.markers[kind] ?? []).some((m) => m.x === position.x && m.y === position.y))
-        ensureActiveLayer(onlySpawns || markerLayers.includes('markers') ? 'markers' : markerLayers[0] ?? 'characters')
-        selectAt(position, boardPoint)
-        setMoveFrom({
-          x: position.x,
-          y: position.y,
-          markers: true,
-          destructible: null,
-          groundItem: null,
-          templatePiece: null,
-        })
-        setStatus('Carrying markers. Click to place · Esc cancels.')
-        return
-      }
-      const hitTemplate = boardPoint ? templatePieceAtBoard(map, boardPoint) : templatePieceAt(map, position, { cellPx: itemGridSize })
-      if (hitTemplate) {
-        const moveLayer = layerOfTemplatePiece(hitTemplate.pieceId)
-        if (!layerAllowsTool(moveLayer)) return setStatus(`${LAYER_LABELS[moveLayer] ?? moveLayer} layer is locked or hidden.`)
-        ensureActiveLayer(moveLayer)
-        selectAt(position, boardPoint)
-        setMoveFrom({
-          x: position.x,
-          y: position.y,
-          templatePiece: hitTemplate.id,
-          markers: false,
-          destructible: null,
-          groundItem: null,
-        })
-        setStatus(`Carrying ${hitTemplate.id}. Click to place · Esc cancels.`)
-        return
-      }
-      const hitItem = boardPoint ? groundItemAtBoard(map, boardPoint) : groundItemAt(map, position, { cellPx: itemGridSize })
-      if (hitItem) {
-        if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
-        ensureActiveLayer('furniture')
-        selectAt(position, boardPoint)
-        setMoveFrom({
-          x: position.x,
-          y: position.y,
-          groundItem: hitItem.id,
-          markers: false,
-          destructible: null,
-          templatePiece: null,
-        })
-        setStatus(`Carrying ${hitItem.id}. Click to place · Esc cancels.`)
-        return
-      }
-      const dest = destructibleAt(map, position)
-      if (dest) {
-        if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
-        ensureActiveLayer('furniture')
-        selectAt(position, boardPoint)
-        setMoveFrom({ ...position, markers: false, destructible: dest.id, groundItem: null, templatePiece: null })
-        setStatus(`Carrying ${dest.id}. Click to place · Esc cancels.`)
-        return
-      }
-      const tileId = map.tiles[position.y]?.[position.x]
-      if (tileId == null || isEmptyTile(tileId)) {
-        selectAt(position, boardPoint)
-        return
-      }
-      const assembly = cellAssemblyLayers(map, position, objectDefinitions)
-      const priority = selectionPriority(layers?.active)
-      const pick =
-        priority.find((layerId) => assembly.includes(layerId) && layerAllowsTool(layerId)) ??
-        assembly.find((layerId) => layerAllowsTool(layerId)) ??
-        assembly[0] ??
-        layerOfTile(tileId)
-      if (pick && !layerAllowsTool(pick)) return setStatus(`${LAYER_LABELS[pick] ?? pick} layer is locked or hidden.`)
-      if (pick) ensureActiveLayer(pick)
-      selectAt(position, boardPoint)
-      setMoveFrom({ ...position, markers: false, destructible: null, groundItem: null, templatePiece: null })
-      setStatus(`Carrying ${getTile(tileId)?.label ?? tileId}. Click to place · Esc cancels.`)
-      return
-    }
     if (tool === 'eraseFloor') {
       if (!layerAllowsTool('ground')) return setStatus('Ground / Floors layer is locked or hidden.')
-      if (first) ensureActiveLayer('ground')
       const result = paintFloor(map, position, NULL_TILE, objectDefinitions)
       if (result.error) setStatus(result.error)
       else if (result.map !== map) edit(result.map)
@@ -1025,7 +1026,6 @@ export default function useEditorTools({
       if (!layerAllowsTool(eraseLayer)) {
         return setStatus('That layer is locked or hidden.')
       }
-      if (first) ensureActiveLayer(eraseLayer)
       const result = eraseStructure(map, position)
       if (result.error) setStatus(result.error)
       else if (result.map !== map) {
@@ -1047,7 +1047,6 @@ export default function useEditorTools({
         const tileId = cycleIds[paintCycleRef.current % cycleIds.length]
         const tileLayer = layerOfTile(tileId)
         if (!layerAllowsTool(tileLayer)) return setStatus(`${tileLayer} layer is locked or hidden.`)
-        if (first) ensureActiveLayer(tileLayer)
         let didPaint = false
         // Ground-layer tiles use paintFloor so walls keep their floorUnder memory.
         if (tileLayer === 'ground') {
@@ -1115,7 +1114,6 @@ export default function useEditorTools({
         setSelectedGroundItemId(null)
         setSelectedTemplatePieceId(null)
         setSelectedMarker({ kind: standingKind, x: position.x, y: position.y })
-        ensureActiveLayer('markers')
         setStatus('Editing marker — Properties tab (facing, roam). Erase Marker or Delete removes it.')
         return
       }
@@ -1132,7 +1130,6 @@ export default function useEditorTools({
       setSelectedGroundItemId(null)
       setSelectedTemplatePieceId(null)
       setSelectedMarker({ kind: tool, x: position.x, y: position.y })
-      ensureActiveLayer('markers')
       setStatus('Placed marker — Properties tab (facing, roam).')
     } else {
       edit(toggleMarker(map, tool, position))
@@ -1177,42 +1174,71 @@ export default function useEditorTools({
       setStatus(`Moved ${from.groundItem}.`)
       return
     }
+    if (from.challengeObject) {
+      if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
+      const dest = { x: Math.round(position.x), y: Math.round(position.y) }
+      if (dest.x === from.x && dest.y === from.y) {
+        setMoveFrom(null)
+        setStatus('Put back.')
+        return
+      }
+      if (isEmptyTile(map.tiles[dest.y]?.[dest.x])) {
+        return setStatus('Challenge objects must be placed on a map tile.')
+      }
+      const occupied = objectDefinitions.find(
+        (definition) =>
+          definition.id !== from.challengeObject &&
+          definition.position[0] === dest.x &&
+          definition.position[1] === dest.y,
+      )
+      if (occupied) return setStatus('That tile already has a challenge object.')
+      const definition = objectDefinitions.find((entry) => entry.id === from.challengeObject)
+      setMoveFrom(null)
+      edit({ ...map, objectPlacements: { ...(map.objectPlacements ?? {}), [from.challengeObject]: dest } })
+      setStatus(`Moved ${definition?.name ?? from.challengeObject} to (${dest.x}, ${dest.y}).`)
+      return
+    }
+    const destCell = { x: Math.round(position.x), y: Math.round(position.y) }
     // Same tile: put back without swapping.
-    if (position.x === from.x && position.y === from.y) {
+    if (destCell.x === from.x && destCell.y === from.y) {
       setMoveFrom(null)
       setStatus('Put back.')
       return
     }
     if (from.destructible) {
       if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
-      const moved = moveDestructible(map, from.destructible, position, objectTiles)
+      const moved = moveDestructible(map, from.destructible, destCell, objectTiles)
       if (moved === map) return setStatus('Destructible objects stand on free floor tiles (not under a challenge object).')
       setMoveFrom(null)
       edit(moved)
-      setStatus(`Moved ${from.destructible} to (${position.x}, ${position.y}).`)
+      setStatus(`Moved ${from.destructible} to (${destCell.x}, ${destCell.y}).`)
       return
     }
     if (from.markers) {
       const blockedLayer = markerLayersAt(map, from).find((layerId) => !layerAllowsTool(layerId))
-      if (blockedLayer) return setStatus(`${blockedLayer === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`)
-      const moved = moveMarkers(map, from, position)
+      if (blockedLayer) {
+        return setStatus(
+          `${blockedLayer === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`,
+        )
+      }
+      const moved = moveMarkers(map, from, destCell)
       if (moved.error) return setStatus(moved.error)
       setMoveFrom(null)
       edit(moved.map)
-      setStatus(`Moved markers from (${from.x}, ${from.y}) to (${position.x}, ${position.y}).`)
+      setStatus(`Moved markers from (${from.x}, ${from.y}) to (${destCell.x}, ${destCell.y}).`)
       return
     }
-    const blockedLayer = [...cellAssemblyLayers(map, from, objectDefinitions), ...cellAssemblyLayers(map, position, objectDefinitions)].find(
+    const blockedLayer = [...cellAssemblyLayers(map, from, objectDefinitions), ...cellAssemblyLayers(map, destCell, objectDefinitions)].find(
       (layerId) => !layerAllowsTool(layerId),
     )
     if (blockedLayer) return setStatus('A layer in that tile assembly is locked or hidden.')
-    const [fromTile, toTile] = [map.tiles[from.y][from.x], map.tiles[position.y][position.x]]
-    const swapped = swapTilesWithObjects(map, from, position, objectDefinitions)
+    const [fromTile, toTile] = [map.tiles[from.y][from.x], map.tiles[destCell.y][destCell.x]]
+    const swapped = swapTilesWithObjects(map, from, destCell, objectDefinitions)
     if (swapped.error) return setStatus(swapped.error)
     setMoveFrom(null)
     edit(swapped.map)
     setStatus(
-      `Swapped ${getTile(fromTile).label} (${from.x}, ${from.y}) with ${getTile(toTile).label} (${position.x}, ${position.y})${swapped.carried.length ? ', with its challenge object' : ''}.`,
+      `Swapped ${getTile(fromTile).label} (${from.x}, ${from.y}) with ${getTile(toTile).label} (${destCell.x}, ${destCell.y})${swapped.carried.length ? ', with its challenge object' : ''}.`,
     )
   }
 
@@ -1239,7 +1265,6 @@ export default function useEditorTools({
         setStatus(`${LAYER_LABELS[eraseLayer] ?? eraseLayer} layer is locked or hidden.`)
         return true
       }
-      ensureActiveLayer(eraseLayer)
       edit(removeTemplatePiece(map, hitTemplate.id))
       if (selectedTemplatePieceId === hitTemplate.id) {
         setSelectedTemplatePieceId(null)
@@ -1259,7 +1284,6 @@ export default function useEditorTools({
         setStatus('Furniture / Scenery layer is locked or hidden.')
         return true
       }
-      ensureActiveLayer('furniture')
       edit(removeGroundItem(map, hitItem.id))
       if (selectedGroundItemId === hitItem.id) {
         setSelectedGroundItemId(null)
@@ -1276,7 +1300,6 @@ export default function useEditorTools({
         setStatus('Furniture / Scenery layer is locked or hidden.')
         return true
       }
-      ensureActiveLayer('furniture')
       edit(removeDestructible(map, dest.id))
       if (selectedDestructibleId === dest.id) {
         setSelectedDestructibleId(null)
@@ -1296,7 +1319,6 @@ export default function useEditorTools({
         return true
       }
       const markerLayer = markerLayers[0] ?? 'characters'
-      ensureActiveLayer(markerLayer)
       edit(eraseMarkers(map, position, { characters: true, markers: true }))
       if (moveFrom?.markers && moveFrom.x === position.x && moveFrom.y === position.y) setMoveFrom(null)
       if (selectedMarker && selectedMarker.x === position.x && selectedMarker.y === position.y) {
@@ -1339,7 +1361,6 @@ export default function useEditorTools({
     const at = ordered.indexOf(tileId)
     paintCycleRef.current = at >= 0 ? at : 0
     setTool(`tile:${tileId}`)
-    ensureActiveLayer(layerOfTile(tileId))
     setRotated(isRotated(map, position))
     setStatus(`Brush: ${getTile(tileId).label}.`)
   }
@@ -1363,7 +1384,6 @@ export default function useEditorTools({
     setPlacing(true)
     setMoving(false)
     setMoveFrom(null)
-    ensureActiveLayer('ground')
     setStatus(`Auto-Paint: ${getAutoPaintRuleset(rulesetId)?.label ?? rulesetId}. Paint floors; walls rebuild automatically.`)
   }
 
@@ -1383,7 +1403,7 @@ export default function useEditorTools({
 
   // Assets thumbnail pick: clear board selection so Properties shows the catalogue asset.
   // Clicking a tile makes it the paint brush (replaces the cycle). Check more thumbs to multi-brush.
-  // Also flips the active layer so Place Tiles / Move / Delete stay on the matching Assets tab.
+  // Does not flip Assets tabs — those stay where the designer left them.
   const selectTool = (next) => {
     clearBoardSelection()
     setTool(next)
@@ -1391,32 +1411,18 @@ export default function useEditorTools({
       setPlacing(true)
       setMoving(false)
       setMoveFrom(null)
-      ensureActiveLayer('ground')
       setStatus(`Auto-Paint: ${getAutoPaintRuleset(autoPaintRulesetId)?.label ?? autoPaintRulesetId}`)
       return
     }
     if (next?.startsWith('tile:')) {
       const id = next.slice('tile:'.length)
-      ensureActiveLayer(layerOfTile(id))
       setPaintTileIds(new Set([id]))
       paintCycleRef.current = 0
     } else if (next?.startsWith('template:')) {
       const id = next.slice('template:'.length)
-      ensureActiveLayer(layerOfTemplatePiece(id))
       const ordered = orderedPaintTemplateIds(paintTemplateIds)
       const at = ordered.indexOf(id)
       if (at >= 0) paintTemplateCycleRef.current = at
-    } else if (next?.startsWith('inventory:') || next?.startsWith('destructible:') || next === 'hazard' || next === 'eraseHazard') {
-      ensureActiveLayer('furniture')
-    } else if (next === 'npcs') {
-      ensureActiveLayer('characters')
-    } else if (isCharacterSpawnKind(next) || next === 'area' || next === 'erase') {
-      // Keep the Markers palette open when switching spawn / erase tools.
-      ensureActiveLayer('markers')
-    } else if (next === 'eraseFloor') {
-      ensureActiveLayer('ground')
-    } else if (next === 'eraseStructure') {
-      ensureActiveLayer('walls')
     }
   }
 

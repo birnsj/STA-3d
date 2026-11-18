@@ -1,5 +1,5 @@
 {
-  "notes": "Auto-Paint / Generate Map rulesets. Template 32 = starship; Outdoor Template 32 = generic settlement; biome-* = outdoor settlement kits from biomes.json (ground/path/fence + outdoor wall faces). Selecting a biome ruleset sets map.biome.",
+  "notes": "Auto-Paint / Generate Map rulesets. Template 32 = starship; Bridge Template = TOS bridge kit (tplBridge*); Outdoor Template 32 = generic settlement; biome-* = outdoor settlement kits from biomes.json (ground/path/fence + outdoor wall faces). Selecting a biome ruleset sets map.biome.",
   "rulesets": [
     {
       "schemaVersion": 1,
@@ -58,6 +58,126 @@
         ],
         "minGap": 1,
         "preferOpenings": true
+      },
+      "props": {
+        "enabled": false,
+        "rules": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "bridge-template",
+      "label": "Bridge Template",
+      "environment": "starshipStation",
+      "wallMode": "tiles",
+      "underlayWallTile": "templateWall",
+      "floors": {
+        "defaultTile": [
+          {
+            "id": "tplBridgeFloor",
+            "weight": 3
+          },
+          {
+            "id": "tplBridgeWell",
+            "weight": 1
+          }
+        ],
+        "underWall": [
+          {
+            "id": "tplBridgeFloor32",
+            "weight": 1
+          }
+        ],
+        "variants": []
+      },
+      "walls": {
+        "straight": [
+          {
+            "id": "tplBridgeIndoorWall32",
+            "weight": 1
+          }
+        ],
+        "straightLong": [
+          {
+            "id": "tplBridgeIndoorWall32Long",
+            "weight": 1
+          }
+        ],
+        "corner": [
+          {
+            "id": "tplBridgeIndoorWall32Corner",
+            "weight": 1
+          }
+        ],
+        "hull": [
+          {
+            "id": "tplBridgeOutdoorWall32",
+            "weight": 1
+          }
+        ],
+        "hullLong": [
+          {
+            "id": "tplBridgeOutdoorWall32Long",
+            "weight": 1
+          }
+        ],
+        "hullCorner": [
+          {
+            "id": "tplBridgeOutdoorWall32Corner",
+            "weight": 1
+          }
+        ],
+        "doorFrame": [
+          {
+            "id": "tplBridgeIndoorWall32Door",
+            "weight": 1
+          }
+        ],
+        "fittings": [
+          {
+            "id": "tplBridgeViewscreenWall32",
+            "weight": 2
+          },
+          {
+            "id": "tplBridgeTurboliftWall32",
+            "weight": 1
+          },
+          {
+            "id": "tplBridgeHullWindowWall32",
+            "weight": 2
+          },
+          {
+            "id": "tplBridgeHullBayWall32",
+            "weight": 1
+          }
+        ],
+        "fittingChance": 0.14
+      },
+      "doors": {
+        "underlayTile": [
+          {
+            "id": "doorway",
+            "weight": 1
+          }
+        ],
+        "minGap": 1,
+        "preferOpenings": true
+      },
+      "pipeline": {
+        "claimExteriorNull": true,
+        "packLong": 128,
+        "packShort": 64,
+        "packStub": 32,
+        "doorCells": 2,
+        "doorTipUnits": 2,
+        "placeJunctionCorners": true,
+        "junctionArmFills": true,
+        "trimRunAtJunction": true,
+        "cornerEndCaps": true
+      },
+      "adjacency": {
+        "wallWall": [],
+        "wallFloor": []
       },
       "props": {
         "enabled": false,

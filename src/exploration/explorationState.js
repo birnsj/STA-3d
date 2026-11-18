@@ -6,7 +6,6 @@ import { controllerFor, isUp } from '../actors/controllers.js'
 import { getAuthoredCharacter, npcRulesFor } from '../character/authoredCharacters.js'
 import { assignNpcAppearances } from '../character/npcAppearance.js'
 import npcData from '../data/adaptation/exploration/npcs.json'
-import { spawnFacing } from '../maps/facing.js'
 import { createMissionResources } from '../rules/missionResources.js'
 import { chooseOption, continueConversation, leaveConversation, rollCheck, startConversation } from '../conversation/conversationRuntime.js'
 import { clampSimulationDelta, createNpc, createWorld, emitNoise, getNpcs, isHostile } from './awareness.js'
@@ -84,8 +83,8 @@ const patrolForRuntime = (patrol) =>
       }))
     : undefined
 
-// A map's NPCs: those placed on it in the map editor; otherwise its own entry in npcs.json, or the fallback test NPCs
-// on its enemy spawns.
+// A map's NPCs: those placed on it in the map editor; otherwise its own entry in npcs.json.
+// No auto-inject onto enemy spawns — empty maps stay empty (designer, 2026-11-17).
 export function npcConfigsFor(map) {
   if (map.npcs?.length) {
     return map.npcs.map((npc) => ({
@@ -97,12 +96,7 @@ export function npcConfigsFor(map) {
       ...(npc.perception ? { perception: npc.perception } : {}),
     }))
   }
-  const own = npcData.maps[map.id] ?? npcData.maps[map.name]
-  if (own) return own
-  return npcData.fallback.slice(0, map.markers.enemySpawns.length).map((config, index) => {
-    const spawn = map.markers.enemySpawns[index]
-    return { ...config, position: [spawn.x, spawn.y], facing: spawnFacing(map, spawn) }
-  })
+  return npcData.maps[map.id] ?? npcData.maps[map.name] ?? []
 }
 
 function createNpcWorld(map) {

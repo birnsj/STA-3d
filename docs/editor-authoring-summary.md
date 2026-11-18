@@ -34,8 +34,8 @@ Layout matches the Mission Editor mockup chrome (ed-shell).
     Search; selecting a thumbnail drives the paint tool and Selection props
     Multi-brush: checkboxes on tile / Template Piece thumbs cycle while painting
     (Unreal foliage-style); selected brush stays in the set
-    Paint / Move / Delete / board pick auto-select the matching active layer
-    so the Assets filter and Layers window stay in sync
+    Assets tabs stay on what you click (board pick / Move no longer yank the strip);
+    Layers window Active is separate selection-priority state
 
   Center — Viewport
     Map title, board (Pixi), tile coord HUD, notices

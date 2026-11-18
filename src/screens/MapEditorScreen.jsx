@@ -194,7 +194,6 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
     boardKey: doc.boardKey,
     suspended: dialogOpen || boardBlocked,
     layers: editorLayers.layers,
-    setActiveLayer: editorLayers.setActive,
     beginStroke: doc.beginStroke,
     endStroke: doc.endStroke,
     onObjectivePlaced: (index) => setObjectiveEditor({ index }),

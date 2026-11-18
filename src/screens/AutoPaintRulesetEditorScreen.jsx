@@ -1124,6 +1124,37 @@ export default function AutoPaintRulesetEditorScreen({
                     })}
                   />
                 ))}
+                <TileSpritePicker
+                  label="Fittings (optional)"
+                  labelTip="Alternate wall pieces (viewscreen, turbolift, etc.) that can replace some Straight runs when Fitting chance is above zero."
+                  options={tileOptions(WALL_FIELD, draft.walls.fittings ?? [])}
+                  value={draft.walls.fittings ?? []}
+                  multi
+                  weighted
+                  emptyText={emptyHint}
+                  resolveDropId={resolveDropToRole}
+                  acceptId={roleIdAllowed}
+                  titleForTile={roleThumbTitle}
+                  onChange={onWeightedRoleChange((entries) => patchWalls({ fittings: entries }), {
+                    allowEmpty: true,
+                  })}
+                />
+                <label className="ge-share">
+                  <span className="ce-field-label" title="Chance a packed Straight cell uses a Fitting piece instead of Straight / Long.">
+                    Fitting chance
+                  </span>
+                  <div className="ge-share-row">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={Math.round((Number(draft.walls.fittingChance) || 0) * 100)}
+                      onChange={(event) => patchWalls({ fittingChance: Number(event.target.value) / 100 })}
+                    />
+                    <span className="ge-share-pct">{Math.round((Number(draft.walls.fittingChance) || 0) * 100)}%</span>
+                  </div>
+                </label>
               </PropertySection>
 
               <PropertySection

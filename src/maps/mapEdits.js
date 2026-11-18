@@ -415,25 +415,30 @@ export const hasMarkers = (map, position) =>
 // The Move tool on a tile with markers: everything on it moves to `to`. Returns { map } or { error } (a start, spawn or
 // NPC can't stand in a solid tile or on another one; a tile holds one area label).
 export function moveMarkers(map, from, to) {
-  if (same(from, to)) return { map }
-  const standing = standsAt(map, from)
-  if (standing && getTile(map.tiles[to.y][to.x]).solid) {
+  const origin = { x: Math.round(from.x), y: Math.round(from.y) }
+  const dest = { x: Math.round(to.x), y: Math.round(to.y) }
+  if (same(origin, dest)) return { map }
+  const standing = standsAt(map, origin)
+  const destTile = getTile(map.tiles[dest.y]?.[dest.x])
+  if (standing && (!destTile || destTile.solid)) {
     return { error: 'Player starts, enemy spawns, animal spawns and NPCs stand on floor tiles.' }
   }
-  if (standing && standsAt(map, to)) {
+  if (standing && standsAt(map, dest)) {
     return { error: 'That tile already has a player start, enemy spawn, animal spawn or NPC.' }
   }
-  if (areaAt(map, from) && areaAt(map, to)) return { error: 'That tile already has an area label.' }
-  const shift = (position) => (same(position, from) ? to : position)
+  if (areaAt(map, origin) && areaAt(map, dest)) return { error: 'That tile already has an area label.' }
+  const shift = (position) => (same(position, origin) ? dest : position)
   // A start or spawn keeps its facing (and roam) when it moves.
-  const shiftSpawn = (spawn) => (same(spawn, from) ? { ...spawn, x: to.x, y: to.y } : spawn)
+  const shiftSpawn = (spawn) => (same(spawn, origin) ? { ...spawn, x: dest.x, y: dest.y } : spawn)
   return {
     map: {
       ...map,
       markers: mapCharacterMarkers(map, shiftSpawn),
       npcs: (map.npcs ?? []).map((npc) => ({ ...npc, position: shift(npc.position) })),
       areas: map.areas.map((area) => ({ ...area, position: shift(area.position) })),
-      objectives: (map.objectives ?? []).map((objective) => (objective.position ? { ...objective, position: shift(objective.position) } : objective)),
+      objectives: (map.objectives ?? []).map((objective) =>
+        objective.position ? { ...objective, position: shift(objective.position) } : objective,
+      ),
     },
   }
 }

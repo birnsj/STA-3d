@@ -18,8 +18,8 @@
 // portraitId (npcPortraits.json; null: Auto, see character/npcAppearance.js), patrol (waypoints walked in order,
 // looping: [{ at, wait, facing?, animation?, animationDuration?, animationLoop? }], same schema as npcs.json; left out
 // when empty; animation fields are optional idle fidgets — see waypointAnimations.js), perception (optional overrides of
-// awareness.json perceptionDefaults; only set keys are stored) }. A map with NPCs of its own doesn't get npcs.json's
-// test NPCs.
+// awareness.json perceptionDefaults; only set keys are stored) }. A map with NPCs of its own replaces any npcs.json
+// entry for that map; a map with none uses npcs.json only when listed there (no enemy-spawn auto-inject).
 // objectives: [{ id, title, description, position (the minimap marks it while active; null: no marker), activeWhen,
 // completeWhen }]; their progress is a mission flag (exploration/missionFlags.js). activeWhen / completeWhen: mission
 // flag conditions (all must hold) that set it active / complete by themselves (missionObjectives.js); empty or left

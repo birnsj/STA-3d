@@ -141,9 +141,11 @@ export function templatePieceSpriteInfo(piece) {
   const tags = piece.tags ?? []
   const group = tags.includes('dimension')
     ? { id: 'template-dimension', label: 'Dimension', section: null }
-    : tags.includes('outdoor')
-      ? { id: 'template-outdoor-32', label: 'Outdoor Template 32', section: null }
-      : { id: 'template-pieces', label: 'Template Pieces', section: null }
+    : tags.includes('bridge')
+      ? { id: 'template-bridge', label: 'Bridge Template', section: null }
+      : tags.includes('outdoor')
+        ? { id: 'template-outdoor-32', label: 'Outdoor Template 32', section: null }
+        : { id: 'template-pieces', label: 'Template Pieces', section: null }
   return {
     id: piece.id,
     label: piece.label,
@@ -201,12 +203,16 @@ export function templatePieceFootprint(def, rotation = 0) {
 export function templatePieceGroups() {
   if (!TEMPLATE_PIECES.length) return []
   const hasTag = (piece, tag) => (piece.tags ?? []).includes(tag)
-  const outdoor = TEMPLATE_PIECES.filter((piece) => hasTag(piece, 'outdoor'))
+  const outdoor = TEMPLATE_PIECES.filter((piece) => hasTag(piece, 'outdoor') && !hasTag(piece, 'bridge'))
   const dimension = TEMPLATE_PIECES.filter((piece) => hasTag(piece, 'dimension'))
-  const starship = TEMPLATE_PIECES.filter((piece) => !hasTag(piece, 'outdoor') && !hasTag(piece, 'dimension'))
+  const bridge = TEMPLATE_PIECES.filter((piece) => hasTag(piece, 'bridge'))
+  const starship = TEMPLATE_PIECES.filter(
+    (piece) => !hasTag(piece, 'outdoor') && !hasTag(piece, 'dimension') && !hasTag(piece, 'bridge'),
+  )
   const groups = []
   if (starship.length) groups.push({ id: 'template-pieces', label: 'Template Pieces', pieces: starship })
   if (outdoor.length) groups.push({ id: 'template-outdoor-32', label: 'Outdoor Template 32', pieces: outdoor })
+  if (bridge.length) groups.push({ id: 'template-bridge', label: 'Bridge Template', pieces: bridge })
   if (dimension.length) groups.push({ id: 'template-dimension', label: 'Dimension', pieces: dimension })
   return groups
 }

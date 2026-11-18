@@ -1,0 +1,795 @@
+{
+  "schemaVersion": 2,
+  "name": "TOS Bridge",
+  "episodeName": "TOS Bridge",
+  "card": null,
+  "mapType": "templateDeck",
+  "biome": "temperate",
+  "weather": "clear",
+  "ambient": 88,
+  "ambientColour": "#0a1018",
+  "rows": [
+    "ġġġġġġġġġġġġġġġġġġġġ",
+    "ġġġġġġġġŻŻŻŻġġġġġġġġ",
+    "ġġġġġŻŻŻ....ŻŻŻġġġġġ",
+    "ġġġġŻ..........Żġġġġ",
+    "ġġġŻ............Żġġġ",
+    "ġġŻ..............Żġġ",
+    "ġġŻ..............Żġġ",
+    "ġŻ................Żġ",
+    "ġŻ................Żġ",
+    "ġŻ................Żġ",
+    "ġŻ................Żġ",
+    "ġġŻ..............Żġġ",
+    "ġġŻ..............Żġġ",
+    "ġġġŻ............Żġġġ",
+    "ġġġġŻ..........Żġġġġ",
+    "ġġġġġŻŻŻ....ŻŻŻġġġġġ",
+    "ġġġġġġġġŻŻŻŻġġġġġġġġ",
+    "ġġġġġġġġġġġġġġġġġġġġ"
+  ],
+  "rotated": [],
+  "floorUnder": {
+    "8,1": "floor",
+    "9,1": "floor",
+    "10,1": "floor",
+    "11,1": "floor",
+    "5,2": "floor",
+    "6,2": "floor",
+    "7,2": "floor",
+    "12,2": "floor",
+    "13,2": "floor",
+    "14,2": "floor",
+    "4,3": "floor",
+    "15,3": "floor",
+    "3,4": "floor",
+    "16,4": "floor",
+    "2,5": "floor",
+    "17,5": "floor",
+    "2,6": "floor",
+    "17,6": "floor",
+    "1,7": "floor",
+    "18,7": "floor",
+    "1,8": "floor",
+    "18,8": "floor",
+    "1,9": "floor",
+    "18,9": "floor",
+    "1,10": "floor",
+    "18,10": "floor",
+    "2,11": "floor",
+    "17,11": "floor",
+    "2,12": "floor",
+    "17,12": "floor",
+    "3,13": "floor",
+    "16,13": "floor",
+    "4,14": "floor",
+    "15,14": "floor",
+    "5,15": "floor",
+    "6,15": "floor",
+    "7,15": "floor",
+    "12,15": "floor",
+    "13,15": "floor",
+    "14,15": "floor",
+    "8,16": "floor",
+    "9,16": "floor",
+    "10,16": "floor",
+    "11,16": "floor"
+  },
+  "areas": [
+    {
+      "name": "Main Bridge",
+      "position": [
+        10,
+        9
+      ]
+    },
+    {
+      "name": "Viewscreen",
+      "position": [
+        10,
+        4
+      ]
+    },
+    {
+      "name": "Turbolift",
+      "position": [
+        11,
+        15
+      ]
+    }
+  ],
+  "markers": {
+    "playerStarts": [
+      [
+        10,
+        12
+      ],
+      [
+        9,
+        12
+      ],
+      [
+        11,
+        12
+      ],
+      [
+        10,
+        13
+      ]
+    ],
+    "enemySpawns": []
+  },
+  "objects": [
+    {
+      "id": "captainsChair",
+      "name": "Captain's Chair",
+      "type": "console",
+      "position": [
+        10,
+        9
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "The command chair at the heart of the bridge."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "mainViewscreen",
+      "name": "Main Viewscreen",
+      "type": "console",
+      "position": [
+        10,
+        4
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "The primary optical viewer at the forward bulkhead."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "helmConsole",
+      "name": "Helm Console",
+      "type": "console",
+      "position": [
+        10,
+        7
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "Flight control station ahead of the captain."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "tacticalConsole",
+      "name": "Tactical Console",
+      "type": "console",
+      "position": [
+        8,
+        7
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "Weapons and defensive systems station."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "scienceConsole",
+      "name": "Science Console",
+      "type": "console",
+      "position": [
+        14,
+        8
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "Sensors and science analysis station."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "commsConsole",
+      "name": "Communications Console",
+      "type": "console",
+      "position": [
+        6,
+        10
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "Ship-to-ship and subspace communications."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "engineeringConsole",
+      "name": "Engineering Console",
+      "type": "console",
+      "position": [
+        14,
+        11
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "Damage control and engineering readouts."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "crewChairPort",
+      "name": "Crew Chair",
+      "type": "furniture",
+      "position": [
+        9,
+        8
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "A bridge duty chair."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "crewChairStarboard",
+      "name": "Crew Chair",
+      "type": "furniture",
+      "position": [
+        12,
+        8
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Idle",
+          "description": "A bridge duty chair."
+        }
+      },
+      "actions": []
+    },
+    {
+      "id": "turboliftDoor",
+      "name": "Turbolift Door",
+      "type": "door",
+      "position": [
+        11,
+        15
+      ],
+      "state": "idle",
+      "states": {
+        "idle": {
+          "label": "Closed",
+          "description": "The turbolift doors are sealed."
+        },
+        "open": {
+          "label": "Open",
+          "description": "The turbolift car is available."
+        }
+      },
+      "actions": [],
+      "covers": [
+        [
+          11,
+          15
+        ]
+      ]
+    }
+  ],
+  "templatePiecePlacements": [
+    {
+      "id": "tplBridgeFloor-1",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        7,
+        6
+      ],
+      "order": 1
+    },
+    {
+      "id": "tplBridgeFloor-2",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        9,
+        6
+      ],
+      "order": 2
+    },
+    {
+      "id": "tplBridgeFloor-3",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        11,
+        6
+      ],
+      "order": 3
+    },
+    {
+      "id": "tplBridgeFloor-4",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        13,
+        6
+      ],
+      "order": 4
+    },
+    {
+      "id": "tplBridgeFloor-5",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        7,
+        8
+      ],
+      "order": 5
+    },
+    {
+      "id": "tplBridgeFloor-6",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        9,
+        8
+      ],
+      "order": 6
+    },
+    {
+      "id": "tplBridgeFloor-7",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        11,
+        8
+      ],
+      "order": 7
+    },
+    {
+      "id": "tplBridgeFloor-8",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        13,
+        8
+      ],
+      "order": 8
+    },
+    {
+      "id": "tplBridgeFloor-9",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        7,
+        10
+      ],
+      "order": 9
+    },
+    {
+      "id": "tplBridgeFloor-10",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        9,
+        10
+      ],
+      "order": 10
+    },
+    {
+      "id": "tplBridgeFloor-11",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        11,
+        10
+      ],
+      "order": 11
+    },
+    {
+      "id": "tplBridgeFloor-12",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        13,
+        10
+      ],
+      "order": 12
+    },
+    {
+      "id": "tplBridgeFloor-13",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        7,
+        12
+      ],
+      "order": 13
+    },
+    {
+      "id": "tplBridgeFloor-14",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        9,
+        12
+      ],
+      "order": 14
+    },
+    {
+      "id": "tplBridgeFloor-15",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        11,
+        12
+      ],
+      "order": 15
+    },
+    {
+      "id": "tplBridgeFloor-16",
+      "pieceId": "tplBridgeFloor",
+      "position": [
+        13,
+        12
+      ],
+      "order": 16
+    },
+    {
+      "id": "tplBridgeWell-17",
+      "pieceId": "tplBridgeWell",
+      "position": [
+        9,
+        9
+      ],
+      "order": 17
+    },
+    {
+      "id": "tplBridgeWell-18",
+      "pieceId": "tplBridgeWell",
+      "position": [
+        11,
+        9
+      ],
+      "order": 18
+    },
+    {
+      "id": "tplBridgeWell-19",
+      "pieceId": "tplBridgeWell",
+      "position": [
+        9,
+        11
+      ],
+      "order": 19
+    },
+    {
+      "id": "tplBridgeWell-20",
+      "pieceId": "tplBridgeWell",
+      "position": [
+        11,
+        11
+      ],
+      "order": 20
+    },
+    {
+      "id": "tplBridgeIndoorWall32Concave-21",
+      "pieceId": "tplBridgeIndoorWall32Concave",
+      "position": [
+        5.5,
+        4.5
+      ],
+      "order": 21
+    },
+    {
+      "id": "tplBridgeIndoorWall32Concave-22",
+      "pieceId": "tplBridgeIndoorWall32Concave",
+      "position": [
+        15.5,
+        4.5
+      ],
+      "rotation": 90,
+      "order": 22
+    },
+    {
+      "id": "tplBridgeIndoorWall32Concave-23",
+      "pieceId": "tplBridgeIndoorWall32Concave",
+      "position": [
+        15.5,
+        14.5
+      ],
+      "rotation": 180,
+      "order": 23
+    },
+    {
+      "id": "tplBridgeIndoorWall32Concave-24",
+      "pieceId": "tplBridgeIndoorWall32Concave",
+      "position": [
+        5.5,
+        14.5
+      ],
+      "rotation": 270,
+      "order": 24
+    },
+    {
+      "id": "tplBridgeIndoorWall32Long-25",
+      "pieceId": "tplBridgeIndoorWall32Long",
+      "position": [
+        9.5,
+        3.5
+      ],
+      "order": 25
+    },
+    {
+      "id": "tplBridgeViewscreenWall32Long-26",
+      "pieceId": "tplBridgeViewscreenWall32Long",
+      "position": [
+        13.5,
+        3.5
+      ],
+      "order": 26
+    },
+    {
+      "id": "tplBridgeViewscreenWall32-27",
+      "pieceId": "tplBridgeViewscreenWall32",
+      "position": [
+        7.5,
+        3.5
+      ],
+      "order": 27
+    },
+    {
+      "id": "tplBridgeIndoorWall32Long-28",
+      "pieceId": "tplBridgeIndoorWall32Long",
+      "position": [
+        16.5,
+        8.5
+      ],
+      "rotation": 90,
+      "order": 28
+    },
+    {
+      "id": "tplBridgeIndoorWall32Long-29",
+      "pieceId": "tplBridgeIndoorWall32Long",
+      "position": [
+        16.5,
+        12.5
+      ],
+      "rotation": 90,
+      "order": 29
+    },
+    {
+      "id": "tplBridgeIndoorWall32Long-30",
+      "pieceId": "tplBridgeIndoorWall32Long",
+      "position": [
+        13.5,
+        15.5
+      ],
+      "rotation": 180,
+      "order": 30
+    },
+    {
+      "id": "tplBridgeTurboliftWall32-31",
+      "pieceId": "tplBridgeTurboliftWall32",
+      "position": [
+        9.5,
+        15.5
+      ],
+      "rotation": 180,
+      "order": 31
+    },
+    {
+      "id": "tplBridgeIndoorWall32Long-32",
+      "pieceId": "tplBridgeIndoorWall32Long",
+      "position": [
+        4.5,
+        12.5
+      ],
+      "rotation": 270,
+      "order": 32
+    },
+    {
+      "id": "tplBridgeIndoorWall32Long-33",
+      "pieceId": "tplBridgeIndoorWall32Long",
+      "position": [
+        4.5,
+        8.5
+      ],
+      "rotation": 270,
+      "order": 33
+    },
+    {
+      "id": "tplBridgeIndoorWall32Corner-34",
+      "pieceId": "tplBridgeIndoorWall32Corner",
+      "position": [
+        11.5,
+        3.5
+      ],
+      "order": 34
+    },
+    {
+      "id": "tplBridgeIndoorWall32Door-35",
+      "pieceId": "tplBridgeIndoorWall32Door",
+      "position": [
+        11.5,
+        15.5
+      ],
+      "rotation": 180,
+      "order": 35
+    },
+    {
+      "id": "tplBridgeTurboliftDoor-36",
+      "pieceId": "tplBridgeTurboliftDoor",
+      "position": [
+        11.5,
+        15.5
+      ],
+      "rotation": 180,
+      "order": 36
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Long-37",
+      "pieceId": "tplBridgeOutdoorWall32Long",
+      "position": [
+        10.5,
+        2.5
+      ],
+      "order": 37
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Concave-38",
+      "pieceId": "tplBridgeOutdoorWall32Concave",
+      "position": [
+        4.5,
+        3.5
+      ],
+      "order": 38
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Concave-39",
+      "pieceId": "tplBridgeOutdoorWall32Concave",
+      "position": [
+        16.5,
+        3.5
+      ],
+      "rotation": 90,
+      "order": 39
+    },
+    {
+      "id": "tplBridgeViewscreen-40",
+      "pieceId": "tplBridgeViewscreen",
+      "position": [
+        10.5,
+        4.1
+      ],
+      "order": 40
+    },
+    {
+      "id": "tplBridgeCaptainsChair-41",
+      "pieceId": "tplBridgeCaptainsChair",
+      "position": [
+        10.3,
+        9.8
+      ],
+      "order": 41
+    },
+    {
+      "id": "tplBridgeHelmConsole-42",
+      "pieceId": "tplBridgeHelmConsole",
+      "position": [
+        10.3,
+        7.4
+      ],
+      "order": 42
+    },
+    {
+      "id": "tplBridgeRail-43",
+      "pieceId": "tplBridgeRail",
+      "position": [
+        10.3,
+        8.6
+      ],
+      "order": 43
+    },
+    {
+      "id": "tplBridgeTacticalConsole-44",
+      "pieceId": "tplBridgeTacticalConsole",
+      "position": [
+        7.6,
+        7.6
+      ],
+      "rotation": 315,
+      "order": 44
+    },
+    {
+      "id": "tplBridgeScienceConsole-45",
+      "pieceId": "tplBridgeScienceConsole",
+      "position": [
+        14,
+        8.4
+      ],
+      "rotation": 90,
+      "order": 45
+    },
+    {
+      "id": "tplBridgeCommsConsole-46",
+      "pieceId": "tplBridgeCommsConsole",
+      "position": [
+        5.8,
+        10.4
+      ],
+      "rotation": 270,
+      "order": 46
+    },
+    {
+      "id": "tplBridgeEngineeringConsole-47",
+      "pieceId": "tplBridgeEngineeringConsole",
+      "position": [
+        14,
+        11.6
+      ],
+      "rotation": 90,
+      "order": 47
+    },
+    {
+      "id": "tplBridgeCrewChair-48",
+      "pieceId": "tplBridgeCrewChair",
+      "position": [
+        8.6,
+        8.5
+      ],
+      "order": 48
+    },
+    {
+      "id": "tplBridgeCrewChair-49",
+      "pieceId": "tplBridgeCrewChair",
+      "position": [
+        12,
+        8.5
+      ],
+      "order": 49
+    },
+    {
+      "id": "tplBridgeCrewChair-50",
+      "pieceId": "tplBridgeCrewChair",
+      "position": [
+        7.2,
+        11.2
+      ],
+      "rotation": 270,
+      "order": 50
+    },
+    {
+      "id": "tplBridgeCrewChair-51",
+      "pieceId": "tplBridgeCrewChair",
+      "position": [
+        13.4,
+        11.2
+      ],
+      "rotation": 90,
+      "order": 51
+    }
+  ],
+  "autoPaint": {
+    "rulesetId": "bridge-template",
+    "defaultEnvironment": "starshipStation",
+    "regions": [
+      {
+        "id": "region-1",
+        "floorKeys": [],
+        "generatedWallKeys": []
+      }
+    ]
+  },
+  "briefing": "Constitution-class main bridge. Station ring, command well, viewscreen forward, turbolift aft."
+}

@@ -6,7 +6,7 @@
     "maps: NPCs for one map, keyed by map file name. position [x, y] in tiles; facing in degrees (0 = toward increasing x, 90 = toward increasing y). disposition, alertGroupId, alertMethod, responseType and perception overrides: see awareness.json.",
     "patrol: waypoints walked in order, looping. wait in seconds; facing (optional) is turned to while waiting. Several waypoints on the same spot make a guard who stands and looks around.",
     "Vault of the Ancients: Guard A (Wary) stands in the west end of the pillared hall looking east; the party's room door opens behind him. Guard B (Hostile, raises the alarm) patrols the room north of the hall, same alert group. Guard C (Aggressive, separate group) watches the door of the south-east room.",
-    "fallback: maps without their own entry get these NPCs on their enemy spawns in order, facing the map centre and standing still."
+    "Maps with no map.npcs and no entry here get no NPCs (designer 2026-11-17: do not auto-inject onto enemy spawns)."
   ],
   "maps": {
     "Vault of the Ancients": [
@@ -52,10 +52,5 @@
         ]
       }
     ]
-  },
-  "fallback": [
-    { "id": "guardA", "name": "Guard A", "characterId": "klingonWarrior1", "disposition": "wary", "alertGroupId": "security-a", "alertMethod": "shout" },
-    { "id": "guardB", "name": "Guard B", "characterId": "klingonWarrior2", "disposition": "hostile", "responseType": "alarm", "alertGroupId": "security-a", "alertMethod": "shout" },
-    { "id": "guardC", "name": "Guard C", "characterId": "klingonWarrior3", "disposition": "aggressive", "alertGroupId": "security-b", "alertMethod": "shout" }
-  ]
+  }
 }

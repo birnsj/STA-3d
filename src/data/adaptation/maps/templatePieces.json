@@ -11,7 +11,8 @@
     "Dimension Kit (tplDim*): solid-but-lit AA size/footprint tests. Separate from Starship templates and Calibration tiles. Art via scripts/makeDimensionKit.mjs.",
     "Outdoor Template 32 (tplOutdoor*): overlay copies of curated outdoor tiles (roads, fields, trees, props) that reuse the tile PNGs — no new art. Pieces with solid: true block movement like their tile (templatePieces.isTemplateWallCollider); walls are the baked 32-thick kit from scripts/makeOutdoorTemplatePieces.mjs. Tag outdoor; group Outdoor Template 32.",
     "Outdoor Template 32 walls (tplOutdoor*Wall32*): 32 thick (64 / 128 run); corner post 32×32. Faces match outdoor builtWall tiles (prefab / barn / city / timber / stone / ruin). Art via scripts/makeOutdoorTemplatePieces.mjs. Floors/props remain tile-art overlays.",
-    "Outdoor fence (tplOutdoorFence64 / Corner / Gate64): chunky timber post-and-rail 64×32 + corner post + 64 gate. Art via scripts/makeOutdoorFencePieces.mjs."
+    "Outdoor fence (tplOutdoorFence64 / Corner / Gate64): chunky timber post-and-rail 64×32 + corner post + 64 gate. Art via scripts/makeOutdoorFencePieces.mjs.",
+    "Bridge Template (tplBridge*): original TOS faces (tosStation / tosViewscreen / tosTurbolift / tosHull) and prop materials — not Starship Template copies. Art via scripts/makeBridgeTemplatePieces.mjs. World Gen ruleset bridge-template. Palette group Bridge Template (tag bridge)."
   ],
   "pieces": [
     {
@@ -15126,6 +15127,2760 @@
       "cover": true,
       "fade": false,
       "solid": true
+    },
+    {
+      "id": "tplBridgeIndoorWall32",
+      "label": "TOS Station Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32.png",
+      "size": {
+        "width": 49,
+        "height": 117
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeIndoorWall32Long",
+      "label": "TOS Station Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 133
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeIndoorWall32Corner",
+      "label": "TOS Station Corner Post 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 109
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeIndoorWall32Concave",
+      "label": "TOS Station Concave Corner 128",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Concave.png",
+      "size": {
+        "width": 130,
+        "height": 157
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Concave_r90.png",
+          "size": {
+            "width": 130,
+            "height": 157
+          },
+          "anchorX": 65
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Concave_r180.png",
+          "size": {
+            "width": 130,
+            "height": 157
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Concave_r270.png",
+          "size": {
+            "width": 130,
+            "height": 157
+          },
+          "anchorX": 65
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "corner",
+        "concave"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 128
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeIndoorWall32Tee",
+      "label": "TOS Station Tee 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Tee.png",
+      "size": {
+        "width": 82,
+        "height": 133
+      },
+      "anchorX": 41,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Tee_r90.png",
+          "size": {
+            "width": 82,
+            "height": 133
+          },
+          "anchorX": 41
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Tee_r180.png",
+          "size": {
+            "width": 82,
+            "height": 133
+          },
+          "anchorX": 41
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Tee_r270.png",
+          "size": {
+            "width": 82,
+            "height": 133
+          },
+          "anchorX": 41
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "tee"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeIndoorWall32Cross",
+      "label": "TOS Station Cross 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Cross.png",
+      "size": {
+        "width": 66,
+        "height": 125
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Cross_r90.png",
+          "size": {
+            "width": 66,
+            "height": 125
+          },
+          "anchorX": 33
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Cross_r180.png",
+          "size": {
+            "width": 66,
+            "height": 125
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Cross_r270.png",
+          "size": {
+            "width": 66,
+            "height": 125
+          },
+          "anchorX": 33
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "cross"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeIndoorWall32Alcove",
+      "label": "TOS Station Alcove 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Alcove.png",
+      "size": {
+        "width": 46,
+        "height": 115
+      },
+      "anchorX": 25,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Alcove_r90.png",
+          "size": {
+            "width": 46,
+            "height": 115
+          },
+          "anchorX": 21
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Alcove_r180.png",
+          "size": {
+            "width": 46,
+            "height": 115
+          },
+          "anchorX": 25
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Alcove_r270.png",
+          "size": {
+            "width": 46,
+            "height": 115
+          },
+          "anchorX": 21
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "alcove"
+      ],
+      "footprint": {
+        "width": 48,
+        "depth": 40
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeIndoorWall32Door",
+      "label": "TOS Station Door Frame 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Door.png",
+      "size": {
+        "width": 49,
+        "height": 117
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Door_r90.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Door_r180.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeIndoorWall32Door_r270.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosStation",
+        "door"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32",
+      "label": "TOS Hull Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32.png",
+      "size": {
+        "width": 49,
+        "height": 113
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Long",
+      "label": "TOS Hull Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 129
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Corner",
+      "label": "TOS Hull Corner Post 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 105
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Concave",
+      "label": "TOS Hull Concave Corner 128",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Concave.png",
+      "size": {
+        "width": 130,
+        "height": 153
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Concave_r90.png",
+          "size": {
+            "width": 130,
+            "height": 153
+          },
+          "anchorX": 65
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Concave_r180.png",
+          "size": {
+            "width": 130,
+            "height": 153
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Concave_r270.png",
+          "size": {
+            "width": 130,
+            "height": 153
+          },
+          "anchorX": 65
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "corner",
+        "concave"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 128
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Tee",
+      "label": "TOS Hull Tee 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Tee.png",
+      "size": {
+        "width": 82,
+        "height": 129
+      },
+      "anchorX": 41,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Tee_r90.png",
+          "size": {
+            "width": 82,
+            "height": 129
+          },
+          "anchorX": 41
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Tee_r180.png",
+          "size": {
+            "width": 82,
+            "height": 129
+          },
+          "anchorX": 41
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Tee_r270.png",
+          "size": {
+            "width": 82,
+            "height": 129
+          },
+          "anchorX": 41
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "tee"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Cross",
+      "label": "TOS Hull Cross 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Cross.png",
+      "size": {
+        "width": 66,
+        "height": 121
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Cross_r90.png",
+          "size": {
+            "width": 66,
+            "height": 121
+          },
+          "anchorX": 33
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Cross_r180.png",
+          "size": {
+            "width": 66,
+            "height": 121
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Cross_r270.png",
+          "size": {
+            "width": 66,
+            "height": 121
+          },
+          "anchorX": 33
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "cross"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Alcove",
+      "label": "TOS Hull Alcove 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Alcove.png",
+      "size": {
+        "width": 46,
+        "height": 111
+      },
+      "anchorX": 25,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Alcove_r90.png",
+          "size": {
+            "width": 46,
+            "height": 111
+          },
+          "anchorX": 21
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Alcove_r180.png",
+          "size": {
+            "width": 46,
+            "height": 111
+          },
+          "anchorX": 25
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Alcove_r270.png",
+          "size": {
+            "width": 46,
+            "height": 111
+          },
+          "anchorX": 21
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "alcove"
+      ],
+      "footprint": {
+        "width": 48,
+        "depth": 40
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeOutdoorWall32Door",
+      "label": "TOS Hull Door Frame 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Door.png",
+      "size": {
+        "width": 49,
+        "height": 113
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Door_r90.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Door_r180.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeOutdoorWall32Door_r270.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHull",
+        "door"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeHullWindowWall32",
+      "label": "TOS Hull Viewport Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32.png",
+      "size": {
+        "width": 49,
+        "height": 113
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHullWindow",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHullWindow"
+    },
+    {
+      "id": "tplBridgeHullWindowWall32Long",
+      "label": "TOS Hull Viewport Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 129
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHullWindow",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHullWindow"
+    },
+    {
+      "id": "tplBridgeHullWindowWall32Corner",
+      "label": "TOS Hull Viewport Corner Post 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 105
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHullWindow",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHullWindow"
+    },
+    {
+      "id": "tplBridgeHullWindowWall32Concave",
+      "label": "TOS Hull Viewport Concave 128",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Concave.png",
+      "size": {
+        "width": 130,
+        "height": 153
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Concave_r90.png",
+          "size": {
+            "width": 130,
+            "height": 153
+          },
+          "anchorX": 65
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Concave_r180.png",
+          "size": {
+            "width": 130,
+            "height": 153
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullWindowWall32Concave_r270.png",
+          "size": {
+            "width": 130,
+            "height": 153
+          },
+          "anchorX": 65
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHullWindow",
+        "corner",
+        "concave"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 128
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHullWindow"
+    },
+    {
+      "id": "tplBridgeHullBayWall32",
+      "label": "TOS Hull Bay Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32.png",
+      "size": {
+        "width": 49,
+        "height": 113
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 113
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHullBay",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHullBay"
+    },
+    {
+      "id": "tplBridgeHullBayWall32Long",
+      "label": "TOS Hull Bay Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 129
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 129
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHullBay",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHullBay"
+    },
+    {
+      "id": "tplBridgeHullBayWall32Corner",
+      "label": "TOS Hull Bay Corner Post 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 105
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullBayWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "outdoorHull",
+        "tosHullBay",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHullBay"
+    },
+    {
+      "id": "tplBridgeViewscreenWall32",
+      "label": "TOS Viewscreen Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32.png",
+      "size": {
+        "width": 49,
+        "height": 117
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosViewscreen",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosViewscreen"
+    },
+    {
+      "id": "tplBridgeViewscreenWall32Long",
+      "label": "TOS Viewscreen Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 133
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosViewscreen",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosViewscreen"
+    },
+    {
+      "id": "tplBridgeViewscreenWall32Corner",
+      "label": "TOS Viewscreen Corner Post 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 109
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosViewscreen",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosViewscreen"
+    },
+    {
+      "id": "tplBridgeViewscreenWall32Concave",
+      "label": "TOS Viewscreen Concave 128",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Concave.png",
+      "size": {
+        "width": 130,
+        "height": 157
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Concave_r90.png",
+          "size": {
+            "width": 130,
+            "height": 157
+          },
+          "anchorX": 65
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Concave_r180.png",
+          "size": {
+            "width": 130,
+            "height": 157
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreenWall32Concave_r270.png",
+          "size": {
+            "width": 130,
+            "height": 157
+          },
+          "anchorX": 65
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosViewscreen",
+        "corner",
+        "concave"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 128
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosViewscreen"
+    },
+    {
+      "id": "tplBridgeTurboliftWall32",
+      "label": "TOS Turbolift Wall 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32.png",
+      "size": {
+        "width": 49,
+        "height": 117
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32_r90.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32_r180.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32_r270.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosTurbolift",
+        "straight"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosTurbolift"
+    },
+    {
+      "id": "tplBridgeTurboliftWall32Long",
+      "label": "TOS Turbolift Wall (Long) 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Long.png",
+      "size": {
+        "width": 81,
+        "height": 133
+      },
+      "anchorX": 65,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Long_r90.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Long_r180.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 65
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Long_r270.png",
+          "size": {
+            "width": 81,
+            "height": 133
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosTurbolift",
+        "straight",
+        "long"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosTurbolift"
+    },
+    {
+      "id": "tplBridgeTurboliftWall32Corner",
+      "label": "TOS Turbolift Corner Post 32",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Corner.png",
+      "size": {
+        "width": 34,
+        "height": 109
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Corner_r90.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Corner_r180.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftWall32Corner_r270.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "thick32",
+        "indoor",
+        "tosTurbolift",
+        "corner"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosTurbolift"
+    },
+    {
+      "id": "tplBridgeFloor",
+      "label": "TOS Deck",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeFloor.png",
+      "size": {
+        "width": 64,
+        "height": 36
+      },
+      "anchorX": 32,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor_r90.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor_r180.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor_r270.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeFloor128",
+      "label": "TOS Deck 128",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeFloor128.png",
+      "size": {
+        "width": 128,
+        "height": 68
+      },
+      "anchorX": 64,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor128_r90.png",
+          "size": {
+            "width": 128,
+            "height": 68
+          },
+          "anchorX": 64
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor128_r180.png",
+          "size": {
+            "width": 128,
+            "height": 68
+          },
+          "anchorX": 64
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor128_r270.png",
+          "size": {
+            "width": 128,
+            "height": 68
+          },
+          "anchorX": 64
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 128
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeFloor32",
+      "label": "TOS Deck 32",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeFloor32.png",
+      "size": {
+        "width": 32,
+        "height": 20
+      },
+      "anchorX": 16,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor32_r90.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor32_r180.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeFloor32_r270.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeWell",
+      "label": "TOS Command Well",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeWell.png",
+      "size": {
+        "width": 64,
+        "height": 36
+      },
+      "anchorX": 32,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell_r90.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell_r180.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell_r270.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor",
+        "carpet"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeWell32",
+      "label": "TOS Command Well 32",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeWell32.png",
+      "size": {
+        "width": 32,
+        "height": 20
+      },
+      "anchorX": 16,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell32_r90.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell32_r180.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell32_r270.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor",
+        "carpet"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeWell128",
+      "label": "TOS Command Well 128",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeWell128.png",
+      "size": {
+        "width": 128,
+        "height": 68
+      },
+      "anchorX": 64,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell128_r90.png",
+          "size": {
+            "width": 128,
+            "height": 68
+          },
+          "anchorX": 64
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell128_r180.png",
+          "size": {
+            "width": 128,
+            "height": 68
+          },
+          "anchorX": 64
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeWell128_r270.png",
+          "size": {
+            "width": 128,
+            "height": 68
+          },
+          "anchorX": 64
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor",
+        "carpet"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 128
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeHullPlate",
+      "label": "TOS Hull Plating",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeHullPlate.png",
+      "size": {
+        "width": 64,
+        "height": 36
+      },
+      "anchorX": 32,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPlate_r90.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPlate_r180.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPlate_r270.png",
+          "size": {
+            "width": 64,
+            "height": 36
+          },
+          "anchorX": 32
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor",
+        "outdoorHull"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 64
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeHullPlate32",
+      "label": "TOS Hull Plating 32",
+      "layer": "ground",
+      "href": "/art/sprites/environment/templates/tplBridgeHullPlate32.png",
+      "size": {
+        "width": 32,
+        "height": 20
+      },
+      "anchorX": 16,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPlate32_r90.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPlate32_r180.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPlate32_r270.png",
+          "size": {
+            "width": 32,
+            "height": 20
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "floor",
+        "bridge",
+        "floor",
+        "outdoorHull"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 4,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgePillar",
+      "label": "TOS Station Pillar",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgePillar.png",
+      "size": {
+        "width": 34,
+        "height": 109
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgePillar_r90.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgePillar_r180.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgePillar_r270.png",
+          "size": {
+            "width": 34,
+            "height": 109
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "pillar",
+        "indoor",
+        "tosStation"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosStation"
+    },
+    {
+      "id": "tplBridgeHullPillar",
+      "label": "TOS Hull Pillar",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeHullPillar.png",
+      "size": {
+        "width": 34,
+        "height": 105
+      },
+      "anchorX": 17,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPillar_r90.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPillar_r180.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHullPillar_r270.png",
+          "size": {
+            "width": 34,
+            "height": 105
+          },
+          "anchorX": 17
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "pillar",
+        "outdoorHull",
+        "tosHull"
+      ],
+      "footprint": {
+        "width": 32,
+        "depth": 32
+      },
+      "height": 88,
+      "cover": false,
+      "fade": true,
+      "face": "tosHull"
+    },
+    {
+      "id": "tplBridgeCaptainsChair",
+      "label": "TOS Captain's Chair",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeCaptainsChair.png",
+      "size": {
+        "width": 47,
+        "height": 64
+      },
+      "anchorX": 22,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeCaptainsChair_r90.png",
+          "size": {
+            "width": 47,
+            "height": 64
+          },
+          "anchorX": 25
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeCaptainsChair_r180.png",
+          "size": {
+            "width": 47,
+            "height": 64
+          },
+          "anchorX": 22
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeCaptainsChair_r270.png",
+          "size": {
+            "width": 47,
+            "height": 64
+          },
+          "anchorX": 25
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "chair"
+      ],
+      "footprint": {
+        "width": 44,
+        "depth": 54
+      },
+      "height": 16,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeCrewChair",
+      "label": "TOS Crew Chair",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeCrewChair.png",
+      "size": {
+        "width": 24,
+        "height": 38
+      },
+      "anchorX": 12,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeCrewChair_r90.png",
+          "size": {
+            "width": 24,
+            "height": 38
+          },
+          "anchorX": 12
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeCrewChair_r180.png",
+          "size": {
+            "width": 24,
+            "height": 38
+          },
+          "anchorX": 12
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeCrewChair_r270.png",
+          "size": {
+            "width": 24,
+            "height": 38
+          },
+          "anchorX": 12
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "chair"
+      ],
+      "footprint": {
+        "width": 36,
+        "depth": 42
+      },
+      "height": 12,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeHelmConsole",
+      "label": "TOS Helm Console",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeHelmConsole.png",
+      "size": {
+        "width": 48,
+        "height": 58
+      },
+      "anchorX": 28,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHelmConsole_r90.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 20
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHelmConsole_r180.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 28
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHelmConsole_r270.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 20
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "console"
+      ],
+      "footprint": {
+        "width": 60,
+        "depth": 50
+      },
+      "height": 18,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeHelmWide",
+      "label": "TOS Helm / Nav Console",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeHelmWide.png",
+      "size": {
+        "width": 64,
+        "height": 66
+      },
+      "anchorX": 44,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeHelmWide_r90.png",
+          "size": {
+            "width": 64,
+            "height": 66
+          },
+          "anchorX": 20
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeHelmWide_r180.png",
+          "size": {
+            "width": 64,
+            "height": 66
+          },
+          "anchorX": 44
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeHelmWide_r270.png",
+          "size": {
+            "width": 64,
+            "height": 66
+          },
+          "anchorX": 20
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "console"
+      ],
+      "footprint": {
+        "width": 96,
+        "depth": 50
+      },
+      "height": 18,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeTacticalConsole",
+      "label": "TOS Tactical Console",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeTacticalConsole.png",
+      "size": {
+        "width": 48,
+        "height": 58
+      },
+      "anchorX": 28,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeTacticalConsole_r90.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 20
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeTacticalConsole_r180.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 28
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeTacticalConsole_r270.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 20
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "console"
+      ],
+      "footprint": {
+        "width": 60,
+        "depth": 50
+      },
+      "height": 18,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeScienceConsole",
+      "label": "TOS Science Console",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeScienceConsole.png",
+      "size": {
+        "width": 67,
+        "height": 78
+      },
+      "anchorX": 44,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeScienceConsole_r90.png",
+          "size": {
+            "width": 67,
+            "height": 78
+          },
+          "anchorX": 23
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeScienceConsole_r180.png",
+          "size": {
+            "width": 67,
+            "height": 78
+          },
+          "anchorX": 44
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeScienceConsole_r270.png",
+          "size": {
+            "width": 67,
+            "height": 78
+          },
+          "anchorX": 23
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "console"
+      ],
+      "footprint": {
+        "width": 96,
+        "depth": 50
+      },
+      "height": 18,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeCommsConsole",
+      "label": "TOS Communications Console",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeCommsConsole.png",
+      "size": {
+        "width": 48,
+        "height": 58
+      },
+      "anchorX": 28,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeCommsConsole_r90.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 20
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeCommsConsole_r180.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 28
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeCommsConsole_r270.png",
+          "size": {
+            "width": 48,
+            "height": 58
+          },
+          "anchorX": 20
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "console"
+      ],
+      "footprint": {
+        "width": 60,
+        "depth": 50
+      },
+      "height": 18,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeEngineeringConsole",
+      "label": "TOS Engineering Console",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeEngineeringConsole.png",
+      "size": {
+        "width": 64,
+        "height": 66
+      },
+      "anchorX": 44,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeEngineeringConsole_r90.png",
+          "size": {
+            "width": 64,
+            "height": 66
+          },
+          "anchorX": 20
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeEngineeringConsole_r180.png",
+          "size": {
+            "width": 64,
+            "height": 66
+          },
+          "anchorX": 44
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeEngineeringConsole_r270.png",
+          "size": {
+            "width": 64,
+            "height": 66
+          },
+          "anchorX": 20
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "console"
+      ],
+      "footprint": {
+        "width": 96,
+        "depth": 50
+      },
+      "height": 18,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeViewscreen",
+      "label": "TOS Main Viewscreen",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeViewscreen.png",
+      "size": {
+        "width": 67,
+        "height": 108
+      },
+      "anchorX": 56,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreen_r90.png",
+          "size": {
+            "width": 67,
+            "height": 108
+          },
+          "anchorX": 11
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreen_r180.png",
+          "size": {
+            "width": 67,
+            "height": 108
+          },
+          "anchorX": 56
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeViewscreen_r270.png",
+          "size": {
+            "width": 67,
+            "height": 108
+          },
+          "anchorX": 11
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "console",
+        "viewscreen"
+      ],
+      "footprint": {
+        "width": 112,
+        "depth": 30
+      },
+      "height": 40,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeRail",
+      "label": "TOS Bridge Rail",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeRail.png",
+      "size": {
+        "width": 35,
+        "height": 34
+      },
+      "anchorX": 32,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeRail_r90.png",
+          "size": {
+            "width": 35,
+            "height": 34
+          },
+          "anchorX": 3
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeRail_r180.png",
+          "size": {
+            "width": 35,
+            "height": 34
+          },
+          "anchorX": 32
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeRail_r270.png",
+          "size": {
+            "width": 35,
+            "height": 34
+          },
+          "anchorX": 3
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "rail"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 12
+      },
+      "height": 10,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeRailLong",
+      "label": "TOS Bridge Rail Long",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeRailLong.png",
+      "size": {
+        "width": 67,
+        "height": 50
+      },
+      "anchorX": 64,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeRailLong_r90.png",
+          "size": {
+            "width": 67,
+            "height": 50
+          },
+          "anchorX": 3
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeRailLong_r180.png",
+          "size": {
+            "width": 67,
+            "height": 50
+          },
+          "anchorX": 64
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeRailLong_r270.png",
+          "size": {
+            "width": 67,
+            "height": 50
+          },
+          "anchorX": 3
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "rail"
+      ],
+      "footprint": {
+        "width": 128,
+        "depth": 12
+      },
+      "height": 10,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeRailCorner",
+      "label": "TOS Bridge Rail Corner",
+      "layer": "props",
+      "href": "/art/sprites/environment/templates/tplBridgeRailCorner.png",
+      "size": {
+        "width": 40,
+        "height": 36
+      },
+      "anchorX": 20,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeRailCorner_r90.png",
+          "size": {
+            "width": 40,
+            "height": 36
+          },
+          "anchorX": 20
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeRailCorner_r180.png",
+          "size": {
+            "width": 40,
+            "height": 36
+          },
+          "anchorX": 20
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeRailCorner_r270.png",
+          "size": {
+            "width": 40,
+            "height": 36
+          },
+          "anchorX": 20
+        }
+      },
+      "tags": [
+        "prop",
+        "bridge",
+        "furniture",
+        "rail"
+      ],
+      "footprint": {
+        "width": 40,
+        "depth": 40
+      },
+      "height": 10,
+      "cover": false,
+      "fade": false
+    },
+    {
+      "id": "tplBridgeTurboliftDoor",
+      "label": "TOS Turbolift Door",
+      "layer": "walls",
+      "href": "/art/sprites/environment/templates/tplBridgeTurboliftDoor.png",
+      "size": {
+        "width": 49,
+        "height": 117
+      },
+      "anchorX": 33,
+      "orients": {
+        "90": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftDoor_r90.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        },
+        "180": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftDoor_r180.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 33
+        },
+        "270": {
+          "href": "/art/sprites/environment/templates/tplBridgeTurboliftDoor_r270.png",
+          "size": {
+            "width": 49,
+            "height": 117
+          },
+          "anchorX": 16
+        }
+      },
+      "tags": [
+        "wall",
+        "bridge",
+        "door",
+        "indoor",
+        "tosTurbolift"
+      ],
+      "footprint": {
+        "width": 64,
+        "depth": 32
+      },
+      "height": 92,
+      "cover": false,
+      "fade": true,
+      "face": "tosTurbolift"
     }
   ]
 }

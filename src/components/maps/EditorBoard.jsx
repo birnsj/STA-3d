@@ -223,7 +223,12 @@ function tilePreview(map, hover, brush, rotated, moveFrom) {
   if (!hover) return null
   // Move carrying a tile: preview the swap at the hover cell (origin clears / destination shows the carried tile).
   const tileSwap =
-    moveFrom && !moveFrom.markers && !moveFrom.destructible && !moveFrom.templatePiece && !moveFrom.groundItem
+    moveFrom &&
+    !moveFrom.markers &&
+    !moveFrom.challengeObject &&
+    !moveFrom.destructible &&
+    !moveFrom.templatePiece &&
+    !moveFrom.groundItem
   if (tileSwap) {
     return {
       layout: boardLayout(swapTiles(map, moveFrom, hover)),
@@ -247,8 +252,19 @@ function tilePreview(map, hover, brush, rotated, moveFrom) {
 function resolveMoveHighlightTarget(map, position, boardPoint, moveFrom, gridSize) {
   if (moveFrom) return null
   if (!position) return null
-  // Same order as Move pick: markers before Template Piece / inventory sprites that cover the cell.
+  // Same order as Move pick: markers → challenge C → Template Piece / inventory sprites that cover the cell.
   if (hasMarkers(map, position)) return { kind: 'markers', position }
+  const hitChallenge = challengeDefinitionsFor(map).find(
+    (definition) => definition.position[0] === position.x && definition.position[1] === position.y,
+  )
+  if (hitChallenge) {
+    return {
+      kind: 'challengeObject',
+      id: hitChallenge.id,
+      position: { x: hitChallenge.position[0], y: hitChallenge.position[1] },
+      entry: hitChallenge,
+    }
+  }
   const hitTemplate = boardPoint
     ? templatePieceAtBoard(map, boardPoint)
     : templatePieceAt(map, position, { cellPx: gridSize })
@@ -449,10 +465,16 @@ export default function EditorBoard({
   // Moving an item uses the same lid hit as placing one. The floor tile under a raised top is the
   // cell behind it, and that cell rejects a move onto another spot of the surface.
   const pointerAt = (event) => {
+    // Move: floor cells for markers / C / tiles. Fine-grid only while carrying a Template Piece or inventory item
+    // (those place via boardPoint / tip snap). A selected Template brush must not steal Move to half-cells —
+    // fractional tips make hasMarkers miss and moveMarkers crash on getTile(undefined).
+    if (moving) {
+      if (moveFrom?.templatePiece || movingTemplatePiece) return templateAt(event, map, gridSize)
+      if (moveFrom?.groundItem || movingGroundItem) return itemAt(event, map, gridSize)
+      return tileAt(event, map, brush)
+    }
     if (inventoryTool || movingGroundItem) return itemAt(event, map, gridSize)
     if (templateTool || movingTemplatePiece) return templateAt(event, map, gridSize)
-    // Move uses tile cells for hover / drop. Drawn objects are hit via boardPoint in onPaint / onPaintEnd
-    // (itemAt always snaps on-map, so it must not replace the tile under Move).
     return tileAt(event, map, brush)
   }
 
@@ -489,15 +511,17 @@ export default function EditorBoard({
     Boolean(moveFrom?.markers && position.x === moveFrom.x && position.y === moveFrom.y)
   const markers = [
     ...(layerShown('furniture')
-      ? challengeDefinitionsFor(map).map((definition) => ({
-          id: `c${definition.id}`,
-          position: { x: definition.position[0], y: definition.position[1] },
-          kind: 'object',
-          label: 'C',
-          facing: null,
-          selected: definition.id === selectedObjectId,
-          doomed: false,
-        }))
+      ? challengeDefinitionsFor(map)
+          .filter((definition) => moveFrom?.challengeObject !== definition.id)
+          .map((definition) => ({
+            id: `c${definition.id}`,
+            position: { x: definition.position[0], y: definition.position[1] },
+            kind: 'object',
+            label: 'C',
+            facing: null,
+            selected: definition.id === selectedObjectId,
+            doomed: false,
+          }))
       : []),
     ...(layerShown('characters')
       ? map.markers.playerStarts
@@ -594,7 +618,7 @@ export default function EditorBoard({
             : []
         })
       : []),
-    // Move carry: markers ride the hover cell until placed (same idea as the inventory ghost).
+    // Move carry: markers / challenge C ride the hover cell until placed (same idea as the inventory ghost).
     ...(moveFrom?.markers && hover
       ? [
           {
@@ -602,6 +626,19 @@ export default function EditorBoard({
             position: { x: Math.round(hover.x), y: Math.round(hover.y) },
             kind: 'player',
             label: 'M',
+            facing: null,
+            selected: true,
+            doomed: false,
+          },
+        ]
+      : []),
+    ...(moveFrom?.challengeObject && hover
+      ? [
+          {
+            id: '__move-challenge',
+            position: { x: Math.round(hover.x), y: Math.round(hover.y) },
+            kind: 'object',
+            label: 'C',
             facing: null,
             selected: true,
             doomed: false,

@@ -536,24 +536,20 @@ export default function EditorPalette({
     saveThumbScale(thumbScale)
   }, [thumbScale])
 
+  // Assets tab is local — board picks / Layers window / tool ensureActiveLayer must not yank the strip.
+  const [assetLayer, setAssetLayer] = useState(() => (LAYER_IDS.includes(activeLayer) ? activeLayer : 'ground'))
   const showAllSprites = catalogueTab === ALL_TAB
-  const layerTab = LAYER_IDS.includes(activeLayer) ? activeLayer : 'ground'
+  const layerTab = LAYER_IDS.includes(assetLayer) ? assetLayer : 'ground'
   const body = showAllSprites
     ? 'tiles'
     : catalogueTab === 'environment' || catalogueTab === 'items'
       ? catalogueTab
       : BODY_FOR_LAYER[layerTab] ?? 'tiles'
 
-  // Layers window / external active-layer changes leave All / Environment / Items.
-  const [seenLayer, setSeenLayer] = useState(activeLayer)
-  if (activeLayer && activeLayer !== seenLayer) {
-    setSeenLayer(activeLayer)
-    setCatalogueTab(null)
-  }
-
   const selectLayer = (layerId) => {
     if (!LAYER_IDS.includes(layerId)) return
     setCatalogueTab(null)
+    setAssetLayer(layerId)
     onActiveLayer?.(layerId)
   }
 

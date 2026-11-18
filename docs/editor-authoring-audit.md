@@ -133,7 +133,7 @@ Columns: Runtime · Editor create · Configure · Place · Serialize · Reload �
 | 58 | Room env-control consoles | Complete | Y | as objects | Y | Y | Y§ | Y§ | Y | Y | Challenge objects + `neutralizeHazardsInRoom` |
 
 \* Persist only after Save.  
-† Enemy spawns drive Combat mode roster slots and fallback NPCs when the map has no `npcs`.  
+† Enemy spawns drive Combat mode roster slots; world NPCs come only from `map.npcs` or a matching `npcs.json` entry (no spawn auto-inject).  
 ‡ Catalogue write, not map-local.  
 § Complete once Object Editor has copied definitions onto the map; shared `challenges.json` content is not edited as a map file field until then.
 

@@ -2,13 +2,19 @@
 // Footprint is item-space with the south tip at (0,0); PNG anchorX is that tip so board placement snaps correctly.
 import { encodePng } from '../png.mjs'
 import { RESOLUTION, render, renderLights, shade, rgb, scale, clamp01 } from './engine.mjs'
+import { bridgePropMaterial, bridgeWallMaterial, isBridgeWallFace } from './templateBridgeFaces.mjs'
 import { materialForKind } from './templateStarshipProps.mjs'
 import { fittingForFace, starshipWallMaterial } from './templateWallFaces.mjs'
 import { isOutdoorWallFace, outdoorWallMaterial } from './templateOutdoorWalls.mjs'
 
 function wallMaterialFor(face, height) {
+  if (isBridgeWallFace(face)) return bridgeWallMaterial(height, face)
   if (isOutdoorWallFace(face)) return outdoorWallMaterial(height, face)
   return starshipWallMaterial(height, fittingForFace(face, height))
+}
+
+function propOrBridgeMaterial(kind) {
+  return materialForKind(kind) ?? bridgePropMaterial(kind)
 }
 
 export function itemSize(w, d, h) {
@@ -232,7 +238,7 @@ export function paintPrismsAA(prisms, { subsamples = 3, face = 'plain', material
     if (colour) return solidMaterial(colour)
     const h = Math.max(1, (prism.z1 ?? 0) - (prism.z0 ?? 0))
     // Per-prism material (e.g. console screen) wins over the piece-level kind.
-    const prop = materialForKind(prism.material ?? material)
+    const prop = propOrBridgeMaterial(prism.material ?? material)
     if (prop) return prop
     return wallMaterialFor(face, h)
   }
@@ -262,7 +268,7 @@ export function paintPrismsLightsAA(prisms, { face = 'plain', material = null, y
   const turns = ((yawTurns % 4) + 4) % 4
   const materialOf = (prism) => {
     const h = Math.max(1, (prism.z1 ?? 0) - (prism.z0 ?? 0))
-    const prop = materialForKind(prism.material ?? material)
+    const prop = propOrBridgeMaterial(prism.material ?? material)
     if (prop) return prop
     return wallMaterialFor(face, h)
   }
