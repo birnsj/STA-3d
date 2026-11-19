@@ -59,6 +59,7 @@ export default function OpenArtGenerationPanel({
   const [job, setJob] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [resultPng, setResultPng] = useState(null)
+  const [viewerOpen, setViewerOpen] = useState(false)
   const [importLabelOverride, setImportLabelOverride] = useState(null)
   const [warnings, setWarnings] = useState([])
   const pollRef = useRef(0)
@@ -105,10 +106,20 @@ export default function OpenArtGenerationPanel({
     return () => URL.revokeObjectURL(previewUrl)
   }, [previewUrl])
 
+  useEffect(() => {
+    if (!viewerOpen) return undefined
+    const onKey = (event) => {
+      if (event.key === 'Escape') setViewerOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [viewerOpen])
+
   const refreshPreview = async (nextJob) => {
     if (!nextJob || nextJob.status !== 'completed' || nextJob.dryRun) {
       setPreviewUrl(null)
       setResultPng(null)
+      setViewerOpen(false)
       return
     }
     if (nextJob.resultUrl) {
@@ -169,6 +180,7 @@ export default function OpenArtGenerationPanel({
         onStatus?.('OpenArt dry-run complete (no image, no credits spent).')
         setPreviewUrl(null)
         setResultPng(null)
+        setViewerOpen(false)
         return
       }
       await refreshPreview(finished.job)
@@ -193,6 +205,7 @@ export default function OpenArtGenerationPanel({
       setJob(snap.job)
       setPreviewUrl(null)
       setResultPng(null)
+      setViewerOpen(false)
       setWarnings([])
       onStatus?.('OpenArt result discarded.')
     } catch (error) {
@@ -235,6 +248,7 @@ export default function OpenArtGenerationPanel({
       setJob(null)
       setPreviewUrl(null)
       setResultPng(null)
+      setViewerOpen(false)
     } catch (error) {
       onStatus?.(`Import failed: ${error.message}`)
     } finally {
@@ -366,8 +380,25 @@ export default function OpenArtGenerationPanel({
 
         {previewUrl && (
           <div className="ed-openart-preview">
-            <div className="ed-openart-preview-label">Generated preview</div>
-            <img src={previewUrl} alt="OpenArt result" />
+            <div className="ed-openart-preview-head">
+              <div className="ed-openart-preview-label">Generated preview</div>
+              <button
+                type="button"
+                className="me-button"
+                title="Enlarge the generated image"
+                onClick={() => setViewerOpen(true)}
+              >
+                View
+              </button>
+            </div>
+            <button
+              type="button"
+              className="ed-openart-preview-hit"
+              title="Enlarge the generated image"
+              onClick={() => setViewerOpen(true)}
+            >
+              <img src={previewUrl} alt="OpenArt result" />
+            </button>
             {job?.resultInfo && (
               <div className="ed-openart-meta">
                 {job.resultInfo.width}×{job.resultInfo.height}
@@ -410,6 +441,34 @@ export default function OpenArtGenerationPanel({
           </ul>
         )}
       </div>
+
+      {viewerOpen && previewUrl ? (
+        <div
+          className="me-dialog-backdrop ed-dialog-backdrop ed-openart-viewer-backdrop"
+          onPointerDown={(event) => event.target === event.currentTarget && setViewerOpen(false)}
+        >
+          <div
+            className="ed-openart-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Generated image"
+          >
+            <div className="ed-openart-viewer-bar">
+              <span className="me-text">
+                {job?.resultInfo
+                  ? `${job.resultInfo.width}×${job.resultInfo.height}${job.resultInfo.hasAlpha ? ' · RGBA' : ''}`
+                  : 'Generated image'}
+              </span>
+              <button type="button" className="me-button" autoFocus onClick={() => setViewerOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className="ed-openart-viewer-stage">
+              <img src={previewUrl} alt="OpenArt result enlarged" />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </PropertySection>
   )
 }

@@ -2089,10 +2089,28 @@
   text-align: center;
 }
 
-.ed-openart-preview-label {
+.ed-openart-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0 0 6px;
+}
+
+.ed-openart-preview-label {
+  margin: 0;
   color: #8eacb2;
   font-size: 11px;
+}
+
+.ed-openart-preview-hit {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
 }
 
 .ed-openart-preview img {
@@ -2101,6 +2119,57 @@
   max-height: 160px;
   margin: 0 auto;
   object-fit: contain;
+  image-rendering: auto;
+}
+
+.ed-openart-viewer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.ed-openart-viewer {
+  display: flex;
+  flex-direction: column;
+  width: min(96vw, 1400px);
+  max-height: min(92vh, 1000px);
+  overflow: hidden;
+  border: 1px solid var(--ed-border, #23434a);
+  border-radius: var(--ui-radius);
+  background: #0c181c;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+.ed-openart-viewer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ed-border, #23434a);
+  background: #102226;
+}
+
+.ed-openart-viewer-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  background:
+    linear-gradient(45deg, #152428 25%, transparent 25%) 0 0 / 16px 16px,
+    linear-gradient(-45deg, #152428 25%, transparent 25%) 0 8px / 16px 16px,
+    linear-gradient(45deg, transparent 75%, #152428 75%) 8px -8px / 16px 16px,
+    linear-gradient(-45deg, transparent 75%, #152428 75%) -8px 0 / 16px 16px,
+    #0a1214;
+}
+
+.ed-openart-viewer-stage img {
+  display: block;
+  max-width: none;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
   image-rendering: auto;
 }
 
