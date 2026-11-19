@@ -31,7 +31,12 @@ const GROUP_LABELS = {
   dice: 'Dice',
 }
 
-export const SPRITE_TYPE_ORDER = ['characters', 'environment', 'effects', 'dice']
+export const SPRITE_TYPE_ORDER = [
+  // 'characters', // commented out — Sprite Sheets uses the main Assets palette (shared tiles.json)
+  'environment',
+  'effects',
+  'dice',
+]
 
 export function spriteGroupLabel(group) {
   return GROUP_LABELS[group] || titleCase(group) || 'Other'

@@ -550,6 +550,7 @@ export function TemplatePieceDetails({ piece, onStatus }) {
 export default function AssetProperties({
   tool,
   onStatus,
+  onTool,
   hazardIntensity = 2,
   onHazardIntensity,
   animateTiles = true,

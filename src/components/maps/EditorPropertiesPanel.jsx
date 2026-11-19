@@ -18,6 +18,7 @@ export default function EditorPropertiesPanel({
   mapProps,
   inspectors,
   onStatus,
+  onTool,
   hazardIntensity,
   onHazardIntensity,
   animateTiles = true,
@@ -76,6 +77,7 @@ export default function EditorPropertiesPanel({
             <AssetProperties
               tool={tool}
               onStatus={onStatus}
+              onTool={onTool}
               hazardIntensity={hazardIntensity}
               onHazardIntensity={onHazardIntensity}
               animateTiles={animateTiles}

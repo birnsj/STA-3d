@@ -15,9 +15,20 @@ import {
   reorderPaletteGroups,
 } from '../../maps/tileFiles.js'
 import { LAYER_IDS, LAYER_LABELS, layerOfTile, layerOfTemplatePiece } from '../../maps/layers.js'
-import { getTile, PALETTE_GROUPS, TILES, tileCatalogueEpochOf } from '../../maps/mapFormat.js'
+import {
+  getTile,
+  PALETTE_GROUPS,
+  TILES,
+  subscribeTileCatalogue,
+  subscribeTileReveal,
+  tileCatalogueEpochOf,
+} from '../../maps/mapFormat.js'
 import { canEditTemplatePieces, deleteTemplatePiece } from '../../maps/templatePieceFiles.js'
-import { templatePieceCatalogueEpochOf, templatePieceGroups } from '../../maps/templatePieces.js'
+import {
+  getTemplatePiece,
+  templatePieceCatalogueEpochOf,
+  templatePieceGroups,
+} from '../../maps/templatePieces.js'
 import { getCategoryName, getItems } from '../../rules/equipment.js'
 import { propSpriteSize } from '../../rules/placement.js'
 import { DESTRUCTIBLE_TYPES, destructibleTileId, HAZARD_TYPES } from '../../world/environment.js'
@@ -168,10 +179,11 @@ function matchesQuery(text, query) {
 }
 
 // Active authoring layer → which Assets body to show (tiles are also filtered by layer).
+// Ground / Walls / Furniture share the tiles body so tab switches keep the same thumb grid + scale.
 const BODY_FOR_LAYER = {
   ground: 'tiles',
   walls: 'tiles',
-  furniture: 'furniture',
+  furniture: 'tiles',
   characters: 'npcs',
   markers: 'markers',
 }
@@ -200,7 +212,19 @@ export default function EditorPalette({
   askConfirm = null,
   askText = null,
   onStatus = null,
+  // Layer ids to hide from tabs + tile grids (e.g. Sprite Sheets omits character sprites).
+  omitLayers = null,
 }) {
+  const omittedLayers = useMemo(() => new Set(omitLayers ?? []), [omitLayers])
+  const visibleLayerIds = useMemo(
+    () => LAYER_IDS.filter((layerId) => !omittedLayers.has(layerId)),
+    [omittedLayers],
+  )
+  // Paint-cycle checkboxes only when the map editor wires a paint set; Sprite Sheets has neither.
+  const showPaintTileChecks = paintTileIds != null
+  const showPaintTemplateChecks = paintTemplateIds != null
+  // Browse-only hosts (Sprite Sheets) omit onActiveLayer — keep brush selection in sync with the visible tab.
+  const browseOnlyPalette = !onActiveLayer
   const [query, setQuery] = useState('')
   // First tab All (every tile/piece); Environment / Items stay catalogue-only (not authoring layers).
   const [catalogueTab, setCatalogueTab] = useState(ALL_TAB)
@@ -229,6 +253,21 @@ export default function EditorPalette({
     return templatePieceGroups()
   }, [catalogueEpoch])
   const refreshCatalogue = () => setCatalogueEpoch(tileCatalogueEpochOf() + templatePieceCatalogueEpochOf())
+
+  useEffect(() => subscribeTileCatalogue(() => refreshCatalogue()), [])
+
+  useEffect(
+    () =>
+      subscribeTileReveal(({ tileId, groupId, label }) => {
+        refreshCatalogue()
+        setCatalogueTab(ALL_TAB)
+        if (groupId) setOpen((current) => new Set(current).add(groupId))
+        if (label) setQuery(String(label))
+        else setQuery(tileId || '')
+        onTool?.(`tile:${tileId}`)
+      }),
+    [onTool],
+  )
 
   const clearToolIfDeleted = (prefix, id) => {
     if (tool === `${prefix}:${id}`) onTool?.('eraseStructure')
@@ -537,23 +576,50 @@ export default function EditorPalette({
   }, [thumbScale])
 
   // Assets tab is local — board picks / Layers window / tool ensureActiveLayer must not yank the strip.
-  const [assetLayer, setAssetLayer] = useState(() => (LAYER_IDS.includes(activeLayer) ? activeLayer : 'ground'))
+  const [assetLayer, setAssetLayer] = useState(() =>
+    visibleLayerIds.includes(activeLayer) ? activeLayer : visibleLayerIds[0] ?? 'ground',
+  )
   const showAllSprites = catalogueTab === ALL_TAB
-  const layerTab = LAYER_IDS.includes(assetLayer) ? assetLayer : 'ground'
+  const layerTab = visibleLayerIds.includes(assetLayer) ? assetLayer : visibleLayerIds[0] ?? 'ground'
   const body = showAllSprites
     ? 'tiles'
     : catalogueTab === 'environment' || catalogueTab === 'items'
       ? catalogueTab
       : BODY_FOR_LAYER[layerTab] ?? 'tiles'
 
+  const toolMatchesLayer = (layerId) => {
+    if (!tool) return true
+    if (tool.startsWith('tile:')) {
+      const tile = getTile(tool.slice('tile:'.length))
+      return tile ? layerOfTile(tile) === layerId : false
+    }
+    if (tool.startsWith('template:')) {
+      const piece = getTemplatePiece(tool.slice('template:'.length))
+      return piece ? layerOfTemplatePiece(piece) === layerId : false
+    }
+    return false
+  }
+
   const selectLayer = (layerId) => {
-    if (!LAYER_IDS.includes(layerId)) return
+    if (!visibleLayerIds.includes(layerId)) return
     setCatalogueTab(null)
     setAssetLayer(layerId)
     onActiveLayer?.(layerId)
+    if (browseOnlyPalette && !toolMatchesLayer(layerId)) onTool?.(null)
   }
 
+  useEffect(() => {
+    if (omittedLayers.size && omittedLayers.has(assetLayer) && visibleLayerIds[0]) {
+      setAssetLayer(visibleLayerIds[0])
+    }
+  }, [omittedLayers, assetLayer, visibleLayerIds])
+
   const selectAllSprites = () => setCatalogueTab(ALL_TAB)
+
+  const selectCatalogueTab = (tab) => {
+    setCatalogueTab(tab)
+    if (browseOnlyPalette) onTool?.(null)
+  }
 
   const toggle = (id) =>
     setOpen((current) => {
@@ -569,11 +635,13 @@ export default function EditorPalette({
       GROUPS.map((group) => ({
         ...group,
         tiles: group.tiles.filter((tile) => {
-          if (!showAllSprites && layerOfTile(tile) !== layerTab) return false
+          const layer = layerOfTile(tile)
+          if (omittedLayers.has(layer)) return false
+          if (!showAllSprites && layer !== layerTab) return false
           return matchesQuery(tile.label, q) || matchesQuery(tile.id, q)
         }),
       })).filter((group) => group.tiles.length > 0 || (canEditTiles && group.id !== 'other' && !q)),
-    [GROUPS, q, layerTab, showAllSprites],
+    [GROUPS, q, layerTab, showAllSprites, omittedLayers],
   )
 
   const filteredPieceGroups = useMemo(
@@ -582,7 +650,9 @@ export default function EditorPalette({
         .map((group) => ({
           ...group,
           pieces: group.pieces.filter((piece) => {
-            if (!showAllSprites && layerOfTemplatePiece(piece) !== layerTab) return false
+            const layer = layerOfTemplatePiece(piece)
+            if (omittedLayers.has(layer)) return false
+            if (!showAllSprites && layer !== layerTab) return false
             return (
               !q ||
               matchesQuery(piece.label, q) ||
@@ -592,7 +662,7 @@ export default function EditorPalette({
           }),
         }))
         .filter((group) => group.pieces.length),
-    [pieceGroups, q, layerTab, showAllSprites],
+    [pieceGroups, q, layerTab, showAllSprites, omittedLayers],
   )
 
   const anyOpen = filteredGroups.some((group) => open.has(group.id))
@@ -633,7 +703,7 @@ export default function EditorPalette({
         >
           All
         </button>
-        {LAYER_IDS.map((layerId) => (
+        {visibleLayerIds.map((layerId) => (
           <button
             key={layerId}
             type="button"
@@ -652,7 +722,7 @@ export default function EditorPalette({
           className={`ed-tab${catalogueTab === 'environment' ? ' is-active' : ''}`}
           aria-selected={catalogueTab === 'environment'}
           title="Destructibles and hazards"
-          onClick={() => setCatalogueTab('environment')}
+          onClick={() => selectCatalogueTab('environment')}
         >
           Environment
         </button>
@@ -662,7 +732,7 @@ export default function EditorPalette({
           className={`ed-tab${catalogueTab === 'items' ? ' is-active' : ''}`}
           aria-selected={catalogueTab === 'items'}
           title="Inventory and ground-loot items"
-          onClick={() => setCatalogueTab('items')}
+          onClick={() => selectCatalogueTab('items')}
         >
           Items
         </button>
@@ -702,7 +772,7 @@ export default function EditorPalette({
                 <ToolGroup key={group.id} id={`tiles:templates:${group.id}`} label={group.label} count={group.pieces.length} open={open} onToggle={toggle}>
                   <div className="ed-asset-grid">
                     {group.pieces.map((piece) => {
-                      const inPaintSet = paintTemplateIds?.has(piece.id) ?? tool === `template:${piece.id}`
+                      const inPaintSet = showPaintTemplateChecks && Boolean(paintTemplateIds?.has(piece.id))
                       return (
                       <div key={piece.id} className="ed-asset-cell">
                         <div className="ed-thumb-wrap">
@@ -713,26 +783,30 @@ export default function EditorPalette({
                             title={templatePieceThumbTitle(piece, {
                               extra: canEditTemplatePieces
                                 ? 'paint cycle · right-click to delete'
-                                : 'paint cycle',
+                                : showPaintTemplateChecks
+                                  ? 'paint cycle'
+                                  : undefined,
                             })}
                             onClick={() => onTool(`template:${piece.id}`)}
                             onContextMenu={(event) => onPieceContextMenu(event, piece)}
                           >
                             <TemplatePieceThumbnail piece={piece} className="me-thumb-preview" animate={animateTiles} />
                           </button>
-                          <label
-                            className="ed-thumb-check me-check"
-                            title="Include in Template Piece paint cycle"
-                            onClick={(event) => event.stopPropagation()}
-                            onContextMenu={(event) => event.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={inPaintSet}
-                              aria-label={`Paint with ${piece.label}`}
-                              onChange={(event) => onTogglePaintTemplate?.(piece.id, event.target.checked)}
-                            />
-                          </label>
+                          {showPaintTemplateChecks ? (
+                            <label
+                              className="ed-thumb-check me-check"
+                              title="Include in Template Piece paint cycle"
+                              onClick={(event) => event.stopPropagation()}
+                              onContextMenu={(event) => event.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={inPaintSet}
+                                aria-label={`Paint with ${piece.label}`}
+                                onChange={(event) => onTogglePaintTemplate?.(piece.id, event.target.checked)}
+                              />
+                            </label>
+                          ) : null}
                         </div>
                         <span className="ed-thumb-label">{piece.label}</span>
                       </div>
@@ -850,7 +924,7 @@ export default function EditorPalette({
                     <>
                       <div className="ed-asset-grid">
                         {group.tiles.map((tile) => {
-                          const inPaintSet = paintTileIds?.has(tile.id) ?? tool === `tile:${tile.id}`
+                          const inPaintSet = showPaintTileChecks && Boolean(paintTileIds?.has(tile.id))
                           return (
                           <div key={tile.id} className="ed-asset-cell">
                             <div className="ed-thumb-wrap">
@@ -861,7 +935,9 @@ export default function EditorPalette({
                                 title={tileThumbTitle(tile, {
                                   extra: canEditTiles
                                     ? 'paint cycle · right-click Rename / Import / Delete'
-                                    : 'paint cycle',
+                                    : showPaintTileChecks
+                                      ? 'paint cycle'
+                                      : undefined,
                                 })}
                                 onClick={() => onTool(`tile:${tile.id}`)}
                                 onContextMenu={(event) => onTileContextMenu(event, tile)}
@@ -873,19 +949,21 @@ export default function EditorPalette({
                                   </span>
                                 )}
                               </button>
-                              <label
-                                className="ed-thumb-check me-check"
-                                title="Include in Place Tiles paint cycle"
-                                onClick={(event) => event.stopPropagation()}
-                                onContextMenu={(event) => event.stopPropagation()}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={inPaintSet}
-                                  aria-label={`Paint with ${tile.label}`}
-                                  onChange={(event) => onTogglePaintTile?.(tile.id, event.target.checked)}
-                                />
-                              </label>
+                              {showPaintTileChecks ? (
+                                <label
+                                  className="ed-thumb-check me-check"
+                                  title="Include in Place Tiles paint cycle"
+                                  onClick={(event) => event.stopPropagation()}
+                                  onContextMenu={(event) => event.stopPropagation()}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={inPaintSet}
+                                    aria-label={`Paint with ${tile.label}`}
+                                    onChange={(event) => onTogglePaintTile?.(tile.id, event.target.checked)}
+                                  />
+                                </label>
+                              ) : null}
                             </div>
                             <span className="ed-thumb-label">{tile.label}</span>
                           </div>
@@ -918,105 +996,6 @@ export default function EditorPalette({
                 onClose={() => setCtxMenu(null)}
               />
             )}
-          </>
-        )}
-
-        {body === 'furniture' && (
-          <>
-            {filteredPieceGroups.map((group) => (
-              <ToolGroup key={group.id} id={`furniture:templates:${group.id}`} label={group.label} count={group.pieces.length} open={open} onToggle={toggle}>
-                <div className="ed-asset-grid">
-                  {group.pieces.map((piece) => {
-                    const inPaintSet = paintTemplateIds?.has(piece.id) ?? tool === `template:${piece.id}`
-                    return (
-                      <div key={piece.id} className="ed-asset-cell">
-                        <div className="ed-thumb-wrap">
-                          <button
-                            type="button"
-                            className={`ed-thumb-btn${tool === `template:${piece.id}` ? ' is-selected' : ''}${inPaintSet ? ' is-paint-set' : ''}`}
-                            aria-pressed={tool === `template:${piece.id}`}
-                            title={templatePieceThumbTitle(piece, {
-                              extra: canEditTemplatePieces
-                                ? 'paint cycle · right-click to delete'
-                                : 'paint cycle',
-                            })}
-                            onClick={() => onTool(`template:${piece.id}`)}
-                            onContextMenu={(event) => onPieceContextMenu(event, piece)}
-                          >
-                            <TemplatePieceThumbnail piece={piece} className="me-thumb-preview" animate={animateTiles} />
-                          </button>
-                          <label
-                            className="ed-thumb-check me-check"
-                            title="Include in Template Piece paint cycle"
-                            onClick={(event) => event.stopPropagation()}
-                            onContextMenu={(event) => event.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={inPaintSet}
-                              aria-label={`Paint with ${piece.label}`}
-                              onChange={(event) => onTogglePaintTemplate?.(piece.id, event.target.checked)}
-                            />
-                          </label>
-                        </div>
-                        <span className="ed-thumb-label">{piece.label}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </ToolGroup>
-            ))}
-            {filteredGroups.map((group) => {
-              const isOpen = open.has(group.id) || Boolean(q)
-              return (
-                <div key={group.id} className="me-group">
-                  <button type="button" className="me-group-tag" aria-expanded={isOpen} onClick={() => toggle(group.id)}>
-                    <span className="me-group-arrow" aria-hidden="true">
-                      {isOpen ? '▾' : '▸'}
-                    </span>
-                    <span className="me-group-label">{group.label}</span>
-                    <span className="me-group-count">{group.tiles.length}</span>
-                  </button>
-                  {isOpen && (
-                    <div className="ed-asset-grid">
-                      {group.tiles.map((tile) => {
-                        const inPaintSet = paintTileIds?.has(tile.id) ?? tool === `tile:${tile.id}`
-                        return (
-                          <div key={tile.id} className="ed-asset-cell">
-                            <div className="ed-thumb-wrap">
-                              <button
-                                type="button"
-                                className={`ed-thumb-btn${tool === `tile:${tile.id}` ? ' is-selected' : ''}${inPaintSet ? ' is-paint-set' : ''}`}
-                                aria-pressed={tool === `tile:${tile.id}`}
-                                title={tileThumbTitle(tile, { extra: 'paint cycle' })}
-                                onClick={() => onTool(`tile:${tile.id}`)}
-                                onContextMenu={(event) => onTileContextMenu(event, tile)}
-                              >
-                                <TileThumbnail tile={tile} className="me-thumb-preview" animate={animateTiles} />
-                              </button>
-                              <label
-                                className="ed-thumb-check me-check"
-                                title="Include in Place Tiles paint cycle"
-                                onClick={(event) => event.stopPropagation()}
-                                onContextMenu={(event) => event.stopPropagation()}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={inPaintSet}
-                                  aria-label={`Paint with ${tile.label}`}
-                                  onChange={(event) => onTogglePaintTile?.(tile.id, event.target.checked)}
-                                />
-                              </label>
-                            </div>
-                            <span className="ed-thumb-label">{tile.label}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
           </>
         )}
 

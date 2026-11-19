@@ -122,7 +122,25 @@ const BIOME_MAP_TYPES = new Set(['forest', 'swamp', 'desert', 'iceField', 'volca
 const BY_ID = new Map(TILES.map((tile) => [tile.id, tile]))
 const BY_SYMBOL = new Map(TILES.map((tile) => [tile.symbol, tile]))
 let tileCatalogueEpoch = 0
+const tileCatalogueListeners = new Set()
 export const tileCatalogueEpochOf = () => tileCatalogueEpoch
+// Properties-side authoring (e.g. OpenArt Accept) bumps the epoch outside EditorPalette; subscribe so the palette rebuilds.
+export function subscribeTileCatalogue(listener) {
+  tileCatalogueListeners.add(listener)
+  return () => tileCatalogueListeners.delete(listener)
+}
+
+// Ask the Assets palette to open a group and focus a tile (e.g. after OpenArt Accept).
+const tileRevealListeners = new Set()
+export function subscribeTileReveal(listener) {
+  tileRevealListeners.add(listener)
+  return () => tileRevealListeners.delete(listener)
+}
+export function revealTileInPalette({ tileId, groupId = null, label = null } = {}) {
+  if (!tileId) return
+  const payload = { tileId, groupId, label }
+  for (const listener of tileRevealListeners) listener(payload)
+}
 export const getTile = (id) => BY_ID.get(id)
 export const tileIdForSymbol = (symbol) => BY_SYMBOL.get(symbol)?.id
 export const isEmptyTile = (id) => Boolean(getTile(id)?.empty)
@@ -147,6 +165,7 @@ export function groundTileId(map, { x, y }) {
 
 function bumpTileCatalogue() {
   tileCatalogueEpoch += 1
+  for (const listener of tileCatalogueListeners) listener(tileCatalogueEpoch)
 }
 
 // Dev Edit Assets delete: drop a tile from the live catalogue (tiles.json already rewritten by /__tiles).

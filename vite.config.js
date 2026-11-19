@@ -20,7 +20,8 @@ import { applyTemplatePieceChange } from './tools/templatePieceStore.cjs'
 import { applyTileChange } from './tools/tileStore.cjs'
 import { putWallVariantSet } from './tools/wallVariantStore.cjs'
 import { applyAutoPaintChange } from './tools/autoPaintStore.cjs'
-import { listSprites, putSprite } from './tools/spriteStore.cjs'
+import { createSiblingSpriteFromArt, listSprites, putSprite } from './tools/spriteStore.cjs'
+import { createOpenArtJobs } from './tools/openArtJobs.cjs'
 
 const MUSIC_FOLDER = fileURLToPath(new URL('./music', import.meta.url))
 const CHARACTERS_FOLDER = fileURLToPath(new URL('./characters', import.meta.url))
@@ -259,6 +260,9 @@ const spriteFilesEndpoint = () => {
     GET: () => listSprites(SPRITES_FOLDER),
     PUT: (body) => {
       savedAt = Date.now()
+      if (body?.op === 'createSiblingFromArt') {
+        return createSiblingSpriteFromArt(SPRITES_FOLDER, body)
+      }
       return putSprite(SPRITES_FOLDER, body)
     },
   })
@@ -269,6 +273,114 @@ const spriteFilesEndpoint = () => {
     },
   }
 }
+
+// OpenArt CLI (DEV only): model list/cost, one-at-a-time generate, temp PNG preview files under .tmp-openart/.
+const openArtJobs = createOpenArtJobs({
+  rootDir: fileURLToPath(new URL('./', import.meta.url)),
+  publicRoot: PUBLIC_FOLDER,
+})
+
+const openArtEndpoint = () => ({
+  name: 'openart-endpoint',
+  apply: 'serve',
+  configureServer(server) {
+    const sendJson = (res, status, payload) => {
+      res.statusCode = status
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify(payload))
+    }
+    // Exact `/__openart` (+ query) only — `/__openart/files/*` is served by openArtFiles.
+    server.middlewares.use((req, res, next) => {
+      const rawUrl = req.url || ''
+      const urlPath = decodeURIComponent(rawUrl.split('?')[0])
+      if (urlPath !== '/__openart') return next()
+
+      const readBody = () =>
+        new Promise((resolve, reject) => {
+          let body = ''
+          req.setEncoding('utf8')
+          req.on('data', (chunk) => {
+            body += chunk
+          })
+          req.on('end', () => resolve(body))
+          req.on('error', reject)
+        })
+
+      Promise.resolve()
+        .then(async () => {
+          if (req.method === 'GET' || req.method === 'HEAD') {
+            const url = new URL(rawUrl, 'http://localhost')
+            const action = url.searchParams.get('action') || 'status'
+            if (action === 'models') return openArtJobs.getModels(url.searchParams.get('refresh') === '1')
+            if (action === 'result') {
+              const snap = openArtJobs.snapshot()
+              const job = snap.job
+              if (!job || job.id !== url.searchParams.get('id')) {
+                const error = new Error('No such job')
+                error.statusCode = 404
+                throw error
+              }
+              if (job.status !== 'completed' || job.dryRun) return { ...snap, png: null }
+              return { ...snap, png: openArtJobs.readResultBase64(job.id) }
+            }
+            return openArtJobs.snapshot()
+          }
+          if (req.method === 'POST') {
+            const raw = await readBody()
+            const body = raw ? JSON.parse(raw) : null
+            const op = body?.op || 'generate'
+            if (op === 'generate') return openArtJobs.startJob(body)
+            if (op === 'discard') return openArtJobs.discard()
+            if (op === 'cost') return openArtJobs.quoteCost(body.model, body.mode)
+            throw new Error(`Unknown OpenArt op “${op}”`)
+          }
+          const error = new Error(`Method ${req.method} not allowed`)
+          error.statusCode = 405
+          throw error
+        })
+        .then((result) => {
+          if (req.method === 'HEAD') {
+            res.statusCode = 200
+            res.end()
+            return
+          }
+          sendJson(res, 200, result ?? true)
+        })
+        .catch((error) => sendJson(res, error.statusCode || 400, { error: String(error.message ?? error) }))
+    })
+  },
+})
+
+const openArtFiles = () => ({
+  name: 'openart-temp-files',
+  apply: 'serve',
+  configureServer(server) {
+    server.middlewares.use((req, res, next) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next()
+      const urlPath = decodeURIComponent((req.url ?? '').split('?')[0])
+      if (!urlPath.startsWith('/__openart/files/')) return next()
+      const rel = urlPath.slice('/__openart/files/'.length)
+      const file = openArtJobs.resolveTempFile(rel)
+      if (!file) {
+        res.statusCode = 404
+        res.end('Not found')
+        return
+      }
+      const { size } = statSync(file)
+      res.setHeader('Content-Type', 'image/png')
+      res.setHeader('Cache-Control', 'no-store')
+      res.setHeader('Content-Length', size)
+      if (req.method === 'HEAD') {
+        res.end()
+        return
+      }
+      const stream = createReadStream(file)
+      stream.on('error', () => res.destroy())
+      res.on('close', () => stream.destroy())
+      stream.pipe(res)
+    })
+  },
+})
 
 // Soundtrack files stay in music/ (gitignored). Dev and preview stream them at /music/; a build copies the mp3s
 // into dist/music so the Electron app can fetch the same path. A missing folder leaves the game silent.
@@ -360,13 +472,26 @@ export default defineConfig({
     storyEndpoint(),
     authoredCharactersEndpoint(),
     spriteFilesEndpoint(),
+    openArtFiles(),
+    openArtEndpoint(),
   ],
   // Relative asset paths so the built app also loads from disk inside the Electron .exe.
   base: './',
   server: {
     // Media, PDFs, packaged builds and saved characters/maps aren't app code; watching them crashes the server when another program locks a file.
     watch: {
-      ignored: ['**/music/**', '**/reference/**', '**/extracted-art/**', '**/release/**', '**/dist/**', '**/characters/**', isInMapsFolder, isInConversationsFolder],
+      ignored: [
+        '**/music/**',
+        '**/reference/**',
+        '**/extracted-art/**',
+        '**/release/**',
+        '**/dist/**',
+        '**/characters/**',
+        '**/.tmp-openart/**',
+        '**/.tmp-openart-*/**',
+        isInMapsFolder,
+        isInConversationsFolder,
+      ],
     },
   },
   // React in its own file: it changes far less often than the app, so a browser keeps it cached between builds.

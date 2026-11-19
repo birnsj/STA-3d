@@ -1,216 +1,165 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import AssetProperties from '../components/maps/AssetProperties.jsx'
+import { DEFAULT_EDITOR_GRID_SIZE, EDITOR_GRID_SIZES } from '../components/maps/editorGrid.js'
+import EditorPalette from '../components/maps/EditorPalette.jsx'
+import EditorSelect from '../components/maps/EditorSelect.jsx'
 import EditorSubScreen from '../components/maps/EditorSubScreen.jsx'
 import { SUB_EDITOR_BACK_LABEL, subEditorFileMenus } from '../components/maps/editorSubMenus.js'
-import SpriteSheetPreview from '../components/maps/SpriteSheetPreview.jsx'
-import useResettableState from '../components/useResettableState.js'
+import { hasAssetSelection, parseTool } from '../components/maps/editorSelection.js'
+import OpenArtGenerationPanel from '../components/maps/OpenArtGenerationPanel.jsx'
+import { PropertySectionsProvider, PropertySectionsToolbar } from '../components/maps/PropertySections.jsx'
+import SpriteSheetComposer from '../components/maps/SpriteSheetComposer.jsx'
+import useDialogs from '../components/maps/useDialogs.jsx'
+import { getTile, imageSize } from '../maps/mapFormat.js'
+import { bumpSpriteCache, spriteCacheVersion } from '../maps/spriteFiles.js'
 import {
-  bumpSpriteCache,
-  canEditSprites,
-  downloadSprite,
-  importSprite,
-  listSpriteFiles,
-  spriteCacheVersion,
-} from '../maps/spriteFiles.js'
+  DEFAULT_SHEET_PACK_GAP,
+  DEFAULT_SHEET_PRESET,
+  DEFAULT_SHEET_SQUARE_GRID,
+  SHEET_PACK_GAP_PRESETS,
+  SHEET_PRESETS,
+  SHEET_SQUARE_GRID_PRESETS,
+  footprintTilesFromDesign,
+  packSheetStamps,
+  sheetPackGapPreset,
+  sheetPreset,
+} from '../maps/spriteSheetLayout.js'
 import {
-  categorizeSpriteEntries,
-  enrichSpriteEntry,
-  expectedSpriteSize,
-  filterSpriteEntries,
-  listPreviewAnimations,
-  SPRITE_TYPE_ORDER,
-  spriteGroupLabel,
-} from '../rules/spriteCatalogue.js'
+  getTemplatePiece,
+  templatePieceArt,
+  templatePieceFootprint,
+} from '../maps/templatePieces.js'
 import '../components/maps/spriteSheets.css'
 
-function SpriteCategoryTabs({ categories, activeId, onSelect }) {
-  return (
-    <div className="ss-type-tabs ed-asset-tabs" role="tablist" aria-label="Sprite type">
-      {categories.map((category) => (
-        <button
-          key={category.id}
-          type="button"
-          role="tab"
-          className={`ed-tab${category.id === activeId ? ' is-active' : ''}`}
-          aria-selected={category.id === activeId}
-          onClick={() => onSelect(category.id)}
-        >
-          {category.label}
-          <span className="ss-type-count">{category.count}</span>
-        </button>
-      ))}
-    </div>
-  )
+// Character layer sprites are omitted here — same Assets palette + tiles.json as the main map editor.
+const OMIT_LAYERS = ['characters']
+
+function cleanPath(path) {
+  return String(path || '').split('?')[0]
 }
 
-function SpriteSubgroup({ subgroup, open, onToggle, selectedPath, onSelect }) {
-  const isOpen = open.has(subgroup.id)
-  return (
-    <div className="ss-group me-group">
-      <button type="button" className="me-group-tag" aria-expanded={isOpen} onClick={() => onToggle(subgroup.id)}>
-        <span className="me-group-arrow" aria-hidden="true">
-          {isOpen ? '▾' : '▸'}
-        </span>
-        <span className="me-group-label">{subgroup.label}</span>
-        <span className="me-group-count">{subgroup.entries.length}</span>
-      </button>
-      {isOpen && (
-        <ul className="ss-group-list">
-          {subgroup.entries.map((entry) => (
-            <li key={entry.path}>
-              <button
-                type="button"
-                className={`ss-list-item${entry.path === selectedPath ? ' is-selected' : ''}`}
-                onClick={() => onSelect(entry.path)}
-                title={entry.path}
-              >
-                <span className="ss-list-name">{entry.name}</span>
-                <span className="ss-list-path">{entry.path.replace('/art/sprites/', '')}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
+function tipBrushFromPiece(piece, id, label, rotation) {
+  const art = templatePieceArt(piece, rotation)
+  if (!art?.href || !art.size) return null
+  return {
+    id,
+    pieceId: piece.id,
+    label,
+    image: cleanPath(art.href),
+    size: { width: art.size.width, height: art.size.height },
+    anchorX: art.anchorX,
+    plant: 'tip',
+    rotation: ((rotation % 360) + 360) % 360,
+    footprint: footprintTilesFromDesign(templatePieceFootprint(piece, rotation)),
+  }
+}
+
+function brushFromAsset(asset, rotation = 0) {
+  if (!asset) return null
+  if (asset.kind === 'template') {
+    const piece = getTemplatePiece(asset.id)
+    if (!piece) return null
+    return tipBrushFromPiece(piece, piece.id, piece.label || piece.id, rotation)
+  }
+  if (asset.kind !== 'tile') return null
+  const tile = getTile(asset.id)
+  if (!tile?.image) return null
+  // Same as the main editor tile brush / palette thumb: catalogue size, centre plant.
+  // Panel walls draw as a 2-cell pair (TileThumbnail) — footprint and size match that composite.
+  const size = imageSize(tile)
+  return {
+    id: tile.id,
+    pieceId: null,
+    label: tile.label || tile.id,
+    image: cleanPath(tile.image),
+    size: tile.panels ? { width: size.width + 32, height: size.height + 16 } : size,
+    plant: 'center',
+    rotation: 0,
+    footprint: tile.big ? { width: 2, depth: 2 } : tile.panels ? { width: 2, depth: 1 } : { width: 1, depth: 1 },
+  }
+}
+
+function rotateStampRecord(stamp, nextRotation) {
+  if (!stamp?.pieceId) return stamp
+  const piece = getTemplatePiece(stamp.pieceId)
+  if (!piece) return stamp
+  const art = templatePieceArt(piece, nextRotation)
+  if (!art?.href || !art.size) return stamp
+  return {
+    ...stamp,
+    rotation: ((nextRotation % 360) + 360) % 360,
+    image: cleanPath(art.href),
+    size: { width: art.size.width, height: art.size.height },
+    anchorX: art.anchorX,
+    footprint: footprintTilesFromDesign(templatePieceFootprint(piece, nextRotation)),
+  }
 }
 
 export default function SpriteSheetsScreen({ onBack, backLabel = SUB_EDITOR_BACK_LABEL }) {
-  const [entries, setEntries] = useState([])
-  const [selectedPath, setSelectedPath] = useState(null)
-  const [query, setQuery] = useState('')
+  const { askConfirm, dialogs } = useDialogs()
+  const [tool, setTool] = useState(null)
+  const [brushRotation, setBrushRotation] = useState(0)
   const [status, setStatus] = useState('')
   const [version, setVersion] = useState(spriteCacheVersion)
-  const [animation, setAnimation] = useState(null)
-  const [facing, setFacing] = useState('s')
-  const [loopPreview, setLoopPreview] = useState(true)
-  const [busy, setBusy] = useState(false)
-  const [typeId, setTypeId] = useState('characters')
-  const fileRef = useRef(null)
+  const [presetId, setPresetId] = useState(DEFAULT_SHEET_PRESET)
+  const [stamps, setStamps] = useState([])
+  const [selectedStampId, setSelectedStampId] = useState(null)
+  const [showIsoGrid, setShowIsoGrid] = useState(true)
+  const [showGuideGrid, setShowGuideGrid] = useState(true)
+  const [guideGridSize, setGuideGridSize] = useState(DEFAULT_EDITOR_GRID_SIZE)
+  const [showSquareGrid, setShowSquareGrid] = useState(true)
+  const [squareGridId, setSquareGridId] = useState(DEFAULT_SHEET_SQUARE_GRID)
+  const [showSelectionOutline, setShowSelectionOutline] = useState(true)
+  const [packGapId, setPackGapId] = useState(DEFAULT_SHEET_PACK_GAP)
+  const [sheetPreviewUrl, setSheetPreviewUrl] = useState(null)
+  const composerRef = useRef(null)
+  const packGap = sheetPackGapPreset(packGapId)
 
-  // A promise chain, not an async body, so the state is set from the callbacks and never inside the effect that starts it.
-  const loadList = () =>
-    listSpriteFiles().then(
-      (list) => {
-        const enriched = list.map(enrichSpriteEntry)
-        setEntries(enriched)
-        setSelectedPath((current) => current ?? enriched[0]?.path ?? null)
-        if (!enriched.length) setStatus('No PNGs found under public/art/sprites/.')
-      },
-      (error) => {
-        setStatus(error.message || String(error))
-        setEntries([])
-      },
-    )
-
+  const asset = useMemo(() => parseTool(tool), [tool])
   useEffect(() => {
-    loadList()
-  }, [])
+    setBrushRotation(0)
+  }, [tool])
+  const brush = useMemo(() => brushFromAsset(asset, brushRotation), [asset, brushRotation])
+  const preset = sheetPreset(presetId)
 
-  const filtered = useMemo(() => filterSpriteEntries(entries, query), [entries, query])
-  const categories = useMemo(() => categorizeSpriteEntries(filtered), [filtered])
+  const openArtDisabledReason = !stamps.length
+    ? 'Place at least one palette tile on the sheet before generating.'
+    : null
 
-  // Keep a fixed tab order even when a type has no matches under the filter.
-  const typeTabs = useMemo(() => {
-    const byId = new Map(categories.map((category) => [category.id, category]))
-    const known = SPRITE_TYPE_ORDER.map((id) => byId.get(id) ?? { id, label: spriteGroupLabel(id), count: 0, subgroups: [] })
-    const extras = categories.filter((category) => !SPRITE_TYPE_ORDER.includes(category.id))
-    return [...known, ...extras].filter((category) => category.count > 0 || !query.trim())
-  }, [categories, query])
-
-  // The corrections below are adjusted while rendering (each guarded, so it settles after one pass) instead of in
-  // effects, so no frame shows a tab, folder list or preview that is about to be replaced.
-  // A filter that hides the chosen type moves to the first remaining one.
-  if (typeTabs.length && !typeTabs.some((tab) => tab.id === typeId)) setTypeId(typeTabs[0].id)
-
-  const activeCategory = typeTabs.find((tab) => tab.id === typeId) ?? typeTabs[0] ?? null
-  const subgroups = activeCategory?.subgroups ?? []
-
-  const activeTypeId = activeCategory?.id
-  const subgroupIdsKey = subgroups.map((subgroup) => subgroup.id).join('|')
-
-  // Open every subgroup while filtering; otherwise only the first folder in this type.
-  const subgroupIds = subgroupIdsKey ? subgroupIdsKey.split('|') : []
-  const startOpen = query.trim() ? subgroupIds : subgroupIds.slice(0, 1)
-  const [openSubgroups, setOpenSubgroups] = useResettableState(new Set(startOpen), `${activeTypeId}|${subgroupIdsKey}|${query}`)
-
-  // Switching Characters → FX (etc.) should preview a file from that tab, not the previous selection.
-  if (activeCategory?.entries?.length && !activeCategory.entries.some((entry) => entry.path === selectedPath)) {
-    setSelectedPath(activeCategory.entries[0].path)
+  const clearSheet = () => {
+    setStamps([])
+    setSelectedStampId(null)
+    setSheetPreviewUrl(null)
   }
 
-  const selected = useMemo(() => entries.find((entry) => entry.path === selectedPath) ?? null, [entries, selectedPath])
-
-  // Keep the chosen animation when the new file has it; otherwise its first one.
-  const [seenSelected, setSeenSelected] = useState(selected)
-  if (selected !== seenSelected) {
-    setSeenSelected(selected)
-    if (!selected) {
-      setAnimation(null)
-    } else {
-      const names = listPreviewAnimations(selected.path, selected.character)
-      setAnimation((current) => (names.includes(current) ? current : names[0] ?? null))
-    }
-  }
-
-  const toggleSubgroup = (id) =>
-    setOpenSubgroups((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-
-  const anySubgroupOpen = subgroups.some((subgroup) => openSubgroups.has(subgroup.id))
-  const collapseAllSubgroups = () => setOpenSubgroups(new Set())
-  const expandAllSubgroups = () => setOpenSubgroups(new Set(subgroups.map((subgroup) => subgroup.id)))
-
-  const onExport = async () => {
-    if (!selected) return
-    try {
-      setBusy(true)
-      await downloadSprite(selected.path)
-      setStatus(`Exported ${selected.name} (transparent PNG).`)
-    } catch (error) {
-      setStatus(error.message || String(error))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const onPickImport = () => fileRef.current?.click()
-
-  const onImportFile = async (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file || !selected) return
-    if (!canEditSprites) {
-      setStatus('Import needs the Vite DEV server.')
-      return
-    }
-    const expected = expectedSpriteSize(selected.path)
-    if (expected) {
-      const ok = window.confirm(
-        `Replace ${selected.path}?\n\nCharacter sheets should stay ${expected.width}×${expected.height}px (frame grid). Continue?`,
+  const onAutopack = () => {
+    if (!stamps.length) return
+    const result = packSheetStamps(stamps, presetId, { gap: packGap.gap })
+    setStamps(result.stamps)
+    if (result.unfit) {
+      setStatus(
+        `Autopack (${packGap.label} gap): ${result.packed} packed, ${result.unfit} could not fit — try 2K, a smaller gap, or remove some stamps.`,
       )
-      if (!ok) return
-    } else if (!window.confirm(`Replace ${selected.path}?`)) {
-      return
-    }
-    try {
-      setBusy(true)
-      const result = await importSprite(selected.path, file)
-      setVersion(result.version ?? bumpSpriteCache())
-      setStatus(`Imported ${selected.name}.`)
-      await loadList()
-    } catch (error) {
-      setStatus(error.message || String(error))
-    } finally {
-      setBusy(false)
+    } else {
+      setStatus(
+        `Autopack (${packGap.label} gap): packed ${result.packed} stamp${result.packed === 1 ? '' : 's'} on the iso grid.`,
+      )
     }
   }
 
-  const animNames = selected ? listPreviewAnimations(selected.path, selected.character) : []
-  const animPreviewBlocked = Boolean(selected?.character?.isMask || (selected?.path || '').includes('-uniform.png'))
+  const onPresetChange = async (nextId) => {
+    if (nextId === presetId) return
+    if (stamps.length) {
+      const ok = await askConfirm({
+        title: 'Clear Sheet',
+        message: 'Switching 1K/2K clears the current sheet arrangement. Continue?',
+        confirmLabel: 'Clear & Switch',
+      })
+      if (!ok) return
+    }
+    clearSheet()
+    setPresetId(nextId)
+  }
 
   return (
     <EditorSubScreen
@@ -225,86 +174,209 @@ export default function SpriteSheetsScreen({ onBack, backLabel = SUB_EDITOR_BACK
           <button type="button" className="me-button" title={backLabel} onClick={() => onBack?.()}>
             {backLabel}
           </button>
-          <button type="button" className="me-button" disabled={!selected || busy} onClick={onExport}>
-            Export
-          </button>
-          <button type="button" className="me-button is-primary" disabled={!selected || !canEditSprites || busy} onClick={onPickImport}>
-            Import…
-          </button>
-          <input ref={fileRef} type="file" accept="image/png,.png" hidden onChange={onImportFile} />
-          {!canEditSprites && <span className="me-text">Import needs the Vite DEV server (view/export still work if listed).</span>}
-          {status && <span className="me-text ss-status">{status}</span>}
+          <div className="ed-seg" role="group" aria-label="Sheet size">
+            {Object.values(SHEET_PRESETS).map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className={`me-button${presetId === entry.id ? ' is-on' : ''}`}
+                aria-pressed={presetId === entry.id}
+                title={`${entry.label} · ${entry.width}×${entry.height}`}
+                onClick={() => onPresetChange(entry.id)}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </div>
+          <div className="ed-seg" role="group" aria-label="Guides">
+            <button
+              type="button"
+              className={`me-button${showIsoGrid ? ' is-on' : ''}`}
+              aria-pressed={showIsoGrid}
+              title="Show the isometric floor diamonds"
+              onClick={() => setShowIsoGrid((value) => !value)}
+            >
+              Iso
+            </button>
+            <button
+              type="button"
+              className={`me-button${showGuideGrid ? ' is-on' : ''}`}
+              aria-pressed={showGuideGrid}
+              title="Show the iso guide grid (same as the main map editor)"
+              onClick={() => setShowGuideGrid((value) => !value)}
+            >
+              Guide
+            </button>
+            <EditorSelect
+              className="me-select ed-grid-select"
+              value={guideGridSize}
+              disabled={!showGuideGrid}
+              aria-label="Guide grid size"
+              title="Iso guide spacing in world pixels (tip placement snaps to this)"
+              onChange={(event) => setGuideGridSize(Number(event.target.value))}
+            >
+              {EDITOR_GRID_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size}px
+                </option>
+              ))}
+            </EditorSelect>
+            <button
+              type="button"
+              className={`me-button${showSquareGrid ? ' is-on' : ''}`}
+              aria-pressed={showSquareGrid}
+              title="Show the axis-aligned display grid (visual only)"
+              onClick={() => setShowSquareGrid((value) => !value)}
+            >
+              Display grid
+            </button>
+            <EditorSelect
+              className="me-select ed-grid-select"
+              value={squareGridId}
+              disabled={!showSquareGrid}
+              aria-label="Display grid size"
+              title="Axis-aligned display grid — visual only"
+              onChange={(event) => setSquareGridId(event.target.value)}
+            >
+              {SHEET_SQUARE_GRID_PRESETS.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.label}
+                </option>
+              ))}
+            </EditorSelect>
+            <button
+              type="button"
+              className={`me-button${showSelectionOutline ? ' is-on' : ''}`}
+              aria-pressed={showSelectionOutline}
+              title="Show the yellow selection box on the selected stamp"
+              onClick={() => setShowSelectionOutline((value) => !value)}
+            >
+              Selection
+            </button>
+          </div>
+          <div className="ed-seg" role="group" aria-label="Sheet arrange">
+            <button
+              type="button"
+              className="me-button"
+              disabled={!stamps.length}
+              title={`Pack stamps onto free iso cells (${packGap.label} between sprites and the sheet edge)`}
+              onClick={onAutopack}
+            >
+              Autopack
+            </button>
+            <EditorSelect
+              className="me-select ed-grid-select"
+              value={packGapId}
+              aria-label="Autopack gap"
+              title="Pixel gap Autopack keeps between stamp images and the sheet edge"
+              onChange={(event) => setPackGapId(event.target.value)}
+            >
+              {SHEET_PACK_GAP_PRESETS.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  Gap {entry.label}
+                </option>
+              ))}
+            </EditorSelect>
+            <button
+              type="button"
+              className="me-button"
+              disabled={!stamps.length}
+              title="Remove every stamp from the sheet"
+              onClick={clearSheet}
+            >
+              Clear
+            </button>
+          </div>
+          <div className="ed-toolbar-end">
+            <span className="me-text">
+              {preset.width}×{preset.height}
+              {stamps.length ? ` · ${stamps.length} stamp${stamps.length === 1 ? '' : 's'}` : ''}
+            </span>
+            {status ? <span className="me-text ss-status">{status}</span> : null}
+          </div>
         </>
       }
     >
       <div className="ss-body">
-        <aside className="ss-list-pane">
-          <SpriteCategoryTabs categories={typeTabs} activeId={activeCategory?.id} onSelect={setTypeId} />
-          <div className="ss-list-tools">
-            <input
-              className="me-name me-wide"
-              placeholder="Filter by path or name"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <button
-              type="button"
-              className="me-button ss-collapse-all"
-              disabled={!subgroups.length}
-              title={anySubgroupOpen ? 'Collapse all groups' : 'Expand all groups'}
-              onClick={() => (anySubgroupOpen ? collapseAllSubgroups() : expandAllSubgroups())}
-            >
-              {anySubgroupOpen ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-          <div className="ss-list">
-            {subgroups.map((subgroup) => (
-              <SpriteSubgroup
-                key={subgroup.id}
-                subgroup={subgroup}
-                open={openSubgroups}
-                onToggle={toggleSubgroup}
-                selectedPath={selectedPath}
-                onSelect={setSelectedPath}
-              />
-            ))}
-            {!subgroups.length && <p className="me-text">No sprites match.</p>}
-          </div>
+        <aside className="ss-palette-pane">
+          <EditorPalette tool={tool} onTool={setTool} onStatus={setStatus} omitLayers={OMIT_LAYERS} />
         </aside>
 
         <section className="ss-detail">
-          {selected ? (
-            <>
-              <div className="ss-detail-head">
-                <div>
-                  <p className="ss-detail-name">{selected.name}</p>
-                  <p className="me-text">{selected.path}</p>
-                  {selected.character && (
-                    <p className="me-text">
-                      Set {selected.character.setId} · sheet {selected.character.sheetId}
-                      {selected.character.isMask ? ' · uniform mask' : ''}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <SpriteSheetPreview
-                path={selected.path}
-                version={version}
-                character={selected.character}
-                animation={animation}
-                animNames={animPreviewBlocked ? [] : animNames}
-                onAnimationChange={setAnimation}
-                facing={facing}
-                onFacingChange={setFacing}
-                loop={loopPreview}
-                onLoopChange={setLoopPreview}
-              />
-            </>
-          ) : (
-            <p className="me-text">Select a sprite sheet.</p>
-          )}
+          <div className="ss-detail-head">
+            <div>
+              <p className="ss-detail-name">Generation sheet</p>
+              <p className="me-text">
+                Palette tile / Template Piece → click to place · R rotates · right-click / Delete to remove
+              </p>
+            </div>
+          </div>
+          <SpriteSheetComposer
+            ref={composerRef}
+            presetId={presetId}
+            stamps={stamps}
+            onStampsChange={setStamps}
+            selectedStampId={selectedStampId}
+            onSelectStamp={setSelectedStampId}
+            brush={brush}
+            onBrushRotate={() => {
+              setBrushRotation((value) => (value + 90) % 360)
+              setStatus('Brush rotated +90°.')
+            }}
+            onStampRotate={(stampId) => {
+              setStamps((list) =>
+                list.map((stamp) => {
+                  if (stamp.id !== stampId || !stamp.pieceId) return stamp
+                  const next = rotateStampRecord(stamp, (stamp.rotation || 0) + 90)
+                  setStatus(`Rotated ${next.label || next.id} to ${next.rotation}°.`)
+                  return next
+                }),
+              )
+            }}
+            version={version}
+            onStatus={setStatus}
+            showIsoGrid={showIsoGrid}
+            showGuideGrid={showGuideGrid}
+            guideGridSize={guideGridSize}
+            showSquareGrid={showSquareGrid}
+            squareGridId={squareGridId}
+            showSelectionOutline={showSelectionOutline}
+            onSheetPreview={setSheetPreviewUrl}
+          />
         </section>
+
+        <aside className="ss-ai-pane" aria-label="Properties">
+          <div className="ss-ai-pane-head">Properties</div>
+          <PropertySectionsProvider key={tool ? `asset:${tool}` : `sheet:${presetId}`}>
+            <PropertySectionsToolbar />
+            <div className="ss-ai-pane-body">
+              {hasAssetSelection(tool) ? (
+                <AssetProperties tool={tool} onStatus={setStatus} onTool={setTool} />
+              ) : null}
+              <OpenArtGenerationPanel
+                key={`sheet-${presetId}`}
+                templatePath={null}
+                templateLabel={`Sprite sheet ${preset.label} (${preset.width}×${preset.height})`}
+                sourceTile={null}
+                referencePreviewUrl={sheetPreviewUrl}
+                getReferencePng={async () => {
+                  if (!composerRef.current?.exportPngBase64) {
+                    throw new Error('Sheet composer is not ready')
+                  }
+                  return composerRef.current.exportPngBase64()
+                }}
+                disabledReason={openArtDisabledReason}
+                onStatus={setStatus}
+                onImported={async (result) => {
+                  setVersion(result.cacheVersion ?? bumpSpriteCache())
+                  setStatus(`Imported sheet ${result.path}`)
+                }}
+              />
+            </div>
+          </PropertySectionsProvider>
+        </aside>
       </div>
+      {dialogs}
     </EditorSubScreen>
   )
 }

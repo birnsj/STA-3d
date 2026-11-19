@@ -1,6 +1,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const { writeFileAtomic } = require('./atomicWrite.cjs')
+const { decodeBase64Png, fitResultBytesToTemplateBytes, readPngInfo } = require('./openArtPng.cjs')
 
 // Sprite PNGs under public/art/sprites for the map editor's Sprite Sheets screen. Dev server only
 // (vite.config.js /__sprites). List every .png; replace one file after path checks.
@@ -74,4 +75,80 @@ function putSprite(spritesRoot, { path: urlPath, png }) {
   return { path: urlPath, version: Date.now() }
 }
 
-module.exports = { listSprites, putSprite, ROOT_URL }
+function slugifySpriteName(text) {
+  const base = String(text ?? '')
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part, index) =>
+      index === 0 ? part.toLowerCase() : part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(),
+    )
+    .join('')
+  const slug = base.replace(/[^a-zA-Z0-9_]/g, '') || 'sprite'
+  return /^[0-9]/.test(slug) ? `sprite${slug}` : slug
+}
+
+function uniqueSiblingPath(spritesRoot, besidePath, label) {
+  const absoluteBeside = resolveSpritePath(spritesRoot, besidePath)
+  const dir = path.dirname(absoluteBeside)
+  const rootResolved = path.resolve(spritesRoot)
+  const relDir = toSlashes(path.relative(rootResolved, dir))
+  const base = slugifySpriteName(label)
+  let n = 0
+  for (;;) {
+    const file = `${base}${n ? n : ''}.png`
+    const absolute = path.join(dir, file)
+    if (!fs.existsSync(absolute)) {
+      const url = relDir ? `${ROOT_URL}/${relDir}/${file}` : `${ROOT_URL}/${file}`
+      return { absolute, path: url }
+    }
+    n += 1
+  }
+}
+
+// OpenArt Accept from Sprite Sheets: new PNG beside the template (never overwrite), fitted to template size/alpha.
+// templatePng (base64) may replace a disk templatePath when Accepting a composed sheet.
+function createSiblingSpriteFromArt(spritesRoot, { templatePath, templatePng = null, label, png }) {
+  const name = typeof label === 'string' ? label.trim() : ''
+  if (!name) throw new Error('label is required')
+  if (!png) throw new Error('png is required')
+  const besidePath = templatePath || `${ROOT_URL}/environment/_sheets/sheet.png`
+  let templateBytes = null
+  if (templatePng) {
+    templateBytes = decodeBase64Png(templatePng)
+  } else if (templatePath) {
+    const templateAbs = resolveSpritePath(spritesRoot, templatePath)
+    if (!fs.existsSync(templateAbs)) throw new Error(`Template sprite not found: ${templatePath}`)
+    templateBytes = fs.readFileSync(templateAbs)
+  } else {
+    throw new Error('templatePath or templatePng is required')
+  }
+  let bytes = decodeBase64Png(png)
+  const warnings = []
+  try {
+    bytes = fitResultBytesToTemplateBytes(bytes, templateBytes)
+  } catch (error) {
+    warnings.push(`Could not fit generated art to template size/transparency: ${error.message}`)
+  }
+  const info = readPngInfo(bytes)
+  if (!info.hasAlpha) {
+    warnings.push('Generated PNG has no alpha channel; edges may show an opaque background.')
+  }
+  // Ensure the sibling folder exists even when the placeholder sheet file does not yet.
+  const destProbe = resolveSpritePath(spritesRoot, besidePath)
+  fs.mkdirSync(path.dirname(destProbe), { recursive: true })
+  const dest = uniqueSiblingPath(spritesRoot, besidePath, name)
+  fs.mkdirSync(path.dirname(dest.absolute), { recursive: true })
+  writeFileAtomic(dest.absolute, bytes)
+  return {
+    path: dest.path,
+    label: name,
+    version: Date.now(),
+    warnings,
+    pngInfo: info,
+  }
+}
+
+module.exports = { listSprites, putSprite, createSiblingSpriteFromArt, ROOT_URL }

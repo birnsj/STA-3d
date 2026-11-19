@@ -4,6 +4,12 @@ const { writeFileAtomic } = require('./atomicWrite.cjs')
 const { collectArtHrefs, deleteOrphanArtFiles } = require('./artHrefUtils.cjs')
 const { trackAuthoringChange } = require('./gitTrack.cjs')
 const { putSprite } = require('./spriteStore.cjs')
+const {
+  decodeBase64Png,
+  fitResultBytesToTemplateBytes,
+  readPngInfo,
+  readPngInfoFromFile,
+} = require('./openArtPng.cjs')
 
 // Dev map editor: cover/fade/layer, palette CRUD, create/rename/import tile art, or permanent delete.
 
@@ -481,6 +487,104 @@ function importTileArt(file, change, extras = {}) {
   return { id, path: result.path, version: result.version, image: tile.image }
 }
 
+function groupIdForTile(data, tileId) {
+  for (const group of data.paletteGroups ?? []) {
+    if ((group.tiles ?? []).includes(tileId)) return group.id
+  }
+  return null
+}
+
+// Metadata safe to copy into an AI-accepted new tile. Never copy joinImages / alt / panel / run / emission
+// variant paths — those would point at the source tile's private art.
+const COPY_META_KEYS = ['layer', 'solid', 'blocksSight', 'cover', 'fade', 'wall', 'height', 'imageHeight', 'role']
+
+function createTileFromArt(file, change, extras = {}) {
+  const label = typeof change?.label === 'string' ? change.label.trim() : ''
+  const png = change?.png
+  const sourceId = typeof change?.sourceId === 'string' ? change.sourceId : null
+  let groupId = typeof change?.groupId === 'string' ? change.groupId : null
+  if (!label) throw new Error('label is required')
+  if (!png) throw new Error('png is required')
+  if (!extras.publicRoot) throw new Error('publicRoot is required to create tile art')
+
+  let bytes = decodeBase64Png(png)
+  const warnings = []
+
+  const data = loadData(file)
+  let source = null
+  if (sourceId) {
+    source = (data.tiles ?? []).find((entry) => entry.id === sourceId)
+    if (!source) throw new Error(`No source tile with id ${sourceId}`)
+    if (!groupId) groupId = groupIdForTile(data, sourceId)
+    if (source.joinImages) {
+      warnings.push('Source uses join-image variants; the new tile will not inherit those variant paths.')
+    }
+    if (source.panelImages || source.runImages || source.altImage || source.bigImage) {
+      warnings.push('Source has alternate/panel/run art; only the main image is imported for the new tile.')
+    }
+    // Accept always force-matches the source sprite size + transparency (OpenArt output is unreliable).
+    if (source.image && extras.publicRoot) {
+      const srcFile = path.join(extras.publicRoot, source.image.replace(/^\//, ''))
+      if (fs.existsSync(srcFile)) {
+        try {
+          bytes = fitResultBytesToTemplateBytes(bytes, fs.readFileSync(srcFile))
+        } catch (error) {
+          warnings.push(`Could not fit generated art to source size/transparency: ${error.message}`)
+        }
+      }
+    }
+  }
+
+  const info = readPngInfo(bytes)
+  if (!info.hasAlpha) {
+    warnings.push('Generated PNG has no alpha channel; map edges may show an opaque background.')
+  }
+  if (!groupId) throw new Error('groupId is required (or provide sourceId in a palette group)')
+  const group = findGroup(data, groupId)
+
+  const taken = new Set((data.tiles ?? []).map((tile) => tile.id))
+  const id = uniqueSlug(change.id || label, taken)
+  const symbol = nextFreeSymbol(data.tiles)
+  const image = `/art/sprites/environment/${groupId}/${id}.png`
+  const tile = {
+    id,
+    layer: 'ground',
+    symbol,
+    label,
+    image,
+    solid: false,
+    blocksSight: false,
+    cover: false,
+    fade: false,
+    height: 0,
+    role: null,
+  }
+  if (source) {
+    for (const key of COPY_META_KEYS) {
+      if (key in source) tile[key] = source[key]
+    }
+  }
+  data.tiles.push(tile)
+  group.tiles = group.tiles ?? []
+  group.tiles.push(id)
+  updateNotesNextSymbol(data, nextFreeSymbol(data.tiles))
+  saveData(file, data)
+  const spritesRoot = path.join(extras.publicRoot, 'art', 'sprites')
+  const written = putSprite(spritesRoot, { path: image, png: bytes.toString('base64') })
+  return {
+    id,
+    label,
+    symbol,
+    image,
+    groupId,
+    layer: tile.layer,
+    tile,
+    version: written.version,
+    warnings,
+    pngInfo: info,
+  }
+}
+
 function applyTileChange(file, change, extras = {}) {
   if (!change || typeof change !== 'object') throw new Error('body required')
   if (change.delete) return deleteTile(file, change, extras)
@@ -501,6 +605,8 @@ function applyTileChange(file, change, extras = {}) {
       return renameTile(file, change)
     case 'importTileArt':
       return importTileArt(file, change, extras)
+    case 'createTileFromArt':
+      return createTileFromArt(file, change, extras)
     default:
       break
   }
@@ -521,7 +627,9 @@ module.exports = {
   createTile,
   renameTile,
   importTileArt,
+  createTileFromArt,
   applyTileChange,
   PROTECTED_IDS,
   LAYER_IDS,
+  COPY_META_KEYS,
 }

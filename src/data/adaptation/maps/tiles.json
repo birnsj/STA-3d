@@ -50,7 +50,8 @@
         "machinery",
         "crate",
         "grating",
-        "epsControl"
+        "epsControl",
+        "bulkheadAi"
       ]
     },
     {
@@ -5233,6 +5234,21 @@
       "role": null,
       "empty": true,
       "wall": true
+    },
+    {
+      "id": "bulkheadAi",
+      "layer": "walls",
+      "symbol": "'",
+      "label": "Bulkhead (AI)",
+      "image": "/art/sprites/environment/starship/bulkheadAi.png",
+      "solid": true,
+      "blocksSight": true,
+      "cover": false,
+      "fade": true,
+      "height": 92,
+      "role": null,
+      "wall": true,
+      "imageHeight": 128
     }
   ]
 }

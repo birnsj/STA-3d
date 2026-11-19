@@ -795,6 +795,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
           mapProps={mapProps}
           inspectors={inspectors}
           onStatus={setStatus}
+          onTool={tools.selectTool}
           hazardIntensity={tools.hazardIntensity}
           onHazardIntensity={tools.setHazardIntensity}
           animateTiles={animateTiles}
