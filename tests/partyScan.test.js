@@ -20,6 +20,7 @@ import { MODE } from '../src/exploration/combatLink.js'
 import { partyReducer } from '../src/exploration/partyControl.js'
 import { createBlankMap } from '../src/maps/mapFormat.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 // The party at the west end, one NPC eight tiles east: inside a science tricorder's range. No tick runs, so the party
 // has perceived nothing before the scan.
@@ -30,6 +31,7 @@ function testMap() {
     { x: 2, y: 7 },
   ]
   map.markers.enemySpawns = [{ x: 10, y: 6 }]
+  withFallbackNpcs(map)
   return map
 }
 

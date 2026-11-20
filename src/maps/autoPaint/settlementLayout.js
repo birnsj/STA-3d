@@ -665,7 +665,6 @@ export function generateSettlementLayout(
   const doorDensity = Number.isFinite(Number(doorsInBuilding)) ? clamp01(Number(doorsInBuilding)) : 1
   const placeBuildings = includeBuildings !== false
   const placeRoads = includeRoads !== false
-  const biome = biomeId ? biomeFor(biomeId) : null
   const floorOpts = { wood: interiorWood, stone: interiorStone }
   const interiorIds = new Set()
   const rotatedKeys = new Set()

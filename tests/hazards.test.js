@@ -23,6 +23,7 @@ import {
 import { applyObjectEffect } from '../src/world/objectEffects.js'
 import { objectFor } from '../src/world/objects.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 const room = ({ hazards = [], destructibles = [] } = {}) => ({ ...createBlankMap({ name: 'Hazard Room', width: 16, height: 12 }), hazards, destructibles })
 const fire = (id, tiles, overrides = {}) => ({ id, type: 'fire', tiles, ...overrides })
@@ -262,6 +263,7 @@ describe('hazards across the hand-off', () => {
     const map = room({ hazards: [fire('f', { '9,9': 2 }, { duration: 5, spreadChance: 0, dissipateChance: 0 })] })
     map.markers.playerStarts = [{ x: 4, y: 6 }, { x: 4, y: 8 }]
     map.markers.enemySpawns = [{ x: 7, y: 6 }]
+    withFallbackNpcs(map)
     let state = createExplorationState(map, team(), 3)
     state = tickFor(state, HAZARD_ROUND_SECONDS / 2)
     const clockBefore = state.hazardClock
@@ -291,6 +293,7 @@ describe('neutralizing across modes', () => {
       const map = room({ hazards: [fire('f', { '5,6': 2, '5,7': 2 }, { spreadChance: 0, dissipateChance: 0 })] })
       map.markers.playerStarts = [{ x: 4, y: 6 }, { x: 4, y: 8 }]
       map.markers.enemySpawns = [{ x: 12, y: 6 }]
+      withFallbackNpcs(map)
       let state = createExplorationState(map, team(), seed)
       const [npcId] = Object.keys(state.world.npcs)
       state = explorationReducer(state, { type: 'attackNpc', npcId, targetId: 'alpha' })

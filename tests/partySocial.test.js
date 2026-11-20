@@ -11,6 +11,7 @@ import { currentCheck, previewCheck } from '../src/conversation/conversationRunt
 import { MODE } from '../src/exploration/combatLink.js'
 import { createBlankMap } from '../src/maps/mapFormat.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 // The party at the west end, one NPC eight tiles east (just within earshot of alpha).
 function testMap() {
@@ -20,6 +21,7 @@ function testMap() {
     { x: 2, y: 7 },
   ]
   map.markers.enemySpawns = [{ x: 10, y: 6 }]
+  withFallbackNpcs(map)
   return map
 }
 

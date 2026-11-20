@@ -11,7 +11,7 @@
 //   tipAlongX/Y (collides with the corner tip) and never the axis-swapped half tips.
 import { wallCandidateAllowed } from './adjacency.js'
 import { pickWeighted, primaryId, normalizeWeightedEntries } from './weightedChoice.js'
-import { getTile, groundTileId, NULL_TILE, normalizeTemplateRotation } from '../mapFormat.js'
+import { groundTileId, NULL_TILE, normalizeTemplateRotation } from '../mapFormat.js'
 import { snapTemplatePiecePosition, TEMPLATE_PIECE_CELL_PX } from '../mapEdits.js'
 import { getTemplatePiece, templatePieceFootprint } from '../templatePieces.js'
 import { WORLD_WALL_UNDERLAY } from './constants.js'

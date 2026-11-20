@@ -123,7 +123,6 @@ function encodePng(rgba, width, height) {
  * opts: { base, dark?, light?, stripe?, stripeGap?, grain?, seed?, leather?, stone?, soft? }
  */
 function fillCell(rgba, col, row, opts) {
-  const base = hex(opts.base)
   const dark = hex(opts.dark ?? opts.base)
   const light = hex(opts.light ?? opts.base)
   const grain = opts.grain ?? 0.12

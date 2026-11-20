@@ -15,6 +15,7 @@ import { createBlankMap } from '../src/maps/mapFormat.js'
 import { MAX_MOMENTUM } from '../src/rules/missionResources.js'
 import { buildStaTask } from '../src/rules/taskResolver.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 const DEFEATED = { stress: 0, injuries: [], defeated: true }
 
@@ -26,6 +27,7 @@ function testMap() {
     { x: 9, y: 7 },
   ]
   map.markers.enemySpawns = [{ x: 12, y: 6 }]
+  withFallbackNpcs(map)
   return map
 }
 

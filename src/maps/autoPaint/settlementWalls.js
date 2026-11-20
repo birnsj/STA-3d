@@ -101,7 +101,6 @@ export function placeSettlementBuildingWalls(
 
   const { x0, x1, y0, y1 } = rect
   const corner = primaryId(kit.corner)
-  const shortId = primaryId(kit.straight)
   const doorwayId =
     doorwayPiece && getTemplatePiece(doorwayPiece)
       ? doorwayPiece

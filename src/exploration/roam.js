@@ -168,7 +168,7 @@ function pickWanderGoal(map, home, radius, profile, lastGoal, rng = Math.random)
   return near[Math.floor(rng() * near.length)] ?? near[0]
 }
 
-function tickIdle({ home, position, heading, seconds }) {
+function tickIdle({ home, position }) {
   const atHome = distance(position, home.position) <= DEFAULT_ARRIVE
   if (atHome) {
     return {

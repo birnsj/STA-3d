@@ -8,7 +8,6 @@ const {
   decodeBase64Png,
   fitResultBytesToTemplateBytes,
   readPngInfo,
-  readPngInfoFromFile,
 } = require('./openArtPng.cjs')
 
 // Dev map editor: cover/fade/layer, palette CRUD, create/rename/import tile art, or permanent delete.

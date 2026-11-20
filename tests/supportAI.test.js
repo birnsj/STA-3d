@@ -10,6 +10,7 @@ import { startCombat } from '../src/exploration/combatLink.js'
 import { createExplorationState } from '../src/exploration/explorationState.js'
 import { createBlankMap } from '../src/maps/mapFormat.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 const MEDIC = { attributes: { daring: 11 }, disciplines: { medicine: 4 }, focuses: ['First Aid'] }
 
@@ -100,6 +101,7 @@ describe('an exploration scan carries into combat', () => {
     const map = createBlankMap({ name: 'Scan Carry', width: 18, height: 12 })
     map.markers.playerStarts = [{ x: 4, y: 5 }]
     map.markers.enemySpawns = [{ x: 8, y: 5 }]
+    withFallbackNpcs(map)
     const state = createExplorationState(map, [makeCharacter({ id: 'alpha', name: 'Alpha' })])
     const npcId = Object.keys(state.world.npcs)[0]
     const npcScans = scanned === undefined ? {} : { [npcId]: { key: 0, memberId: 'alpha', success: scanned } }

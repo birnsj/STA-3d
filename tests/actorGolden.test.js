@@ -13,6 +13,7 @@ import { createExplorationState, explorationReducer } from '../src/exploration/e
 import { getMembers } from '../src/exploration/partyControl.js'
 import { createBlankMap, parseMapFile } from '../src/maps/mapFormat.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 const EXPECTED = {
   // 2026-10-25: Minor Klingons, and Auto Combat parties rush to hand-to-hand.
@@ -55,7 +56,7 @@ function room() {
     { x: 14, y: 9 },
     { x: 12, y: 3 },
   ]
-  return map
+  return withFallbackNpcs(map)
 }
 
 const memberView = (member) => ({

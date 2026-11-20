@@ -29,7 +29,6 @@ import {
 } from './viewerLightSettings.js'
 
 const HUMANOID_HEIGHT = PROCEDURAL_HEIGHT
-const HUMANOID_PIVOT_Y = HUMANOID_HEIGHT * 0.5
 // Radians per pixel of left-drag (horizontal → yaw, vertical → pitch).
 const YAW_PER_PX = 0.01
 const PITCH_PER_PX = 0.008

@@ -7,6 +7,7 @@ import { combatAction, endCombat, MODE, startCombat } from '../src/exploration/c
 import { createExplorationState, explorationReducer } from '../src/exploration/explorationState.js'
 import { createBlankMap } from '../src/maps/mapFormat.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 // The party and Guard A in the west room; Guard B in the east room, behind a solid wall (or not, for the control).
 function testMap(wall) {
@@ -20,7 +21,7 @@ function testMap(wall) {
     { x: 7, y: 6 },
     { x: 12, y: 6 },
   ]
-  return map
+  return withFallbackNpcs(map)
 }
 
 // Guard A has just gone down; Guard B is in the fight and still up.

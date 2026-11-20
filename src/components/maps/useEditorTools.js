@@ -1318,7 +1318,6 @@ export default function useEditorTools({
         )
         return true
       }
-      const markerLayer = markerLayers[0] ?? 'characters'
       edit(eraseMarkers(map, position, { characters: true, markers: true }))
       if (moveFrom?.markers && moveFrom.x === position.x && moveFrom.y === position.y) setMoveFrom(null)
       if (selectedMarker && selectedMarker.x === position.x && selectedMarker.y === position.y) {

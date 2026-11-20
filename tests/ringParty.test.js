@@ -9,6 +9,7 @@ import { npcButtonPerformer, ringPartyView } from '../src/exploration/ringParty.
 import { createBlankMap, parseMapFile } from '../src/maps/mapFormat.js'
 import { objectFor } from '../src/world/objects.js'
 import { makeCharacter } from './support/characters.js'
+import { withFallbackNpcs } from './support/fallbackNpcs.js'
 
 const scientist = (id, equipment) => makeCharacter({ id, name: id, attributes: { reason: 12 }, disciplines: { science: 5 }, equipment })
 
@@ -20,6 +21,7 @@ function npcState() {
     { x: 9, y: 7 },
   ]
   map.markers.enemySpawns = [{ x: 10, y: 6 }]
+  withFallbackNpcs(map)
   return createExplorationState(map, [scientist('alpha', [{ itemId: 'scienceTricorder' }]), scientist('beta', [])], 1, { enemiesActive: false })
 }
 
@@ -72,6 +74,7 @@ describe('Ring party band (Prototype)', () => {
       { x: 9, y: 7 },
     ]
     map.markers.enemySpawns = [{ x: 10, y: 6 }]
+    withFallbackNpcs(map)
     const talker = makeCharacter({ id: 'talker', name: 'Talker', attributes: { presence: 12, control: 7 }, disciplines: { command: 5, security: 1 } })
     const shooter = makeCharacter({ id: 'shooter', name: 'Shooter', attributes: { presence: 7, control: 12 }, disciplines: { command: 1, security: 5 } })
     const state = createExplorationState(map, [talker, shooter], 1, { enemiesActive: false })
