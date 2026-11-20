@@ -412,6 +412,34 @@ const standsAt = (map, position) =>
 export const hasMarkers = (map, position) =>
   standsAt(map, position) || Boolean(areaAt(map, position)) || (map.objectives ?? []).some((objective) => objective.position && same(objective.position, position))
 
+// Nearest P/E/H/N/C/area/objective marker to the free cursor in tile space. The yellow cursor hotspot is the tip,
+// so a small screen diamond often misses while the glyph still looks "under" the pointer — tile radius is forgiving.
+const MARKER_TILE_HIT_RADIUS = 0.7
+
+/** Tile of the marker glyph nearest the board pointer, or null when none are close enough. */
+export function markerAtBoard(map, boardPoint) {
+  if (!boardPoint) return null
+  const tip = unproject(boardPoint)
+  let best = null
+  let bestDist = Infinity
+  const consider = (pos) => {
+    if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) return
+    const tile = { x: Math.round(pos.x), y: Math.round(pos.y) }
+    const dist = Math.hypot(tip.x - tile.x, tip.y - tile.y)
+    if (dist > MARKER_TILE_HIT_RADIUS || dist >= bestDist) return
+    bestDist = dist
+    best = tile
+  }
+  for (const pos of characterMarkerLists(map)) consider(pos)
+  for (const npc of map.npcs ?? []) consider(npc.position)
+  for (const area of map.areas ?? []) consider(area.position)
+  for (const objective of map.objectives ?? []) {
+    if (objective.position) consider(objective.position)
+  }
+  for (const pos of Object.values(map.objectPlacements ?? {})) consider(pos)
+  return best
+}
+
 // The Move tool on a tile with markers: everything on it moves to `to`. Returns { map } or { error } (a start, spawn or
 // NPC can't stand in a solid tile or on another one; a tile holds one area label).
 export function moveMarkers(map, from, to) {

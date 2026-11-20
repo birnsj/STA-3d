@@ -269,9 +269,9 @@
   fill: transparent;
   cursor: var(--cursor-crosshair);
 }
-/* Move tool: move icon until something is picked up; then hide the cursor so the carried ghost is the pointer. */
+/* Move: yellow free cursor while picking. While carrying, hide it — the sprite footprint diamond is the grid pointer. */
 .me-cells.is-move-tool {
-  cursor: var(--cursor-move);
+  cursor: var(--cursor-default);
 }
 .me-cells.is-move-carrying {
   cursor: none;
@@ -296,9 +296,18 @@
 .me-intensity { display: flex; gap: 4px; margin: 4px 0; }
 .me-intensity .me-button { flex: 1; }
 .me-intensity .me-button.is-selected { outline: 2px solid #ffb347; }
-.me-hover.is-move-source { fill: rgba(102, 204, 255, 0.15); stroke: #66ccff; stroke-width: 3; stroke-dasharray: 6 4; }
+/* Move pick hover floor mark — gold, same family as sprite selection outline. */
+.me-hover.is-move-source { fill: rgba(255, 179, 71, 0.28); stroke: #ffb347; stroke-width: 3; stroke-dasharray: 6 4; }
+/* Cyan dashed sprite footprint (Move carry + inventory/template paint). */
+.me-hover.is-footprint {
+  fill: rgba(102, 204, 255, 0.28);
+  stroke: #66ccff;
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+/* Placement box: green/red stacking cell for inventory items. */
 .me-hover.is-place { fill: rgba(90, 230, 140, 0.5); stroke: #8dffb0; stroke-width: 3; }
-.me-hover.is-place.is-invalid { fill: rgba(200, 70, 70, 0.38); stroke: #e07070; }
+.me-hover.is-place.is-invalid { fill: rgba(200, 70, 70, 0.38); stroke: #e07070; stroke-width: 3; }
 
 .me-dialog-backdrop {
   position: absolute;

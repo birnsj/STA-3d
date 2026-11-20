@@ -485,10 +485,9 @@ export class EditorOutlineView {
   }
 }
 
-// The brush or the Move tool's swap, drawn see-through over everything as the tiles would look placed: preview:
+// The brush or the Move tool's swap, drawn over everything as the tiles would look placed: preview:
 // { layout (the map as it would be), positions, key } or null. Drawn from canvasTiles.js drawLoneTiles, so the tiles
-// look exactly as the board draws them; a new key or map redraws it.
-const PREVIEW_ALPHA = 0.75
+// look exactly as the board draws them; a new key or map redraws it. Full opacity — same as a placed tile.
 const PREVIEW_RESOLUTION = 2
 export class TilePreviewView {
   constructor(container) {
@@ -511,7 +510,7 @@ export class TilePreviewView {
       this.sprite = new Sprite(textureOf(canvas))
       this.sprite.position.set(area.x, area.y)
       this.sprite.scale.set(1 / PREVIEW_RESOLUTION)
-      this.sprite.alpha = PREVIEW_ALPHA
+      this.sprite.alpha = 1
       this.container.addChild(this.sprite)
     })
   }

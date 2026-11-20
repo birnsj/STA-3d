@@ -6,11 +6,19 @@ import { orderedPaintTileIds, orderedPaintTemplateIds } from './toolHelpers.js'
 export function createBrushHandlers(ctx) {
   const {
     autoPaintRulesetId, beginStroke, clearBoardSelection, edit, endStroke, layerAllowsTool, map,
-    paintCycleRef, paintTemplateCycleRef, paintTemplateIds, paintTileIds, setMoveFrom, setMoving,
+    moving, paintCycleRef, paintTemplateCycleRef, paintTemplateIds, paintTileIds, setMoveFrom, setMoving,
     setPaintTemplateIds, setPaintTileIds, setPlacing, setStatus, setTool,
   } = ctx
 
+  const moveBlocksBrush = () => {
+    const moveOn = ctx.movingRef?.current ?? moving
+    if (!moveOn) return false
+    setStatus('Turn off Move to pick a brush from the palette.')
+    return true
+  }
+
   const enableAutoPaintTool = (rulesetId = autoPaintRulesetId) => {
+    if (moveBlocksBrush()) return
     clearBoardSelection()
     setTool('autoPaint')
     setPlacing(true)
@@ -35,8 +43,9 @@ export function createBrushHandlers(ctx) {
 
   // Assets thumbnail pick: clear board selection so Properties shows the catalogue asset.
   // Clicking a tile makes it the paint brush (replaces the cycle). Check more thumbs to multi-brush.
-  // Does not flip Assets tabs — those stay where the designer left them.
+  // Does not flip Assets tabs — those stay where the designer left them. Blocked while Move is on.
   const selectTool = (next) => {
+    if (moveBlocksBrush()) return
     clearBoardSelection()
     setTool(next)
     if (next === 'autoPaint') {
@@ -59,7 +68,7 @@ export function createBrushHandlers(ctx) {
   }
 
   const togglePaintTile = (tileId, checked) => {
-    if (!tileId) return
+    if (!tileId || moveBlocksBrush()) return
     setPaintTileIds((prev) => {
       const next = new Set(prev)
       if (checked) next.add(tileId)
@@ -74,7 +83,7 @@ export function createBrushHandlers(ctx) {
   }
 
   const togglePaintTemplate = (pieceId, checked) => {
-    if (!pieceId) return
+    if (!pieceId || moveBlocksBrush()) return
     setPaintTemplateIds((prev) => {
       const next = new Set(prev)
       if (checked) next.add(pieceId)

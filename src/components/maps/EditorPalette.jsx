@@ -101,7 +101,7 @@ function setItemDragImage(event, item) {
   window.setTimeout(() => image.remove(), 0)
 }
 
-function ItemGrid({ items, tool, onTool, onItemDragStart, onItemDragEnd }) {
+function ItemGrid({ items, tool, onTool, toolsLocked = false, onItemDragStart, onItemDragEnd }) {
   if (!items.length) return null
   return (
     <div className="ed-asset-grid">
@@ -111,9 +111,10 @@ function ItemGrid({ items, tool, onTool, onItemDragStart, onItemDragEnd }) {
             type="button"
             className={`ed-thumb-btn${tool === `inventory:${item.id}` ? ' is-selected' : ''}`}
             aria-pressed={tool === `inventory:${item.id}`}
-            title={getCategoryName(item.category)}
+            title={toolsLocked ? 'Turn off Move to pick a brush' : getCategoryName(item.category)}
+            disabled={toolsLocked}
             onClick={() => onTool(`inventory:${item.id}`)}
-            draggable
+            draggable={!toolsLocked}
             onDragStart={(event) => {
               event.dataTransfer.effectAllowed = 'copy'
               event.dataTransfer.setData(EDITOR_ITEM_DRAG_TYPE, item.id)
@@ -149,9 +150,16 @@ function buildPaletteGroups() {
   ]
 }
 
-function ToolButton({ selected, onClick, title, children }) {
+function ToolButton({ selected, onClick, title, disabled = false, children }) {
   return (
-    <button type="button" className={`me-tool${selected ? ' is-selected' : ''}`} aria-pressed={selected} title={title} onClick={onClick}>
+    <button
+      type="button"
+      className={`me-tool${selected ? ' is-selected' : ''}`}
+      aria-pressed={selected}
+      title={disabled ? 'Turn off Move to pick a brush' : title}
+      disabled={disabled}
+      onClick={onClick}
+    >
       {children}
     </button>
   )
@@ -199,6 +207,8 @@ const LAYER_TAB_SHORT = {
 export default function EditorPalette({
   tool,
   onTool,
+  // Move mode: palette buttons are disabled here; brushHandlers.js also refuses the pick (keys, drags, reveal).
+  toolsLocked = false,
   paintTileIds = null,
   onTogglePaintTile = null,
   paintTemplateIds = null,
@@ -674,7 +684,11 @@ export default function EditorPalette({
   const expandAll = () => setOpen(new Set(filteredGroups.map((group) => group.id)))
 
   return (
-    <aside className="ed-assets me-palette" style={{ '--ed-thumb-cols': thumbCols }} data-thumb-scale={thumbScale}>
+    <aside
+      className={`ed-assets me-palette${toolsLocked ? ' is-tools-locked' : ''}`}
+      style={{ '--ed-thumb-cols': thumbCols }}
+      data-thumb-scale={thumbScale}
+    >
       <div className="ed-panel-head">
         <span>Palette</span>
         <div className="ed-seg ed-thumb-scale" role="group" aria-label="Thumbnail size">
@@ -780,14 +794,19 @@ export default function EditorPalette({
                             type="button"
                             className={`ed-thumb-btn${tool === `template:${piece.id}` ? ' is-selected' : ''}${inPaintSet ? ' is-paint-set' : ''}`}
                             aria-pressed={tool === `template:${piece.id}`}
-                            title={templatePieceThumbTitle(piece, {
-                              extra: canEditTemplatePieces
-                                ? 'paint cycle · right-click to delete'
-                                : showPaintTemplateChecks
-                                  ? 'paint cycle'
-                                  : undefined,
-                            })}
-                            onClick={() => onTool(`template:${piece.id}`)}
+                            title={
+                              toolsLocked
+                                ? 'Turn off Move to pick a brush'
+                                : templatePieceThumbTitle(piece, {
+                                    extra: canEditTemplatePieces
+                                      ? 'paint cycle · right-click to delete'
+                                      : showPaintTemplateChecks
+                                        ? 'paint cycle'
+                                        : undefined,
+                                  })
+                            }
+                            onClick={() => onTool?.(`template:${piece.id}`)}
+                            disabled={toolsLocked}
                             onContextMenu={(event) => onPieceContextMenu(event, piece)}
                           >
                             <TemplatePieceThumbnail piece={piece} className="me-thumb-preview" animate={animateTiles} />
@@ -803,6 +822,7 @@ export default function EditorPalette({
                                 type="checkbox"
                                 checked={inPaintSet}
                                 aria-label={`Paint with ${piece.label}`}
+                                disabled={toolsLocked}
                                 onChange={(event) => onTogglePaintTemplate?.(piece.id, event.target.checked)}
                               />
                             </label>
@@ -932,14 +952,19 @@ export default function EditorPalette({
                                 type="button"
                                 className={`ed-thumb-btn${tool === `tile:${tile.id}` ? ' is-selected' : ''}${inPaintSet ? ' is-paint-set' : ''}`}
                                 aria-pressed={tool === `tile:${tile.id}`}
-                                title={tileThumbTitle(tile, {
-                                  extra: canEditTiles
-                                    ? 'paint cycle · right-click Rename / Import / Delete'
-                                    : showPaintTileChecks
-                                      ? 'paint cycle'
-                                      : undefined,
-                                })}
-                                onClick={() => onTool(`tile:${tile.id}`)}
+                                title={
+                                  toolsLocked
+                                    ? 'Turn off Move to pick a brush'
+                                    : tileThumbTitle(tile, {
+                                        extra: canEditTiles
+                                          ? 'paint cycle · right-click Rename / Import / Delete'
+                                          : showPaintTileChecks
+                                            ? 'paint cycle'
+                                            : undefined,
+                                      })
+                                }
+                                onClick={() => onTool?.(`tile:${tile.id}`)}
+                                disabled={toolsLocked}
                                 onContextMenu={(event) => onTileContextMenu(event, tile)}
                               >
                                 <TileThumbnail tile={tile} className="me-thumb-preview" animate={animateTiles} />
@@ -960,6 +985,7 @@ export default function EditorPalette({
                                     type="checkbox"
                                     checked={inPaintSet}
                                     aria-label={`Paint with ${tile.label}`}
+                                    disabled={toolsLocked}
                                     onChange={(event) => onTogglePaintTile?.(tile.id, event.target.checked)}
                                   />
                                 </label>
@@ -1017,8 +1043,9 @@ export default function EditorPalette({
                         type="button"
                         className={`ed-thumb-btn${tool === `destructible:${type}` ? ' is-selected' : ''}`}
                         aria-pressed={tool === `destructible:${type}`}
-                        title={info.description}
-                        onClick={() => onTool(`destructible:${type}`)}
+                        title={toolsLocked ? 'Turn off Move to pick a brush' : info.description}
+                        onClick={() => onTool?.(`destructible:${type}`)}
+                        disabled={toolsLocked}
                       >
                         <TileThumbnail tile={getTile(destructibleTileId(type))} className="me-thumb-preview" animate={animateTiles} />
                       </button>
@@ -1031,7 +1058,7 @@ export default function EditorPalette({
               {Object.entries(HAZARD_TYPES)
                 .filter(([, info]) => matchesQuery(info.name, q))
                 .map(([type, info]) => (
-                  <ToolButton key={type} selected={tool === `hazard:${type}`} onClick={() => onTool(`hazard:${type}`)}>
+                  <ToolButton key={type} selected={tool === `hazard:${type}`} disabled={toolsLocked} onClick={() => onTool?.(`hazard:${type}`)}>
                     <span
                       className="me-swatch is-hazard"
                       style={{ backgroundColor: info.colour, backgroundImage: `url(${hazardStrip(type)})`, backgroundSize: `${HAZARD_FRAMES * 100}% 100%` }}
@@ -1040,7 +1067,7 @@ export default function EditorPalette({
                     <span>{info.name}</span>
                   </ToolButton>
                 ))}
-              <ToolButton selected={tool === 'hazardErase'} onClick={() => onTool('hazardErase')}>
+              <ToolButton selected={tool === 'hazardErase'} disabled={toolsLocked} onClick={() => onTool?.('hazardErase')}>
                 <span className="me-swatch is-erase" aria-hidden="true" />
                 <span>Erase Hazard</span>
               </ToolButton>
@@ -1061,7 +1088,14 @@ export default function EditorPalette({
                 <div key={group.id}>
                   {!earlier && <p className="me-section">Calibration</p>}
                   <ToolGroup id={group.id} label={group.label} count={items.length} open={q ? new Set([group.id]) : open} onToggle={toggle}>
-                    <ItemGrid items={items} tool={tool} onTool={onTool} onItemDragStart={onItemDragStart} onItemDragEnd={onItemDragEnd} />
+                    <ItemGrid
+                      items={items}
+                      tool={tool}
+                      onTool={onTool}
+                      toolsLocked={toolsLocked}
+                      onItemDragStart={onItemDragStart}
+                      onItemDragEnd={onItemDragEnd}
+                    />
                   </ToolGroup>
                 </div>
               )
@@ -1076,7 +1110,14 @@ export default function EditorPalette({
                 <div key={group.id}>
                   {!earlier && <p className="me-section">Dimension</p>}
                   <ToolGroup id={group.id} label={group.label} count={items.length} open={q ? new Set([group.id]) : open} onToggle={toggle}>
-                    <ItemGrid items={items} tool={tool} onTool={onTool} onItemDragStart={onItemDragStart} onItemDragEnd={onItemDragEnd} />
+                    <ItemGrid
+                      items={items}
+                      tool={tool}
+                      onTool={onTool}
+                      toolsLocked={toolsLocked}
+                      onItemDragStart={onItemDragStart}
+                      onItemDragEnd={onItemDragEnd}
+                    />
                   </ToolGroup>
                 </div>
               )
@@ -1085,6 +1126,7 @@ export default function EditorPalette({
               items={getItems().filter((item) => item.category !== 'calibration' && item.category !== 'dimension' && itemMatches(item, q))}
               tool={tool}
               onTool={onTool}
+              toolsLocked={toolsLocked}
               onItemDragStart={onItemDragStart}
               onItemDragEnd={onItemDragEnd}
             />
@@ -1093,7 +1135,7 @@ export default function EditorPalette({
 
         {body === 'markers' &&
           MARKER_TOOLS.filter((marker) => matchesQuery(marker.label, q)).map((marker) => (
-            <ToolButton key={marker.id} selected={tool === marker.id} onClick={() => onTool(marker.id)}>
+            <ToolButton key={marker.id} selected={tool === marker.id} disabled={toolsLocked} onClick={() => onTool?.(marker.id)}>
               <span className={`me-swatch is-${marker.swatch}`} aria-hidden="true" />
               <span>{marker.label}</span>
             </ToolButton>
@@ -1101,7 +1143,7 @@ export default function EditorPalette({
 
         {body === 'npcs' && (
           <>
-            <ToolButton selected={tool === 'npcs'} onClick={() => onTool('npcs')}>
+            <ToolButton selected={tool === 'npcs'} disabled={toolsLocked} onClick={() => onTool?.('npcs')}>
               <span className="me-swatch is-npc" aria-hidden="true" />
               <span>Place / select NPC</span>
             </ToolButton>

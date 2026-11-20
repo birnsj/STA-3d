@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { canEditLayer } from '../../../maps/layers.js'
 import useEditorToolState from './useEditorToolState.js'
 import useToolKeys from './useToolKeys.js'
@@ -33,9 +34,29 @@ export default function useEditorTools({
   endStroke = null,
 }) {
   const state = useEditorToolState({ map, boardKey })
+  // Live refs so click handlers always see the current carry / Move flag (not a stale render closure).
+  const moveFromRef = useRef(state.moveFrom)
+  const movingRef = useRef(state.moving)
+  moveFromRef.current = state.moveFrom
+  movingRef.current = state.moving
   const layerAllowsTool = (layerId) => canEditLayer(layers, layerId)
   // One shared context: state and setters first, then each handler group adds its handlers for the ones after it.
-  const ctx = { ...state, map, edit, setStatus, askText, suspended, onObjectivePlaced, itemGridSize, layers, beginStroke, endStroke, layerAllowsTool }
+  const ctx = {
+    ...state,
+    map,
+    edit,
+    setStatus,
+    askText,
+    suspended,
+    onObjectivePlaced,
+    itemGridSize,
+    layers,
+    beginStroke,
+    endStroke,
+    layerAllowsTool,
+    moveFromRef,
+    movingRef,
+  }
   Object.assign(ctx, createQuickActions(ctx))
   Object.assign(ctx, createNpcHandlers(ctx))
   Object.assign(ctx, createSelectionHandlers(ctx))

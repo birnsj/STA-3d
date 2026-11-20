@@ -154,6 +154,13 @@
   background: rgba(255, 179, 71, 0.14);
 }
 
+/* Move mode: palette thumbs stay visible but cannot change the brush. */
+.ed-assets.is-tools-locked .ed-thumb-btn:disabled,
+.ed-assets.is-tools-locked .me-tool:disabled {
+  opacity: 0.55;
+  cursor: var(--cursor-default);
+}
+
 .me-group { margin-bottom: 3px; }
 
 .me-group-tag {

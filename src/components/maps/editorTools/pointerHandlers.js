@@ -20,14 +20,16 @@ export function createPointerHandlers(ctx) {
   // Move while carrying: cancel the carry. Place Tiles with no object under the pointer: sample the tile brush.
   // Otherwise an NPC / start / spawn turns 45°.
   const onRightClick = (position, boardPoint = null) => {
-    if (moving && moveFrom) {
+    const moveOn = ctx.movingRef?.current ?? moving
+    const carrying = ctx.moveFromRef?.current ?? moveFrom
+    if (moveOn && carrying) {
       setMoveFrom(null)
       setStatus('Move cancelled.')
       return
     }
-    if (tool?.startsWith('template:') || tool?.startsWith('inventory:') || placing || moving) {
+    if (tool?.startsWith('template:') || tool?.startsWith('inventory:') || placing || moveOn) {
       if (deleteObjectUnderPointer(position, boardPoint)) return
-      if (tool?.startsWith('template:') || tool?.startsWith('inventory:') || moving) return
+      if (tool?.startsWith('template:') || tool?.startsWith('inventory:') || moveOn) return
     }
     if (!position) return
     if (!placing) {

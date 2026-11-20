@@ -130,10 +130,12 @@ export function createPaintHandler(ctx) {
     }
     // Move must win over an active Template / Inventory / tile brush — those tools stay selected in the
     // palette while Move is on, and previously stole the click so P/E/C markers could not be picked up.
-    if (moving) {
+    const moveOn = ctx.movingRef?.current ?? moving
+    const carrying = ctx.moveFromRef?.current ?? moveFrom
+    if (moveOn) {
       if (!first) return
       // Click-to-place when already carrying; click-to-pick otherwise (not drag-drop).
-      if (moveFrom) {
+      if (carrying) {
         placeMoved(position, boardPoint)
         return
       }

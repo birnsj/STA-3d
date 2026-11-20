@@ -17,12 +17,24 @@ export function diamond(position, lift = 0, scale = 1) {
   return [[c.x, c.y - h - lift], [c.x + w, c.y - lift], [c.x, c.y + h - lift], [c.x - w, c.y - lift]]
 }
 
-// The pack cell a drop will fill. `anchor` is the south tip; the square sits behind that tip.
+// The pack cell a drop will fill. `anchor` is the south tip; the footprint extends −X/−Y behind it
+// (same as rules/placement.js footprintRect). Width and depth are independent so walls and half-cells
+// draw their true iso parallelogram, not a square collapsed to Math.min(width, depth).
 export function footprintDiamond(anchor, footprint, lift = 0) {
   const width = footprint?.width > 0 ? footprint.width : 1
   const depth = footprint?.depth > 0 ? footprint.depth : width
-  const center = { x: anchor.x - width / 2, y: anchor.y - depth / 2 }
-  return diamond(center, lift, Math.min(width, depth))
+  // Explicit undefined lift (e.g. missing elevation.z) must not become NaN screen points.
+  const rise = Number(lift) || 0
+  const corners = [
+    { x: anchor.x, y: anchor.y },
+    { x: anchor.x - width, y: anchor.y },
+    { x: anchor.x - width, y: anchor.y - depth },
+    { x: anchor.x, y: anchor.y - depth },
+  ]
+  return corners.map((corner) => {
+    const point = project(corner)
+    return [point.x, point.y - rise]
+  })
 }
 
 // Where a tile PNG of this size (mapFormat.js imageSize) goes so its floor diamond (the bottom 64x32 of the image)

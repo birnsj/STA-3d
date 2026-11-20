@@ -4,6 +4,7 @@ import {
   groundItemAt,
   groundItemAtBoard,
   hasMarkers,
+  markerAtBoard,
   moveDestructible,
   moveGroundItem,
   moveMarkers,
@@ -30,9 +31,14 @@ export function createMoveHandlers(ctx) {
     setSelectedGroundItemId, setSelectedMarker, setSelectedTemplatePieceId, setStatus,
   } = ctx
 
+  // Drop the carry only — Move stays on so the yellow free cursor returns for the next pick.
+  const finishCarry = () => {
+    setMoveFrom(null)
+  }
+
   /** Place whatever Move is carrying at position; clears the carry on success or same-cell put-back. */
   const placeMoved = (position, boardPoint = null) => {
-    const from = moveFrom
+    const from = ctx.moveFromRef?.current ?? moveFrom
     if (!from || !position) return
     if (from.templatePiece) {
       const piece = (map.templatePiecePlacements ?? []).find((entry) => entry.id === from.templatePiece)
@@ -40,13 +46,13 @@ export function createMoveHandlers(ctx) {
       if (!layerAllowsTool(moveLayer)) return setStatus(`${LAYER_LABELS[moveLayer] ?? moveLayer} layer is locked or hidden.`)
       const target = boardPoint ? templatePieceTargetAt(boardPoint, itemGridSize) : position
       if (piece && target.x === piece.position.x && target.y === piece.position.y) {
-        setMoveFrom(null)
+        finishCarry()
         setStatus('Put back.')
         return
       }
       const moved = moveTemplatePiece(map, from.templatePiece, target, itemGridSize)
       if (moved === map) return setStatus(`Template pieces need a cell on the map (${itemGridSize}px grid).`)
-      setMoveFrom(null)
+      finishCarry()
       edit(moved)
       setStatus(`Moved ${from.templatePiece}.`)
       return
@@ -57,13 +63,13 @@ export function createMoveHandlers(ctx) {
       const moved = moveGroundItem(map, from.groundItem, position, itemGridSize, boardPoint)
       if (moved === map) {
         if (item && position.x === from.x && position.y === from.y) {
-          setMoveFrom(null)
+          finishCarry()
           setStatus('Put back.')
           return
         }
         return setStatus(`Inventory objects need a free floor cell (${itemGridSize}px grid).`)
       }
-      setMoveFrom(null)
+      finishCarry()
       edit(moved)
       setStatus(`Moved ${from.groundItem}.`)
       return
@@ -72,7 +78,7 @@ export function createMoveHandlers(ctx) {
       if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
       const dest = { x: Math.round(position.x), y: Math.round(position.y) }
       if (dest.x === from.x && dest.y === from.y) {
-        setMoveFrom(null)
+        finishCarry()
         setStatus('Put back.')
         return
       }
@@ -87,7 +93,7 @@ export function createMoveHandlers(ctx) {
       )
       if (occupied) return setStatus('That tile already has a challenge object.')
       const definition = objectDefinitions.find((entry) => entry.id === from.challengeObject)
-      setMoveFrom(null)
+      finishCarry()
       edit({ ...map, objectPlacements: { ...(map.objectPlacements ?? {}), [from.challengeObject]: dest } })
       setStatus(`Moved ${definition?.name ?? from.challengeObject} to (${dest.x}, ${dest.y}).`)
       return
@@ -95,7 +101,7 @@ export function createMoveHandlers(ctx) {
     const destCell = { x: Math.round(position.x), y: Math.round(position.y) }
     // Same tile: put back without swapping.
     if (destCell.x === from.x && destCell.y === from.y) {
-      setMoveFrom(null)
+      finishCarry()
       setStatus('Put back.')
       return
     }
@@ -103,7 +109,7 @@ export function createMoveHandlers(ctx) {
       if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
       const moved = moveDestructible(map, from.destructible, destCell, objectTiles)
       if (moved === map) return setStatus('Destructible objects stand on free floor tiles (not under a challenge object).')
-      setMoveFrom(null)
+      finishCarry()
       edit(moved)
       setStatus(`Moved ${from.destructible} to (${destCell.x}, ${destCell.y}).`)
       return
@@ -117,7 +123,7 @@ export function createMoveHandlers(ctx) {
       }
       const moved = moveMarkers(map, from, destCell)
       if (moved.error) return setStatus(moved.error)
-      setMoveFrom(null)
+      finishCarry()
       edit(moved.map)
       setStatus(`Moved markers from (${from.x}, ${from.y}) to (${destCell.x}, ${destCell.y}).`)
       return
@@ -129,7 +135,7 @@ export function createMoveHandlers(ctx) {
     const [fromTile, toTile] = [map.tiles[from.y][from.x], map.tiles[destCell.y][destCell.x]]
     const swapped = swapTilesWithObjects(map, from, destCell, objectDefinitions)
     if (swapped.error) return setStatus(swapped.error)
-    setMoveFrom(null)
+    finishCarry()
     edit(swapped.map)
     setStatus(
       `Swapped ${getTile(fromTile).label} (${from.x}, ${from.y}) with ${getTile(toTile).label} (${destCell.x}, ${destCell.y})${swapped.carried.length ? ', with its challenge object' : ''}.`,
@@ -219,29 +225,51 @@ export function createMoveHandlers(ctx) {
   // Pick up whatever Move finds under the pointer (markers, then challenge objects, Template Pieces, items,
   // destructibles, finally the tile assembly) and start carrying it.
   const pickForMove = (position, boardPoint = null) => {
-    // Markers before sprite hits: Template Pieces often cover the floor cell a P/E/H/N marker sits on.
-    if (hasMarkers(map, position)) {
-      const markerLayers = markerLayersAt(map, position)
-      const blocked = markerLayers.find((layerId) => !layerAllowsTool(layerId))
-      if (blocked) {
-        return setStatus(
-          `${blocked === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`,
-        )
+    // Marker glyphs under the free cursor (P/E/H/N/C) before tall Template Piece art that covers the same pixels.
+    const markerPos = boardPoint ? markerAtBoard(map, boardPoint) : null
+    const markerCell = markerPos ?? (hasMarkers(map, position) ? position : null)
+    if (markerCell) {
+      const hitChallenge = objectDefinitions.find(
+        (definition) => definition.position[0] === markerCell.x && definition.position[1] === markerCell.y,
+      )
+      if (hitChallenge) {
+        if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
+        selectAt(markerCell, boardPoint)
+        setMoveFrom({
+          x: markerCell.x,
+          y: markerCell.y,
+          markers: false,
+          challengeObject: hitChallenge.id,
+          destructible: null,
+          groundItem: null,
+          templatePiece: null,
+        })
+        setStatus(`Carrying ${hitChallenge.name ?? hitChallenge.id}. Click to place · Esc cancels.`)
+        return
       }
-      selectAt(position, boardPoint)
-      setMoveFrom({
-        x: position.x,
-        y: position.y,
-        markers: true,
-        challengeObject: null,
-        destructible: null,
-        groundItem: null,
-        templatePiece: null,
-      })
-      setStatus('Carrying markers. Click to place · Esc cancels.')
-      return
+      if (hasMarkers(map, markerCell)) {
+        const markerLayers = markerLayersAt(map, markerCell)
+        const blocked = markerLayers.find((layerId) => !layerAllowsTool(layerId))
+        if (blocked) {
+          return setStatus(
+            `${blocked === 'characters' ? 'NPCs / Characters' : 'Markers / Triggers'} layer is locked or hidden.`,
+          )
+        }
+        selectAt(markerCell, boardPoint)
+        setMoveFrom({
+          x: markerCell.x,
+          y: markerCell.y,
+          markers: true,
+          challengeObject: null,
+          destructible: null,
+          groundItem: null,
+          templatePiece: null,
+        })
+        setStatus('Carrying markers. Click to place · Esc cancels.')
+        return
+      }
     }
-    // Challenge C markers (furniture layer) before Template Pieces that cover the same cell.
+    // Challenge C on the floor cell when the glyph hit missed.
     const hitChallenge = objectDefinitions.find(
       (definition) => definition.position[0] === position.x && definition.position[1] === position.y,
     )
@@ -260,7 +288,11 @@ export function createMoveHandlers(ctx) {
       setStatus(`Carrying ${hitChallenge.name ?? hitChallenge.id}. Click to place · Esc cancels.`)
       return
     }
-    const hitTemplate = boardPoint ? templatePieceAtBoard(map, boardPoint) : templatePieceAt(map, position, { cellPx: itemGridSize })
+    const hitTemplateSprite = boardPoint ? templatePieceAtBoard(map, boardPoint) : null
+    const hitTemplate =
+      (hitTemplateSprite
+        ? (map.templatePiecePlacements ?? []).find((entry) => entry.id === hitTemplateSprite.id)
+        : null) ?? templatePieceAt(map, position, { cellPx: itemGridSize })
     if (hitTemplate) {
       const moveLayer = layerOfTemplatePiece(hitTemplate.pieceId)
       if (!layerAllowsTool(moveLayer)) return setStatus(`${LAYER_LABELS[moveLayer] ?? moveLayer} layer is locked or hidden.`)
@@ -277,7 +309,7 @@ export function createMoveHandlers(ctx) {
       setStatus(`Carrying ${hitTemplate.id}. Click to place · Esc cancels.`)
       return
     }
-    const hitItem = boardPoint ? groundItemAtBoard(map, boardPoint) : groundItemAt(map, position, { cellPx: itemGridSize })
+    const hitItem = (boardPoint ? groundItemAtBoard(map, boardPoint) : null) ?? groundItemAt(map, position, { cellPx: itemGridSize })
     if (hitItem) {
       if (!layerAllowsTool('furniture')) return setStatus('Furniture / Scenery layer is locked or hidden.')
       selectAt(position, boardPoint)

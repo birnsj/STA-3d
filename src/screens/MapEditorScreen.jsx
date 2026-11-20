@@ -696,6 +696,7 @@ export default function MapEditorScreen({ savedCharacters = [], onBack, viewScal
         <EditorPalette
           tool={tool}
           onTool={tools.selectTool}
+          toolsLocked={tools.moving}
           paintTileIds={tools.paintTileIds}
           onTogglePaintTile={tools.togglePaintTile}
           paintTemplateIds={tools.paintTemplateIds}

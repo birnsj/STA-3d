@@ -444,7 +444,7 @@ export default function EditorToolbar({
         <SizeFields width={map.width} height={map.height} onResize={onResize} />
         <div className="ed-toolbar-end">
           <IconButtonRow label="Tools" buttons={tools} />
-          <label className="me-check" title="The green or red footprint while placing an inventory object.">
+          <label className="me-check" title="Green/red stacking cell while placing inventory items (valid / blocked).">
             <input type="checkbox" checked={placementPreview} onChange={(event) => onPlacementPreview(event.target.checked)} /> Placement box
           </label>
           <label className="me-check" title="Props and Template Pieces turn see-through under the pointer or when a placement ghost sits behind them.">
