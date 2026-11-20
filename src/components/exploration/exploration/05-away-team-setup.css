@@ -1,0 +1,226 @@
+/* Away-team screen: fixed to the 1024×576 menu stage. Roster scrolls; sheet and footer stay inside the frame. */
+.explore-setup-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(940px, calc(100% - 32px));
+  height: calc(100% - 32px);
+  max-height: calc(100% - 32px);
+  padding: 8px 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.explore-setup-panel .combat-setup-title {
+  flex: none;
+  font-size: 18px;
+}
+
+.explore-setup-panel .combat-setup-text,
+.explore-setup-panel .combat-setup-map {
+  flex: none;
+}
+
+.explore-setup-panel .combat-setup-text {
+  margin: 2px 0 4px;
+  font-size: 12px;
+}
+
+.explore-setup-panel .combat-setup-map {
+  margin: 0 0 4px;
+}
+
+.explore-setup-panel .combat-setup-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.explore-setup-list {
+  flex: 0 0 220px;
+  width: 220px;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  align-self: stretch;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.explore-setup-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explore-setup-group + .explore-setup-group {
+  margin-top: 8px;
+}
+
+.explore-setup-group-label {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.explore-setup-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each character still free to pick pulses inside its own button (no outer glow, which ran the rows together).
+   Stops on hover, where the yellow edge takes over. */
+.explore-setup-list .combat-setup-entry:not(.is-selected, .is-unavailable, :hover) {
+  animation: explore-setup-pulse 2s ease-in-out infinite;
+}
+
+@keyframes explore-setup-pulse {
+  50% {
+    background: color-mix(in srgb, var(--blue-deep) 65%, var(--blue));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue) 70%, white);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explore-setup-list .combat-setup-entry {
+    animation: none;
+  }
+}
+
+.explore-setup-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: var(--ui-border) solid var(--panel-border);
+  min-height: 0;
+}
+
+.explore-setup-footer .combat-setup-party {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.explore-setup-footer .combat-setup-party-label {
+  width: auto;
+  flex: none;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.explore-setup-footer .explore-setup-member {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  gap: 3px;
+  padding: 2px 4px 2px 2px;
+  font-size: 10px;
+}
+
+.explore-setup-footer .combat-setup-member-portrait {
+  width: 20px;
+  height: 25px;
+}
+
+.explore-setup-footer .combat-setup-actions {
+  flex: none;
+  margin: 0;
+}
+
+.explore-debug-column {
+  position: absolute;
+  top: 76px;
+  bottom: 74px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 360px;
+  overflow-y: auto;
+}
+
+.explore-debug-panel {
+  flex: none;
+  font-size: 11px;
+}
+
+.explore-debug-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  margin: 0 0 6px;
+}
+
+.explore-debug-facts dt {
+  color: var(--text-dim, #9fb4dc);
+}
+
+.explore-debug-facts dd {
+  margin: 0;
+}
+
+.explore-debug-facts input {
+  width: 120px;
+  vertical-align: middle;
+}
+
+.explore-debug-table {
+  width: 100%;
+  margin-bottom: 6px;
+  border-collapse: collapse;
+}
+
+.explore-debug-table td {
+  padding: 1px 4px 1px 0;
+  white-space: nowrap;
+}
+
+.explore-debug-route {
+  fill: none;
+  stroke: #7fffd4;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.explore-debug-target {
+  fill: none;
+  stroke: #7fffd4;
+  stroke-width: 2;
+}
+
+.explore-debug-slot-ideal {
+  fill: none;
+  stroke: #ff9de2;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.explore-debug-slot {
+  fill: #ff9de2;
+}
+
+.explore-debug-label {
+  fill: #e8f0ff;
+  font-size: 9px;
+  paint-order: stroke;
+  stroke: #03060e;
+  stroke-width: 3px;
+}
+

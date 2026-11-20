@@ -1,0 +1,518 @@
+/* Exploration prototype: reuses the combat screen's panels, party cards and isometric units. */
+
+/* On-screen messages: centred near the bottom; party cards are the left rail. */
+.explore-messages {
+  position: absolute;
+  left: calc(8px + var(--explore-party-rail-width, 178px) + 16px);
+  right: 8px;
+  bottom: 26px;
+  z-index: 26;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.explore-messages > :not(.is-faded-out) {
+  pointer-events: auto;
+}
+
+.explore-messages .combat-hint,
+.explore-messages .challenge-prompts {
+  position: static;
+  margin: 0;
+  transform: none;
+}
+
+.explore-messages .combat-hint {
+  width: fit-content;
+}
+
+/* Right-drag selection box (PixiExplorationBoard). */
+.explore-select-box {
+  fill: rgba(246, 185, 40, 0.12);
+  stroke: var(--yellow);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+
+.explore-card-wrap {
+  position: relative;
+  overflow: visible;
+}
+
+/* Keep the open details panel above neighbouring cards. */
+.explore-card-wrap.is-info-open {
+  z-index: 40;
+}
+
+/* Left-rail party cards (shorter so eight fit with a small gap). Formation keeps its own height. */
+.explore-party-bar {
+  --explore-card-height: 54px;
+}
+
+/* Frozen board frame during explore↔combat handoff until the other board (Pixi + Spike3d) has painted.
+   Above HUD chrome so the remount cannot flash panels or an empty WebGL canvas through the freeze. */
+.combat-handoff-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: #03060e;
+}
+
+.combat-handoff-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.exploration-screen {
+  --explore-minimap-size: 240px;
+}
+
+.explore-bottom-right {
+  --explore-formation-height: 75px;
+}
+
+.explore-card {
+  width: 178px;
+  height: var(--explore-card-height);
+  padding: 3px 8px 3px 4px;
+  overflow: hidden;
+}
+
+.explore-card.is-active {
+  padding-left: 3px;
+}
+
+.explore-card .party-info {
+  flex: 1;
+  gap: 1px;
+  min-width: 0;
+}
+
+.explore-party-bar.is-left-rail .party-info .stress-bar {
+  height: 5px;
+}
+
+.explore-card-detail {
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--text-dim, #9fb4dc);
+}
+
+.explore-card-detail.is-main {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* One row along the card's top edge: Best Choice and the TN on the left, Lead / Make Lead on the right. Only Make Lead
+   takes clicks; the rest let them through to the card. */
+.explore-card-badges {
+  position: absolute;
+  top: -9px;
+  left: 6px;
+  right: 6px;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.explore-card-badges .party-task-tag {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.explore-card-badges .party-task-best,
+.explore-card-badges .party-task-tn,
+.explore-card-badges .party-turn-badge,
+.explore-card-badges .explore-make-lead {
+  position: static;
+  flex-shrink: 0;
+  line-height: 14px;
+}
+
+.explore-card-badges .party-task-tn {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  pointer-events: auto;
+}
+
+.explore-card-badges .party-turn-badge,
+.explore-card-badges .explore-make-lead {
+  margin-left: auto;
+}
+
+.explore-card-badges .explore-make-lead {
+  pointer-events: auto;
+}
+
+.explore-card-info-toggle {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #b8962e;
+}
+
+.explore-card-info-toggle svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  stroke: #03060e;
+  stroke-width: 1.2;
+  paint-order: stroke;
+}
+
+.explore-card-info-toggle:hover,
+.explore-card-info-toggle.is-open {
+  color: var(--yellow);
+}
+
+.explore-card-info-toggle.is-open svg {
+  filter: drop-shadow(0 0 2px var(--yellow));
+}
+
+/* The closed insignia pulses so it reads as a button (designer request, 2026-10-15). */
+.explore-card-info-toggle:not(.is-open) svg {
+  animation: insignia-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes insignia-pulse {
+  0%,
+  100% {
+    color: #b8962e;
+    filter: drop-shadow(0 0 0 rgba(246, 185, 40, 0));
+    transform: scale(1);
+  }
+  50% {
+    color: var(--yellow);
+    filter: drop-shadow(0 0 4px var(--yellow));
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explore-card-info-toggle:not(.is-open) svg {
+    animation: none;
+  }
+}
+
+/* Above the card, clear of the badges on its top edge. */
+.explore-card-info {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 14px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  /* One size for everyone (designer request): what doesn't fit, such as the unfolded Values, scrolls inside. */
+  height: 195px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  box-sizing: border-box;
+  padding: 3px 7px 1px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+}
+
+.explore-card-info > * {
+  flex-shrink: 0;
+}
+
+.explore-card-info .explore-card-detail {
+  line-height: 1.15;
+}
+
+.explore-card-detail.is-rank {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #cfe0ff;
+}
+
+.explore-card-info-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.explore-card-info-header .party-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.explore-card-protection {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--yellow);
+  cursor: var(--cursor-help);
+}
+
+.explore-card-protection svg {
+  width: 11px;
+  height: 11px;
+  fill: rgba(61, 123, 255, 0.35);
+  stroke: var(--yellow);
+  stroke-width: 2;
+}
+
+/* Small uppercase yellow headings, as in the creator's summary (.summary-section-heading). */
+.explore-card-heading {
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+
+/* Attributes and Departments side by side, each a list of bars like the creator's summary (.summary-snapshot-score). */
+.explore-card-score-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding-bottom: 1px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.explore-card-score-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.explore-card-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.explore-card-scores li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 4px;
+  font-size: 7.5px;
+  line-height: 8.5px;
+  text-transform: uppercase;
+  color: #d6e1f5;
+  background: var(--blue-deep, #0b1a3a);
+  border-left: 2px solid var(--blue, #3d7bff);
+  border-radius: 2px;
+}
+
+.explore-card-scores strong {
+  font-size: 8px;
+  color: var(--yellow);
+}
+
+.explore-card-list {
+  font-size: 8px;
+  line-height: 1.1;
+  color: #d6e1f5;
+}
+
+.explore-card-list .has-info {
+  text-decoration: underline dotted rgba(159, 180, 220, 0.6);
+  cursor: var(--cursor-help);
+}
+
+/* Like Make Lead on the card: a small outlined button, filled while the Values are showing. */
+.explore-card-values-toggle {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border: 1px solid var(--yellow);
+  border-radius: 3px;
+  background: #03060e;
+  font: inherit;
+  font-size: 7.5px;
+  font-weight: 700;
+  line-height: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yellow);
+  cursor: var(--cursor-pointer);
+}
+
+.explore-card-values-toggle:hover,
+.explore-card-values-toggle.is-open {
+  background: var(--yellow);
+  color: #03060e;
+}
+
+.explore-card-values {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.explore-card-values li {
+  padding-left: 6px;
+  border-left: 2px solid var(--blue);
+  font-size: 9.5px;
+  font-style: italic;
+  line-height: 1.25;
+  color: #d6e1f5;
+}
+
+.explore-make-lead {
+  padding: 0 5px;
+  border: 1px solid var(--yellow);
+  border-radius: 3px;
+  background: #03060e;
+  color: var(--yellow);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Left vertical rail: fixed-height cards from the top, 4px between them. Extra slots stay empty below. */
+.explore-party-bar {
+  --explore-party-rail-width: 178px;
+  --explore-party-hud-inset: 8px;
+  --explore-party-card-gap: 4px;
+  --explore-party-badge-rise: 9px;
+  position: absolute;
+  left: var(--explore-party-hud-inset);
+  top: var(--explore-party-hud-inset);
+  bottom: var(--explore-party-hud-inset);
+  z-index: 26;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--explore-party-card-gap);
+  width: var(--explore-party-rail-width);
+  height: auto;
+  padding: var(--explore-party-badge-rise) 0 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.explore-party-bar.is-left-rail .explore-card-wrap {
+  flex: 0 0 auto;
+}
+
+.explore-party-bar.is-left-rail .explore-card {
+  width: 100%;
+  height: var(--explore-card-height);
+  flex: 0 0 auto;
+}
+
+.explore-party-bar.is-left-rail .party-portrait {
+  width: 36px;
+  height: 44px;
+}
+
+.explore-party-bar.is-left-rail .party-name {
+  font-size: 11px;
+}
+
+.explore-party-bar.is-left-rail .party-weapon,
+.explore-party-bar.is-left-rail .explore-card-detail {
+  font-size: 9px;
+}
+
+/* Details open to the right of the card, flush with it: top-half cards grow down, bottom-half grow up.
+   Shared by exploration and combat left rails. */
+.is-left-rail .explore-card-info {
+  left: calc(100% + 8px);
+  right: auto;
+  width: 168px;
+  height: min(168px, 32vh);
+  padding: 2px 5px 1px;
+  gap: 1px;
+  font-size: 9px;
+}
+
+.is-left-rail .explore-card-info .party-name {
+  font-size: 10px;
+}
+
+.is-left-rail .explore-card-info .explore-card-heading,
+.is-left-rail .explore-card-info .explore-card-scores li,
+.is-left-rail .explore-card-info .explore-card-list {
+  font-size: 7px;
+}
+
+.is-left-rail .explore-card-info .explore-card-scores strong {
+  font-size: 7.5px;
+}
+
+.is-left-rail .explore-card-wrap.is-info-down .explore-card-info {
+  top: 0;
+  bottom: auto;
+}
+
+.is-left-rail .explore-card-wrap.is-info-up .explore-card-info {
+  top: auto;
+  bottom: 0;
+}
+
+.character-sheet {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* On the map: to the right of the party rail. */
+.character-sheet.is-on-map {
+  position: absolute;
+  top: 76px;
+  bottom: 8px;
+  left: calc(8px + var(--explore-party-rail-width, 178px) + 12px);
+  z-index: 25;
+  width: 330px;
+}
+
+/* The Captain's Log: centred left of the right-hand column, clear of the party rail. */
+.captains-log {
+  position: absolute;
+  top: 140px;
+  right: 255px;
+  bottom: 8px;
+  left: calc(8px + var(--explore-party-rail-width, 178px) + 12px);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  width: min(500px, calc(100% - 271px - var(--explore-party-rail-width, 178px)));
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  background: rgba(6, 12, 28, 0.97);
+}
+

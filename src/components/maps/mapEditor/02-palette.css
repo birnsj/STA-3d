@@ -1,0 +1,310 @@
+/* Photoshop-style tileset stack: drag the row; blue insert line marks the drop. */
+.ed-palette-layer {
+  position: relative;
+}
+
+.ed-palette-layer.is-dragging {
+  opacity: 0.4;
+}
+
+.ed-palette-layer.is-drop-before::before,
+.ed-palette-layer.is-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: #79b4ff;
+  box-shadow: 0 0 6px rgba(121, 180, 255, 0.85);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ed-palette-layer.is-drop-before::before {
+  top: -1px;
+}
+
+.ed-palette-layer.is-drop-after::after {
+  bottom: -1px;
+}
+
+.ed-palette-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  margin-bottom: 3px;
+  padding: 2px 3px;
+  box-sizing: border-box;
+  border: var(--ui-border) solid #2f5961;
+  border-radius: var(--ui-radius);
+  background: #13282c;
+  color: #cfe3e6;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  cursor: var(--cursor-pointer);
+  user-select: none;
+}
+
+.ed-palette-layer-row.is-draggable {
+  cursor: grab;
+}
+
+.ed-palette-layer-row.is-draggable:active {
+  cursor: grabbing;
+}
+
+.ed-palette-layer-row:hover {
+  border-color: #ffb347;
+}
+
+.ed-palette-layer-row[aria-expanded='true'] {
+  border-color: #3d7ec4;
+  background: #1a3038;
+}
+
+.ed-palette-grip {
+  flex: 0 0 8px;
+  align-self: stretch;
+  margin: 1px 0;
+  border-radius: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 1px,
+    #5a6a72 1px 2px,
+    transparent 2px 4px
+  );
+  opacity: 0.85;
+}
+
+.ed-palette-create-sprite {
+  width: 100%;
+  margin: 4px 0 8px;
+}
+
+/* Portaled into .stage / .me-screen (design pixels). Overrides .ed-menu-list top/left defaults. */
+.ed-menu-list.ed-ctx-menu {
+  position: absolute;
+  top: auto;
+  left: auto;
+  z-index: 80;
+  min-width: 148px;
+}
+
+.ed-menu-list.ed-ctx-menu .ed-menu-item:disabled {
+  opacity: 0.4;
+  cursor: var(--cursor-default);
+}
+
+.me-collapse-all {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: var(--ui-border) solid #3f6f78;
+  border-radius: var(--ui-radius);
+  background: #13272b;
+  color: #ffb347;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  cursor: var(--cursor-pointer);
+}
+.me-collapse-all:disabled { opacity: 0.35; cursor: var(--cursor-default); }
+
+.me-text {
+  margin: 0 0 4px;
+  color: #9fb9bd;
+  line-height: 1.35;
+}
+
+.me-text.is-warning,
+.me-warnings { color: #ff7a6b; }
+
+.me-warnings {
+  margin: 0 0 4px;
+  padding-left: 14px;
+  line-height: 1.35;
+}
+
+.me-status {
+  margin: 8px 0 0;
+  color: #7fd6e2;
+}
+
+.me-tool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 3px;
+  padding: 1px 3px;
+  border: var(--ui-border) solid #23434a;
+  border-radius: var(--ui-radius);
+  background: #0f1d20;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: var(--cursor-pointer);
+}
+
+.me-tool.is-selected {
+  border-color: #ffb347;
+  background: rgba(255, 179, 71, 0.14);
+}
+
+.me-group { margin-bottom: 3px; }
+
+.me-group-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  margin-bottom: 3px;
+  padding: 2px 3px;
+  border: var(--ui-border) solid #2f5961;
+  border-radius: var(--ui-radius);
+  background: #13282c;
+  color: #cfe3e6;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  cursor: var(--cursor-pointer);
+}
+
+.me-group-tag:hover { border-color: #ffb347; }
+
+.me-group-arrow {
+  width: 10px;
+  color: #ffb347;
+}
+
+.me-group-label { flex: 1; }
+
+.me-group-count {
+  color: #6f8f94;
+  font-size: 10px;
+}
+
+/* Tile PNGs are 64x96; the thumbnail shows the drawn part at half size. */
+.me-thumb-wrap {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 56px;
+  overflow: hidden;
+}
+
+.me-thumb-preview {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.me-thumb-badge {
+  position: absolute;
+  right: -2px;
+  bottom: 0;
+  padding: 0 2px;
+  border-radius: 2px;
+  background: rgba(10, 22, 26, 0.85);
+  color: #ffb347;
+  font-size: 9px;
+  line-height: 12px;
+}
+
+/* Episode card art is 16:9. */
+.me-card-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 4px;
+  border: var(--ui-border) solid #23434a;
+  border-radius: var(--ui-radius);
+  background: #0f1d20;
+  color: #6f8f94;
+  font-size: 11px;
+  overflow: hidden;
+}
+
+.me-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.me-card-select {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 4px;
+}
+
+/* The Cover and Fade checkboxes sit in a strip across the top of the tile's button, above the thumbnail (tall walls
+   and objects fill the thumbnail to the top), as siblings of the tool button, not inside it. */
+.me-tile { position: relative; }
+
+.me-tile .me-tool { padding-top: 16px; }
+
+.me-flags {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  display: flex;
+  gap: 4px;
+}
+
+.me-cover {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 2px 0 0;
+  border-radius: 2px;
+  background: rgba(6, 12, 14, 0.82);
+  color: #cfe3e6;
+  font-size: 9px;
+  line-height: 1;
+  cursor: var(--cursor-pointer);
+}
+
+.me-cover input {
+  width: 10px;
+  height: 10px;
+  margin: 1px;
+  cursor: inherit;
+}
+
+.me-swatch {
+  width: 32px;
+  height: 16px;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.me-swatch.is-player { background: #3fb6e8; }
+.me-swatch.is-horse { background: #b8894a; }
+.me-swatch.is-chicken { background: #e8c96a; }
+.me-swatch.is-cat { background: #c48a3a; }
+/* A hazard's swatch: the first frame of its flipbook (environmentArt.js) over its colour. */
+.me-swatch.is-hazard {
+  width: 28px;
+  height: 28px;
+  clip-path: none;
+  border-radius: 4px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-blend-mode: normal;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+.me-swatch.is-enemy { background: #e5483a; }
+.me-swatch.is-npc { background: #b07ee8; }
+

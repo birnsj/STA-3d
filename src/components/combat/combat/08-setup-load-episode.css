@@ -1,0 +1,407 @@
+/* Setup */
+.combat-setup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 20px wider than before the LCARS frame (.lcars-frame, ui.css), so the contents keep their width inside it. */
+.combat-setup-panel {
+  width: 660px;
+  padding: 14px 18px;
+}
+
+.combat-setup-title {
+  margin: 0;
+  padding-bottom: 2px;
+  border-bottom: var(--ui-border) solid var(--panel-border);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--yellow);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.combat-setup-text {
+  margin: 4px 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.combat-setup-map {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: -4px 0 8px;
+  font-size: 12px;
+}
+
+.combat-setup-location {
+  color: var(--text);
+}
+
+.combat-setup-map .combat-setup-text {
+  margin: 0;
+}
+
+.combat-setup-body {
+  display: flex;
+  gap: 14px;
+  min-height: 226px;
+}
+
+.combat-setup-list {
+  width: 230px;
+  max-height: 300px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.combat-setup-entry {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  box-sizing: border-box;
+  cursor: var(--cursor-pointer);
+}
+
+.combat-setup-entry:hover {
+  border-left-color: var(--yellow);
+}
+
+.combat-setup-entry.is-selected {
+  border-left-color: var(--yellow);
+  background: var(--yellow);
+  color: #111;
+}
+
+.combat-setup-entry.is-selected .combat-setup-slot {
+  background: #111;
+  color: var(--yellow);
+}
+
+.combat-setup-entry:not(.is-file) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.combat-setup-entry.is-unavailable {
+  opacity: 0.45;
+}
+
+.combat-setup-slot {
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--yellow);
+  color: #10131c;
+  font-size: 11px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.combat-setup-party {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: var(--ui-border) solid var(--panel-border);
+}
+
+.combat-setup-party-label {
+  width: 80px;
+  font-size: 13px;
+  color: var(--label);
+  text-transform: uppercase;
+}
+
+.combat-setup-member {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 128px;
+  padding: 3px 6px 3px 3px;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.combat-setup-member:hover {
+  border-left-color: var(--red);
+}
+
+.combat-setup-member-portrait {
+  width: 24px;
+  height: 30px;
+}
+
+.combat-setup-entry.is-file {
+  border: var(--ui-border) dashed var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: none;
+  color: var(--text-muted);
+}
+
+.combat-setup-detail {
+  flex: 1;
+}
+
+.combat-setup-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.combat-setup-portrait {
+  width: 60px;
+  height: 72px;
+}
+
+.combat-setup-name {
+  margin: 0;
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
+.combat-setup-species {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.combat-setup-preview {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.combat-setup-preview dt {
+  color: var(--label);
+}
+
+.combat-setup-preview dd {
+  margin: 0;
+}
+
+.combat-setup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Load Episode fills the 1024×576 menu stage. The gallery grid is sized to the episode count so nothing scrolls. */
+.episode-select {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  overflow: hidden;
+  font-family: var(--display-font);
+  background: radial-gradient(ellipse at 50% 45%, #142446 0%, #070d1d 60%, #03060e 100%);
+}
+
+.episode-select-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  padding: 12px 16px 10px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.episode-select-title {
+  flex: none;
+  margin: 0;
+  padding-bottom: 2px;
+  border-bottom: var(--ui-border) solid var(--panel-border);
+  color: var(--yellow);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.episode-select-text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.episode-select-modes {
+  display: grid;
+  flex: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.episode-select-mode {
+  padding: 6px 12px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--blue-deep);
+  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.episode-select-mode:hover,
+.episode-select-mode:focus-visible {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.episode-select-mode.is-selected {
+  border-color: var(--yellow);
+  background: rgba(246, 185, 40, 0.08);
+  box-shadow: 0 0 0 1px var(--yellow);
+  color: var(--yellow);
+}
+
+.episode-select-gallery {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 8px;
+  overflow: hidden;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: rgba(3, 6, 14, 0.45);
+}
+
+.episode-select-list {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.episode-select-item {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.episode-select-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 4px 4px 5px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+}
+
+.episode-select-card:hover,
+.episode-select-card:focus-visible {
+  border-color: var(--text-muted);
+}
+
+.episode-select-card.is-selected {
+  border-color: var(--yellow);
+  background: rgba(246, 185, 40, 0.08);
+  box-shadow: 0 0 0 1px var(--yellow);
+}
+
+.episode-select-label,
+.episode-select-desc {
+  flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.episode-select-label {
+  color: var(--yellow);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.episode-select-desc {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Dev only, over the card art's top-right corner. */
+.episode-select-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  background: rgba(3, 6, 14, 0.8);
+}
+
+/* The picture fills the card above the two text lines. Episodes without a card keep the empty frame. */
+.episode-select-art {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: linear-gradient(160deg, #10203f, #050a16);
+  overflow: hidden;
+}
+
+.episode-select-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.episode-select-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* nav-button is sized for the 1920 creator. This stage is 1024 wide. */
+.episode-select .nav-button {
+  min-width: 140px;
+  padding: 6px 18px;
+  font-size: 16px;
+}
+
+.episode-select .nav-next {
+  min-width: 180px;
+}
+

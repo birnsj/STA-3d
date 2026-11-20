@@ -1,0 +1,475 @@
+/* Hint / roll: same horizontal band as the turn order; dice centred under it. Bottom stays put. */
+.combat-bottom-left {
+  position: absolute;
+  left: calc(8px + var(--combat-party-rail-width, 178px) + 12px);
+  right: calc(8px + var(--explore-minimap-size, 240px) + 12px);
+  bottom: 8px;
+  z-index: 26;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.combat-bottom-left > * {
+  pointer-events: auto;
+}
+
+.combat-bottom-left .combat-hint {
+  position: static;
+  margin: 0;
+}
+
+.combat-bottom-left .is-faded-out {
+  pointer-events: none;
+}
+
+.party-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 6px;
+  overflow: visible;
+}
+
+/* Left vertical rail: same fixed card size as exploration. The gap holds the tags, which sit above the card. */
+.party-bar.is-left-rail {
+  --combat-party-rail-width: 178px;
+  --combat-party-hud-inset: 8px;
+  --combat-party-card-gap: 16px;
+  --combat-party-badge-rise: 16px;
+  --party-card-height: 54px;
+  position: absolute;
+  left: var(--combat-party-hud-inset);
+  top: var(--combat-party-hud-inset);
+  bottom: var(--combat-party-hud-inset);
+  z-index: 26;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--combat-party-card-gap);
+  width: var(--combat-party-rail-width);
+  height: auto;
+  padding: var(--combat-party-badge-rise) 0 0;
+  box-sizing: border-box;
+}
+
+.party-fireteam {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.party-fireteam.is-b {
+  gap: 6px;
+}
+
+.party-card {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 166px;
+  padding: 4px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  text-align: left;
+  /* Holds the turn badge and the task tag laid over the card. */
+  position: relative;
+}
+
+/* The creator's selected state, scaled down: a yellow left edge rather than a full fill, so the portrait and Stress
+   stay readable; the padding gives back what the wider edge takes, so nothing inside the card moves. */
+.party-card.is-active {
+  border-color: var(--yellow);
+  border-left-width: 4px;
+  padding-left: 2px;
+}
+
+/* Auto Combat keeps a fixed control height; left-rail cards flex with the rail. */
+.auto-controls {
+  --party-card-height: 75px;
+}
+
+.party-card-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.party-bar.is-left-rail .party-card-wrap {
+  flex: 0 0 auto;
+}
+
+.party-bar.is-left-rail .party-card {
+  width: 178px;
+  height: var(--party-card-height);
+  flex: 0 0 auto;
+  padding: 3px 8px 3px 4px;
+  overflow: hidden;
+}
+
+/* Info insignia sits on the card like exploration: the right end of the Stress row, with the number clear of it. */
+.party-bar.is-left-rail .explore-card-info-toggle {
+  right: 5px;
+  bottom: 5px;
+}
+
+.party-bar.is-left-rail .party-info .condition-track {
+  padding-right: 16px;
+}
+
+/* Move/Sprint is a line under Stress, so the insignia stays on the Stress row instead of dropping onto it. */
+.party-bar.is-left-rail .party-card-wrap:has(.party-hits-row) .explore-card-info-toggle {
+  bottom: 12px;
+}
+
+.party-bar.is-left-rail .party-card .party-info {
+  flex: 1;
+  gap: 2px;
+}
+
+.party-bar.is-left-rail .party-portrait {
+  width: 36px;
+  height: 44px;
+}
+
+.party-bar.is-left-rail .party-name {
+  font-size: 11px;
+}
+
+.party-bar.is-left-rail .party-weapon,
+.party-bar.is-left-rail .party-move-left {
+  font-size: 9px;
+}
+
+/* One row along the card's top edge: Major / Minor and the condition tags on the left, the turn badge on the right.
+   Only the task tag's number takes clicks; the rest let them through to the card. */
+.party-card-badges {
+  position: absolute;
+  top: -16px;
+  left: 6px;
+  right: 6px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.party-card-badges .action-points {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: #03060e;
+  line-height: 14px;
+}
+
+.party-card-badges .action-points-count {
+  min-width: 0;
+  font-size: 9px;
+}
+
+/* Condition icons (ConditionIcons.jsx) on the party cards' top edge, exploration's too; each takes the pointer for its
+   mouseover. A solid backing covers the card's border. */
+.condition-icons {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.condition-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: #03060e;
+  pointer-events: auto;
+  cursor: var(--cursor-help);
+}
+
+.condition-icon svg {
+  width: 10px;
+  height: 10px;
+  fill: currentColor;
+}
+
+.condition-icon-count {
+  position: absolute;
+  right: -3px;
+  bottom: -4px;
+  min-width: 8px;
+  padding: 0 1px;
+  border-radius: 2px;
+  background: #03060e;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 9px;
+  text-align: center;
+}
+
+.condition-icon.is-stun { color: #f6b928; }
+.condition-icon.is-deadly { color: #ff7a70; }
+.condition-icon.is-treated { border-style: dashed; }
+.condition-icon.is-fatigued { color: #f0a050; }
+.condition-icon.is-complication { color: #f2c08a; }
+.condition-icon.is-defeated { color: #fff; background: var(--red); border-color: var(--red); }
+.condition-icon.is-defeated.is-dying { background: #7a0f0f; border-color: #7a0f0f; }
+
+.panel-condition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.panel-condition .condition-icons {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Under a turn-order portrait: smaller, overlapping its bottom edge, so the strip keeps its height. */
+.turn-strip-unit {
+  position: relative;
+  display: flex;
+}
+
+.condition-icons.is-compact {
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  transform: translateX(-50%);
+  gap: 1px;
+}
+
+.condition-icons.is-compact .condition-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.condition-icons.is-compact .condition-icon svg {
+  width: 8px;
+  height: 8px;
+}
+
+.condition-icons.is-compact .condition-icon-count {
+  right: -2px;
+  bottom: -3px;
+  min-width: 6px;
+  font-size: 7px;
+  line-height: 7px;
+}
+
+.party-card-badges .party-task-tag {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.party-card-badges .party-task-best,
+.party-card-badges .party-task-tn {
+  position: static;
+  flex-shrink: 0;
+  line-height: 14px;
+}
+
+.party-card-badges .party-task-tn {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+}
+
+.party-card-badges .party-turn-badge {
+  position: static;
+  flex-shrink: 0;
+  margin-left: auto;
+  line-height: 14px;
+}
+
+.party-card.is-down {
+  opacity: 0.55;
+}
+
+.party-card.is-ready {
+  border-color: #3ccf7a;
+  cursor: var(--cursor-pointer);
+}
+
+.party-card.is-ready:hover {
+  background: rgba(20, 60, 40, 0.9);
+}
+
+.party-card.is-done .party-portrait,
+.party-card.is-done .party-info {
+  opacity: 0.5;
+}
+
+.party-turn-badge {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.party-turn-badge.is-ready {
+  background: #3ccf7a;
+  color: #02150a;
+}
+
+.party-turn-badge.is-done {
+  background: #4a5468;
+  color: #e8ecf5;
+}
+
+.party-turn-badge.is-acting {
+  background: var(--yellow);
+  color: #1a1200;
+}
+
+.action-points {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.action-points-count {
+  min-width: 26px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #3ccf7a;
+  letter-spacing: 0;
+}
+
+.action-points.is-empty .action-points-count {
+  color: #6b7486;
+}
+
+.action-point {
+  padding: 0 4px;
+  border: 1px solid #3ccf7a;
+  border-radius: 2px;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #3ccf7a;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.action-point.is-used {
+  border-color: #4a5468;
+  color: #6b7486;
+  text-decoration: line-through;
+}
+
+.action-point.is-pip {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 2px;
+  background: #3ccf7a;
+}
+
+.action-point.is-pip.is-used {
+  background: #2b3242;
+}
+
+.party-portrait-wrap {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+
+.party-done-icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.done-icon circle {
+  fill: #4a5468;
+  stroke: #c9d1e0;
+  stroke-width: 1;
+}
+
+.done-icon path {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.party-move-left.is-empty {
+  fill: #6b7486;
+  color: #6b7486;
+}
+
+.party-hits-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.party-move-left {
+  font-size: 9px;
+  font-weight: 700;
+  color: #7fd3ff;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Under the Task box, outside it, the full width of the sidebar. */
+.task-end-turn {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 0;
+  border: var(--ui-border) solid var(--yellow);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+
+.task-end-turn .actions-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.task-end-turn:hover:not(:disabled) {
+  background: var(--blue-deep);
+}
+
+.task-end-turn:disabled {
+  opacity: 0.35;
+}
+

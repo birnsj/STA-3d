@@ -1,0 +1,224 @@
+/* Colour rows: label | swatch | hex — same width for Ambient Colour and object emit Colour. */
+.ed-emissive:has(.ed-colour),
+.ed-colour-field {
+  grid-template-columns: 56px 28px 1fr;
+}
+
+.ed-colour-field {
+  display: grid;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: var(--ed-muted);
+}
+
+.ed-colour-field-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ed-colour-swatch {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--ed-border);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.ed-colour-swatch:hover,
+.ed-colour-swatch:focus-visible,
+.ed-colour-swatch[aria-expanded='true'] {
+  border-color: var(--ed-accent, #4f9cff);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--ed-accent-soft, rgba(79, 156, 255, 0.35));
+}
+
+.ed-colour-hex {
+  width: 100%;
+  min-width: 0;
+  grid-column: auto;
+}
+
+/* In-theme HSV popover (replaces native OS colour picker for EditorColourField). */
+.ed-colour-panel {
+  position: fixed;
+  z-index: 10050;
+  width: 248px;
+  padding: 12px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #1c2128;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 16px 40px rgba(0, 0, 0, 0.55);
+  color: var(--ed-text);
+}
+
+.ed-colour-sv {
+  position: relative;
+  width: 100%;
+  height: 156px;
+  border-radius: 10px;
+  border: none;
+  cursor: crosshair;
+  touch-action: none;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.ed-colour-sv-white,
+.ed-colour-sv-black {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ed-colour-sv-white {
+  background: linear-gradient(to right, #fff, transparent);
+}
+
+.ed-colour-sv-black {
+  background: linear-gradient(to top, #000, transparent);
+}
+
+.ed-colour-thumb {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2.5px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.ed-colour-hue {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  margin-top: 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  touch-action: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(
+    to right,
+    #ff0000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0000ff,
+    #ff00ff,
+    #ff0000
+  );
+}
+
+.ed-colour-hue-thumb {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2.5px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.ed-colour-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.ed-colour-preview {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.ed-colour-panel .ed-colour-hex {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: #151a20;
+  color: #f2f5f8;
+  font-size: 13px;
+  font-family: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
+}
+
+.ed-colour-panel .ed-colour-hex:focus,
+.ed-colour-panel .ed-colour-hex:focus-visible {
+  outline: none;
+  border-color: var(--ed-accent, #4f9cff);
+  box-shadow: 0 0 0 2px var(--ed-accent-soft, rgba(79, 156, 255, 0.28));
+}
+
+.ed-colour-presets {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.ed-colour-preset {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ed-colour-preset.is-active,
+.ed-colour-preset:hover {
+  border-color: var(--ed-accent, #4f9cff);
+  box-shadow: 0 0 0 1px var(--ed-accent, #4f9cff);
+}
+
+.ed-emit-cell figcaption {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 3px;
+  margin-top: 2px;
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+.ed-emit-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ed-muted);
+}
+
+.ed-sprite-frame-index {
+  color: var(--ed-accent, #ffb347);
+  font-weight: 700;
+}
+
+.ed-viewport.me-board-area {
+  display: flex;
+  flex-direction: column;
+  background: #0a0c10;
+}
+

@@ -1,0 +1,323 @@
+/* The NPC inspector and objectives list in the side panel. */
+.me-wide { width: 100%; max-width: none; box-sizing: border-box; }
+.me-field { display: flex; flex-direction: column; gap: 2px; margin-bottom: 5px; }
+.me-field-label { color: #8fb4ba; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.me-inspector { padding-bottom: 6px; margin-bottom: 6px; border-bottom: var(--ui-border) solid #23434a; }
+.me-inspector-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+/* Animal spawn Texture: pick among coat atlas PNGs (not a colour picker). */
+.me-texture-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 4px;
+}
+.me-texture-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  margin: 0;
+  border: 1px solid #23434a;
+  border-radius: 3px;
+  background: #0b1a1d;
+  color: #9fb9bd;
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+}
+.me-texture-pick:hover { border-color: #3a6a72; }
+.me-texture-pick.is-selected { outline: 2px solid #ffb347; border-color: #ffb347; }
+.me-texture-pick-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 2px;
+  background: #061214;
+  image-rendering: auto;
+}
+.me-texture-pick-auto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: #061214;
+  color: #8fb4ba;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.me-texture-pick-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.me-npc-portrait { display: block; width: 64px; height: 80px; margin: 2px 0 6px; border: 1px solid #23434a; border-radius: 3px; background: #0b1a1d center / cover; object-fit: cover; image-rendering: pixelated; }
+.me-patrol-list { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.me-patrol-list .me-link { width: 100%; text-align: left; }
+.me-patrol-list .me-link.is-selected { color: #ffe08a; }
+.me-waypoint-preview {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0 4px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.me-waypoint-preview canvas {
+  image-rendering: pixelated;
+  width: 80px;
+  height: 128px;
+}
+.me-objective-list { margin: 0 0 6px; padding: 0; list-style: none; }
+.me-link { padding: 2px 0; border: 0; background: none; color: #cfe3e6; font: inherit; text-align: left; cursor: var(--cursor-pointer); }
+.me-link:hover { color: #ffb347; }
+.me-swatch.is-area { background: #9fb9bd; }
+.me-swatch.is-erase { background: repeating-linear-gradient(45deg, #444 0 3px, #222 3px 6px); }
+
+.me-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.me-size .me-check { margin-top: 0; gap: 3px; }
+
+/* Guide grid toggle + size (world pixels) under the palette view checks. */
+.me-grid-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.me-grid-controls .me-check { margin-top: 0; }
+.me-grid-controls .me-grid-size {
+  max-width: none;
+  width: 4.5em;
+  flex-shrink: 0;
+}
+
+.me-ambient {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.me-ambient input { width: 90px; accent-color: #f2a33a; }
+.me-ambient-value { min-width: 3.2em; font-variant-numeric: tabular-nums; }
+
+/* Top-down sun orbit under the Sun slider (Map / World Generation). */
+.ed-sun-dial {
+  display: flex;
+  justify-content: center;
+  margin: 2px 0 8px;
+  user-select: none;
+}
+.ed-sun-dial.is-interactive {
+  cursor: crosshair;
+}
+.ed-sun-dial-svg {
+  display: block;
+  touch-action: none;
+}
+.ed-sun-dial-disc {
+  fill: rgba(0, 0, 0, 0.22);
+}
+.ed-sun-dial-ring {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1.25;
+}
+.ed-sun-dial-ray {
+  stroke: rgba(255, 230, 170, 0.55);
+  stroke-width: 1.5;
+}
+.ed-sun-dial-cast {
+  stroke: #000;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.ed-sun-dial-subject {
+  fill: rgba(220, 230, 240, 0.9);
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.75;
+}
+.ed-sun-dial-sun {
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.75;
+}
+.ed-sun-dial-axis {
+  fill: rgba(255, 255, 255, 0.35);
+  font-size: 7px;
+  font-family: inherit;
+}
+
+/* Generate Map scale sliders — label | track | % fit the narrow properties rail. */
+.me-scale {
+  display: grid;
+  grid-template-columns: 5.6em minmax(0, 1fr) 2.6em;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.me-scale-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.me-scale input {
+  width: 100%;
+  min-width: 0;
+  accent-color: #f2a33a;
+}
+.me-scale .me-ambient-value {
+  text-align: right;
+  min-width: 0;
+}
+
+.me-board-area {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The minimap (EditorMinimap.jsx), over the top right of the board; clicks pass through to the board. The map is
+   drawn one unit per tile, so text sizes are in tiles; strokes stay in screen pixels. */
+.me-minimap {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 200px;
+  padding: 5px;
+  border: var(--ui-border) solid #23434a;
+  border-radius: var(--ui-radius);
+  background: rgba(6, 12, 20, 0.88);
+  pointer-events: none;
+}
+
+.me-minimap svg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.me-minimap-label {
+  fill: rgba(225, 240, 245, 0.85);
+  font-size: 0.75px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: rgba(3, 6, 14, 0.85);
+  stroke-width: 0.25px;
+}
+
+.me-minimap-marker circle {
+  stroke: #ffffff;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.me-minimap-marker.is-player circle { fill: #3fb6e8; }
+.me-minimap-marker.is-enemy circle { fill: #e5483a; }
+.me-minimap-marker.is-horse circle { fill: #b8894a; }
+.me-minimap-marker.is-npc circle { fill: #b07ee8; }
+.me-minimap-marker.is-objective path { fill: #e0a800; stroke: #03060e; stroke-width: 1px; vector-effect: non-scaling-stroke; }
+
+/* The save confirmation: shown over the top of the board for a few seconds. */
+.me-notice {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  padding: 5px 13px;
+  border: var(--ui-border) solid #5fbf7f;
+  border-radius: var(--ui-radius);
+  background: rgba(10, 30, 20, 0.92);
+  color: #9fe6b4;
+  font-size: 13px;
+  pointer-events: none;
+  animation: me-notice-in 0.2s ease-out;
+}
+
+.me-notice.is-failed {
+  border-color: #e07060;
+  background: rgba(40, 12, 10, 0.92);
+  color: #f2a596;
+}
+
+@keyframes me-notice-in {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.me-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  shape-rendering: crispEdges;
+}
+
+.me-cells {
+  fill: transparent;
+  cursor: var(--cursor-crosshair);
+}
+/* Move tool: move icon until something is picked up; then hide the cursor so the carried ghost is the pointer. */
+.me-cells.is-move-tool {
+  cursor: var(--cursor-move);
+}
+.me-cells.is-move-carrying {
+  cursor: none;
+}
+
+.me-hover {
+  fill: rgba(255, 255, 255, 0.12);
+  stroke: #ffffff;
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.me-overlay { pointer-events: none; }
+
+/* Erase Marker: what a click on the hovered tile would remove. */
+.me-hover.is-erase { fill: rgba(255, 179, 71, 0.18); stroke: #ffb347; stroke-width: 3; }
+/* Destructible objects and hazard regions (EditorBoard). */
+.me-hover.is-selected { fill: rgba(255, 179, 71, 0.15); stroke: #ffb347; stroke-width: 3; }
+.me-blast { fill: rgba(255, 90, 40, 0.06); stroke: #ff6a3a; stroke-width: 2; stroke-dasharray: 8 5; }
+.me-hazard polygon { stroke: none; }
+.me-hazard.is-selected polygon { stroke: #ffb347; stroke-width: 1.5; }
+.me-intensity { display: flex; gap: 4px; margin: 4px 0; }
+.me-intensity .me-button { flex: 1; }
+.me-intensity .me-button.is-selected { outline: 2px solid #ffb347; }
+.me-hover.is-move-source { fill: rgba(102, 204, 255, 0.15); stroke: #66ccff; stroke-width: 3; stroke-dasharray: 6 4; }
+.me-hover.is-place { fill: rgba(90, 230, 140, 0.5); stroke: #8dffb0; stroke-width: 3; }
+.me-hover.is-place.is-invalid { fill: rgba(200, 70, 70, 0.38); stroke: #e07070; }
+
+.me-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.me-dialog {
+  width: 360px;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  padding: 9px 11px;
+  border: var(--ui-border) solid #3f6f78;
+  border-radius: var(--ui-radius);
+  background: #0c1719;
+}
+

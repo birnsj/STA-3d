@@ -1,0 +1,185 @@
+/* Character Library (authored NPC pool) */
+.cl-screen { z-index: 2; }
+.cl-title { margin-right: 8px; color: #e6f2f4; }
+.cl-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.cl-list-pane {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: var(--ui-border) solid #23434a;
+  background: #0c1719;
+}
+.cl-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: var(--ui-border) solid #23434a;
+}
+.cl-list {
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  list-style: none;
+  flex: 1;
+}
+.cl-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: var(--cursor-pointer);
+}
+.cl-list-item:hover { background: #13272b; }
+.cl-list-item.is-selected {
+  border-left-color: #ffb347;
+  background: #1a3035;
+}
+.cl-list-name { color: #e6f2f4; }
+.cl-list-id { color: #6f8f94; font-size: 10px; }
+.cl-preview {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  overflow-y: auto;
+}
+.cl-preview-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.cl-preview-name {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: #e6f2f4;
+}
+.cl-portrait {
+  width: 72px;
+  height: 90px;
+  object-fit: cover;
+  border: 1px solid #23434a;
+  border-radius: 3px;
+  background: #0b1a1d;
+  image-rendering: pixelated;
+}
+.cl-portrait-empty { background: #13272b; }
+.cl-summary {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  color: #cfe3e6;
+  line-height: 1.45;
+}
+.cl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.cl-status {
+  margin: 8px 0 0;
+  padding: 8px;
+  white-space: pre-wrap;
+  color: #ffb347;
+  background: #13272b;
+  border: 1px solid #3f6f78;
+  border-radius: 2px;
+  font: inherit;
+}
+.cl-creator-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: auto;
+  background: #070c0e;
+}
+
+/* Character Library under ed-shell */
+.ed-shell.cl-screen .cl-title {
+  color: var(--ed-text);
+}
+.ed-shell.cl-screen .me-toolbar,
+.ed-shell.cl-screen .ess-toolbar {
+  border-bottom: 1px solid var(--ed-border);
+  background: var(--ed-panel);
+}
+.ed-shell .cl-list-pane {
+  border-right-color: var(--ed-border);
+  background: var(--ed-panel);
+}
+.ed-shell .cl-filters {
+  border-bottom-color: var(--ed-border);
+}
+.ed-shell .cl-list-item:hover {
+  background: var(--ed-panel-2);
+}
+.ed-shell .cl-list-item.is-selected {
+  border-left-color: var(--ed-accent);
+  background: var(--ed-accent-soft);
+}
+.ed-shell .cl-list-name,
+.ed-shell .cl-preview-name {
+  color: var(--ed-text);
+}
+.ed-shell .cl-list-id {
+  color: var(--ed-muted);
+}
+.ed-shell .cl-portrait {
+  border-color: var(--ed-border);
+  background: var(--ed-panel-2);
+}
+.ed-shell .cl-portrait-empty {
+  background: #252b35;
+}
+.ed-shell .cl-summary {
+  color: var(--ed-text);
+}
+.ed-shell .cl-status {
+  color: var(--ed-warn);
+  background: var(--ed-panel-2);
+  border-color: var(--ed-border);
+}
+.ed-shell .cl-creator-overlay {
+  background: var(--ed-bg);
+}
+.ed-shell .ess-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--ed-border);
+  background: var(--ed-panel);
+}
+.ed-shell .ess-title {
+  margin-right: 6px;
+  color: var(--ed-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ed-shell .ess-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.ed-shell .ess-toolbar .me-text {
+  display: inline;
+  margin: 0;
+  color: var(--ed-muted);
+}
+

@@ -1,0 +1,141 @@
+/* Dev map editor (all classes me- prefixed) */
+.me-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #070c0e;
+  color: #cfe3e6;
+  font-size: 12px;
+}
+
+/* Wraps onto a second row when the window is too narrow, rather than squeezing labels onto two lines. */
+.me-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 40px;
+  padding: 4px 10px;
+  box-sizing: border-box;
+  border-bottom: var(--ui-border) solid #23434a;
+  background: #0c1719;
+}
+
+.me-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Light, Room size and Building size kept together as one group. */
+.me-sliders {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 1px 7px;
+  border: var(--ui-border) solid #23434a;
+  border-radius: var(--ui-radius);
+}
+
+/* Panels and buttons use the creator's border and corner tokens (base.css), in the editor's own colours. */
+.me-button,
+.me-select,
+.me-name,
+.me-number {
+  padding: 3px 7px;
+  border: var(--ui-border) solid #3f6f78;
+  border-radius: var(--ui-radius);
+  background: #13272b;
+  color: inherit;
+  font: inherit;
+}
+
+.me-button { font-weight: 700; cursor: var(--cursor-pointer); }
+.me-toolbar .me-button,
+.me-toolbar .me-select,
+.me-size { flex-shrink: 0; white-space: nowrap; }
+.me-button:disabled { opacity: 0.45; cursor: var(--cursor-default); }
+.me-button.is-primary { border-color: #ffb347; color: #ffb347; }
+.me-name { width: 170px; }
+.me-name.me-episode { width: 100%; box-sizing: border-box; margin-bottom: 3px; }
+.me-name.me-label-input { width: 100%; box-sizing: border-box; margin-top: 4px; }
+.me-generate { width: 100%; margin-bottom: 4px; }
+.me-place { min-width: 118px; }
+.me-place.is-on { border-color: #ffb347; background: #3a2a12; color: #ffb347; }
+.me-number { width: 46px; padding: 4px; }
+.me-select { max-width: 140px; }
+.me-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.me-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.me-palette,
+.me-side {
+  overflow-y: auto;
+  padding: 6px 8px;
+  background: #0a1315;
+}
+
+.me-palette {
+  width: 150px;
+  border-right: var(--ui-border) solid #23434a;
+}
+
+.me-side {
+  width: 180px;
+  border-left: var(--ui-border) solid #23434a;
+}
+
+.me-heading {
+  margin: 8px 0 4px;
+  color: #ffb347;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.me-heading:first-child { margin-top: 0; }
+
+.me-section {
+  margin: 8px 0 3px;
+  color: #8fb4ba;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ed-palette-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin: 8px 0 4px;
+}
+
+.ed-palette-section .me-section {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ed-palette-add-tileset,
+.ed-shell .me-button.ed-collapse-all.ed-palette-add-tileset {
+  width: 100%;
+  box-sizing: border-box;
+  height: auto;
+  min-height: 24px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+

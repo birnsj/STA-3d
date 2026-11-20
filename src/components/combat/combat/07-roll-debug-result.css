@@ -1,0 +1,299 @@
+/* Roll panel */
+.roll-panel {
+  width: 420px;
+  padding: 5px 9px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+}
+
+.roll-panel.is-hit {
+  border-color: #3ccf7a;
+}
+
+.roll-panel.is-miss {
+  border-color: #8a93a8;
+}
+
+.roll-heading {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.roll-weapon {
+  color: var(--text-muted);
+  text-transform: none;
+}
+
+.roll-task {
+  margin: 1px 0 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.roll-threat-spent {
+  font-weight: 700;
+  color: var(--red);
+}
+
+.roll-dice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.roll-die-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.roll-die-score {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.roll-die-score.is-critical {
+  color: var(--yellow);
+  font-weight: 700;
+}
+
+.roll-die-score.is-complication {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.roll-reroll {
+  padding: 0 4px;
+  border: var(--ui-border) solid var(--blue);
+  border-radius: var(--ui-radius);
+  background: none;
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.roll-reroll.is-momentum {
+  border-color: #47a8ff;
+}
+
+/* The helper's die sits apart from the attacker's two. */
+.roll-assist {
+  padding-left: 8px;
+  border-left: 1px dashed var(--panel-border);
+}
+
+.roll-assist-label {
+  font-size: 9.5px;
+  color: #7fd3ff;
+  text-transform: uppercase;
+}
+
+.roll-outcome {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 32px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.roll-result-text {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.roll-panel.is-hit .roll-result-text {
+  color: #3ccf7a;
+}
+
+.roll-result-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.roll-resolve,
+.roll-momentum-hit {
+  padding: 5px 14px;
+  border: 1px solid var(--yellow);
+  border-radius: 3px;
+  background: rgba(246, 185, 40, 0.15);
+  color: var(--yellow);
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.roll-momentum-hit {
+  margin-top: 5px;
+  border-color: #47a8ff;
+  background: rgba(71, 168, 255, 0.15);
+  color: #9fd0ff;
+  font-size: 11px;
+}
+
+/* Debug panel */
+.debug-panel {
+  position: absolute;
+  top: 120px;
+  left: 8px;
+  bottom: 170px;
+  width: 330px;
+  overflow: auto;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 10.5px;
+  z-index: 5;
+}
+
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debug-close {
+  padding: 0 5px;
+  border: var(--ui-border) solid var(--blue);
+  border-radius: var(--ui-radius);
+  background: none;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.debug-grid {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 1px 6px;
+  margin: 0;
+}
+
+.debug-grid dt {
+  color: var(--text-muted);
+}
+
+.debug-grid dd {
+  margin: 0;
+}
+
+.character-inspector summary {
+  cursor: var(--cursor-pointer);
+}
+
+.character-inspector-row {
+  display: contents;
+}
+
+.debug-heading {
+  margin: 6px 0 2px;
+  font-size: 11px;
+  color: var(--yellow);
+}
+
+.debug-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.debug-log-entry {
+  padding: 3px 0;
+  border-top: 1px solid rgba(29, 74, 168, 0.5);
+}
+
+.debug-log-entry.is-round {
+  color: var(--yellow);
+  font-weight: 700;
+}
+
+.debug-log-entry.is-turn {
+  color: #7fb6ff;
+}
+
+.debug-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.debug-empty {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* Auto Combat speed: same 22px corner button as Settings / Camera, with the rate as the label. */
+.explore-minimap-toggle.auto-speed-toggle {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: inherit;
+}
+
+.combat-setup-seed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.combat-setup-seed input {
+  width: 110px;
+  padding: 2px 5px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+/* Result modal */
+.combat-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 10;
+}
+
+.combat-modal {
+  min-width: 340px;
+  padding: 18px 24px;
+  border: var(--ui-border) solid var(--yellow);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  text-align: center;
+}
+
+.combat-modal.is-defeat {
+  border-color: var(--red);
+}
+
+.combat-modal-title {
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: var(--ui-border) solid var(--panel-border);
+  font-size: 34px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+
+.combat-modal.is-defeat .combat-modal-title {
+  color: var(--red);
+}
+
+.combat-modal-text {
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+
+.combat-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+

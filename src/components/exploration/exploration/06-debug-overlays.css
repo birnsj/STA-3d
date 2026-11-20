@@ -1,0 +1,194 @@
+/* NPC awareness debug view. Colour by awareness: unaware grey, suspicious yellow, investigating orange,
+   alerted red, combat ready magenta. */
+.npc-debug {
+  --npc-state: #9fb4dc;
+}
+
+.npc-debug .is-suspicious {
+  --npc-state: #f6d028;
+}
+
+.npc-debug .is-investigating {
+  --npc-state: #ff9a3c;
+}
+
+.npc-debug .is-alerted {
+  --npc-state: #ff4a3d;
+}
+
+.npc-debug .is-combat-ready {
+  --npc-state: #ff3df2;
+}
+
+.npc-debug-cone {
+  fill: var(--npc-state);
+  fill-opacity: 0.12;
+  stroke: var(--npc-state);
+  stroke-width: 1.2;
+}
+
+.npc-debug-range {
+  fill: none;
+  stroke: var(--npc-state);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  stroke-opacity: 0.7;
+}
+
+.npc-debug-hearing {
+  fill: none;
+  stroke: #8fd3ff;
+  stroke-width: 1;
+  stroke-dasharray: 2 5;
+  stroke-opacity: 0.6;
+}
+
+.npc-debug-sight {
+  fill: none;
+  stroke: var(--npc-state);
+  stroke-width: 2;
+}
+
+.npc-debug-last-known {
+  fill: none;
+  stroke: var(--npc-state);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+
+.npc-debug-investigate-line {
+  fill: none;
+  stroke: #ff9a3c;
+  stroke-width: 1.2;
+  stroke-dasharray: 6 4;
+}
+
+.npc-debug-investigate {
+  fill: #ff9a3c;
+  font-size: 16px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #03060e;
+  stroke-width: 3px;
+}
+
+.npc-debug-noise {
+  fill: rgba(143, 211, 255, 0.12);
+  stroke: #8fd3ff;
+  stroke-width: 2;
+}
+
+.npc-debug-label {
+  fill: var(--npc-state);
+}
+
+.explore-awareness-panel {
+  flex: none;
+  font-size: 11px;
+}
+
+.explore-combat-ready {
+  margin: 0 0 4px;
+  padding: 2px 6px;
+  border: 1px solid #ff3df2;
+  color: #ff3df2;
+  font-weight: 700;
+}
+
+.npc-state.is-suspicious {
+  color: #f6d028;
+}
+
+.npc-state.is-investigating {
+  color: #ff9a3c;
+}
+
+.npc-state.is-alerted {
+  color: #ff4a3d;
+}
+
+.npc-state.is-combat-ready {
+  color: #ff3df2;
+}
+
+.explore-debug-heading {
+  margin: 4px 0 2px;
+  color: var(--text-dim, #9fb4dc);
+}
+
+.explore-debug-list {
+  margin: 0 0 4px;
+  padding-left: 14px;
+}
+
+.explore-debug-events {
+  min-height: 7.5em;
+}
+
+.explore-debug-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+/* Combat started in the world: developer readout of how the fight links to the world, opened with Debug beside the
+   combat debug panel (.debug-panel, 330px wide at left 8px). */
+.world-combat-debug {
+  position: absolute;
+  left: 346px;
+  top: 180px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 360px;
+  max-height: 330px;
+}
+
+.world-combat-debug-panel {
+  overflow: auto;
+  width: 100%;
+  font-size: 11px;
+}
+
+/* Party perception debug: each member's vision radius, rays to NPCs they see, and what the party knows of each NPC. */
+.perception-debug-radius {
+  fill: rgba(90, 170, 255, 0.04);
+  stroke: rgba(90, 170, 255, 0.45);
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+}
+
+.perception-debug-ray {
+  fill: none;
+  stroke: rgba(120, 220, 255, 0.85);
+  stroke-width: 1.5;
+}
+
+.perception-debug-label.is-visible {
+  fill: #7fe0ff;
+}
+
+.perception-debug-label.is-known {
+  fill: #ffb070;
+}
+
+.perception-debug-label.is-unknown {
+  fill: #9aa3b5;
+}
+
+.explore-debug-line {
+  margin: 0 0 4px;
+}
+
+/* Why the last conversation couldn't be opened. */
+.challenge-prompts {
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+  z-index: 25;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+

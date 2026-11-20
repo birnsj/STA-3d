@@ -1,0 +1,519 @@
+/* The action buttons are stacked on top of the Formation panel. Same width and right edge as the minimap.
+   z-index above the board SVG (2) so chrome never draws under 3D characters. */
+.explore-bottom-right {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: var(--explore-minimap-size);
+  pointer-events: none;
+}
+
+.explore-bottom-right > * {
+  pointer-events: auto;
+}
+
+.explore-action-stack {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.explore-action-stack .combat-button {
+  width: 100%;
+}
+
+.explore-minimap-column {
+  --explore-minimap-size: 240px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  width: auto;
+  max-width: calc(100% - 16px);
+  pointer-events: none;
+}
+
+/* Objectives left of the button/minimap column; tops line up. The stack keeps map + below under the buttons. */
+.explore-minimap-column.has-leading {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.explore-minimap-column.has-leading > .objectives-panel {
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: 220px;
+  max-width: min(220px, calc(100vw - var(--explore-minimap-size) - 28px));
+}
+
+.explore-minimap-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: var(--explore-minimap-size);
+  pointer-events: none;
+}
+
+.explore-minimap-stack > * {
+  pointer-events: auto;
+}
+
+/* Minimap readout row (objectives only sit here when the toolbar is not outside). */
+.explore-minimap-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.explore-minimap-row > * {
+  pointer-events: auto;
+}
+
+.explore-minimap-row .objectives-panel {
+  box-sizing: border-box;
+  width: 220px;
+  max-width: min(220px, calc(100vw - var(--explore-minimap-size) - 28px));
+}
+
+/* Momentum / Threat sit under the minimap (or its closed corner), above the Actions toggle. */
+.explore-minimap-column .resource-indicators {
+  pointer-events: auto;
+  width: var(--explore-minimap-size);
+}
+
+
+/* The minimap as a computer readout: blue-tinted tiles (the markers keep their colours), still scanlines and a dark
+   vignette (::after), a faint cyan pulse at random intervals and, during a Scan, a bright band led by a solid line
+   rolling down once (ReadoutNoise.jsx), and a cyan edge glow. The map itself never moves; only the overlays animate,
+   with transform and opacity, so the browser doesn't repaint the map every frame. */
+.explore-minimap {
+  position: relative;
+  box-sizing: border-box;
+  flex: 0 0 var(--explore-minimap-size);
+  width: var(--explore-minimap-size);
+  overflow: hidden;
+  padding: 5px;
+  border: var(--ui-border) solid rgba(110, 200, 255, 0.55);
+  border-radius: var(--ui-radius);
+  background: rgba(4, 14, 32, 0.92);
+  box-shadow:
+    0 0 8px rgba(80, 180, 255, 0.25),
+    inset 0 0 12px rgba(80, 180, 255, 0.2);
+}
+
+.explore-minimap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(140, 220, 255, 0.08) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 8, 24, 0.55) 100%);
+}
+
+.explore-minimap svg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.readout-noise {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.readout-noise-pulse {
+  position: absolute;
+  inset: 0;
+  background: rgba(150, 225, 255, 0.07);
+  opacity: 0;
+  animation: minimap-readout-pulse 2.5s ease-in-out forwards;
+}
+
+.readout-noise-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(to bottom, transparent, rgba(140, 220, 255, 0.1) 60%, rgba(200, 240, 255, 0.3));
+  border-bottom: 2px solid #ffffff;
+  box-shadow: 0 3px 6px rgba(120, 220, 255, 0.7);
+  transform: translateY(-100%);
+  animation: minimap-scan-bar 3s linear forwards;
+}
+
+/* While a Scan sweeps, the readout brightens a touch. */
+.explore-minimap.is-scanning .minimap-readout-tiles {
+  filter: grayscale(1) sepia(1) hue-rotate(165deg) saturate(2.6) brightness(1.05);
+}
+
+.minimap-readout-tiles {
+  filter: grayscale(1) sepia(1) hue-rotate(165deg) saturate(2.2) brightness(0.8);
+}
+
+/* A door object (a sealed bulkhead): solid yellow while closed, a yellow outline once open. */
+.minimap-door {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  shape-rendering: crispEdges;
+}
+
+.minimap-door.is-closed {
+  fill: var(--yellow);
+}
+
+.minimap-scan-pulse circle {
+  r: 0;
+  animation: minimap-scan-grow var(--scan-seconds, 1.5s) cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.minimap-scan-pulse-fill {
+  fill: rgba(120, 220, 255, 0.12);
+}
+
+.minimap-scan-pulse-ring {
+  fill: none;
+  stroke: #bff1ff;
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.minimap-scan-pulse {
+  animation: minimap-scan-fade var(--scan-seconds, 1.5s) linear forwards;
+}
+
+@keyframes minimap-scan-grow {
+  from {
+    r: 0;
+  }
+  to {
+    r: var(--scan-radius);
+  }
+}
+
+@keyframes minimap-scan-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes minimap-readout-pulse {
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* From above the minimap (its own height up) to below it (the minimap is about 3.4 bands tall). */
+@keyframes minimap-scan-bar {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(340%);
+  }
+}
+
+/* The column ignores the pointer so the map stays clickable around it; the toggle opts back in. */
+.explore-actions-toggle {
+  align-self: flex-end;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: var(--ui-border) solid var(--blue);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  color: rgba(225, 240, 245, 0.85);
+  cursor: var(--cursor-pointer);
+  pointer-events: auto;
+}
+
+.explore-actions-toggle:hover {
+  border-color: var(--yellow);
+}
+
+.explore-actions-toggle[aria-expanded='true'] {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.explore-actions-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.minimap-area-label {
+  fill: rgba(175, 230, 255, 0.9);
+  font-size: 0.75px;
+  font-weight: 700;
+  letter-spacing: 0.04px;
+  paint-order: stroke;
+  stroke: rgba(3, 6, 14, 0.85);
+  stroke-width: 0.25px;
+}
+
+/* The map is drawn one unit per tile; strokes stay in screen pixels. */
+.minimap-marker circle,
+.minimap-marker path {
+  vector-effect: non-scaling-stroke;
+}
+
+.minimap-marker circle {
+  stroke: #03060e;
+  stroke-width: 1px;
+}
+
+.minimap-marker.is-party circle {
+  fill: #4fa3ff;
+}
+
+.minimap-marker.is-party.is-selected circle {
+  fill: #9fd3ff;
+  stroke: var(--yellow);
+  stroke-width: 2px;
+}
+
+.minimap-marker.is-enemy circle {
+  fill: #e04848;
+}
+
+.minimap-marker.is-enemy.is-down-stunned circle {
+  fill: #ffd23f;
+}
+
+.minimap-marker.is-neutral circle {
+  fill: #b07ee8;
+}
+
+.minimap-marker.is-neutral.is-down-stunned circle {
+  fill: #ffd23f;
+}
+
+.minimap-marker.is-objective path {
+  fill: #ffcc33;
+  stroke: #03060e;
+  stroke-width: 1px;
+}
+
+.minimap-marker.is-unseen {
+  opacity: 0.45;
+}
+
+.minimap-marker.is-last-seen circle {
+  fill: none;
+  stroke: #e04848;
+  stroke-width: 1.5px;
+  stroke-dasharray: 2 2;
+}
+
+.minimap-marker.is-last-seen text {
+  fill: #ff8a8a;
+  font-size: 1.2px;
+  font-weight: 700;
+}
+
+.minimap-down {
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  stroke: #e04848;
+}
+
+.minimap-marker.is-party .minimap-down {
+  stroke: #4fa3ff;
+}
+
+.minimap-marker.is-party.is-dying .minimap-down {
+  stroke: #ff9d2e;
+}
+
+.explore-formation-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--explore-formation-height, 75px);
+}
+
+.explore-formation-options {
+  display: flex;
+  gap: 3px;
+}
+
+/* The title, then the small Camera and Debug toggles at its right end. */
+.explore-formation-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.explore-formation-header .combat-panel-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.explore-panel-icon-button,
+.explore-minimap-toggle {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: var(--ui-border) solid var(--blue);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  color: #9fb4dc;
+  cursor: var(--cursor-pointer);
+  pointer-events: auto;
+}
+
+.explore-panel-icon-button:hover,
+.explore-minimap-toggle:hover {
+  border-color: var(--yellow);
+}
+
+.explore-panel-icon-button[aria-pressed='true'],
+.explore-minimap-toggle[aria-pressed='true'] {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.explore-panel-icon-button svg,
+.explore-minimap-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The Captain's Log and minimap buttons, over the minimap's top-right corner, above its scanlines and readout noise. */
+.explore-minimap-corner {
+  display: flex;
+  gap: 4px;
+}
+
+.explore-minimap .explore-minimap-corner {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+}
+
+/* The Settings, Captain's Log, and minimap buttons in their own panel above the readout. */
+.explore-minimap-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  box-sizing: border-box;
+  min-width: var(--explore-minimap-size);
+  padding: 4px 6px;
+  pointer-events: auto;
+}
+
+/* While the minimap is hidden its toggle keeps the same corner (inside where the minimap's 1px border was). */
+.explore-minimap-closed {
+  display: flex;
+  justify-content: flex-end;
+  align-self: flex-start;
+  flex: 0 0 var(--explore-minimap-size);
+  width: var(--explore-minimap-size);
+  padding: 7px 7px 0;
+}
+
+.explore-formation-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: var(--ui-border) solid var(--blue);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  cursor: var(--cursor-pointer);
+}
+
+.explore-formation-button:hover {
+  border-color: var(--yellow);
+}
+
+.explore-formation-button.is-active {
+  border-color: var(--yellow);
+  background: rgba(70, 55, 10, 0.75);
+}
+
+.explore-formation-button.is-regroup {
+  margin-left: 2px;
+}
+
+.explore-formation-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.explore-formation-icon circle {
+  fill: #9fb4dc;
+}
+
+.explore-formation-icon circle.is-lead,
+.explore-formation-button.is-active .explore-formation-icon circle {
+  fill: var(--yellow);
+}
+
+.explore-formation-button.is-active .explore-formation-icon circle:not(.is-lead) {
+  fill: #fff2c2;
+}
+
+.explore-formation-icon path {
+  fill: none;
+  stroke: #9fb4dc;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+

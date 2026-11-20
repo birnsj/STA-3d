@@ -1,0 +1,432 @@
+/* Personal condition: Stress, Injuries, Defeated (ConditionTrack.jsx) */
+.condition-svg-track {
+  fill: #0b1428;
+  stroke: #e8ecf5;
+  stroke-width: 1;
+}
+
+.condition-svg-stress {
+  fill: var(--red);
+}
+
+.condition-svg-stress.is-fatigued {
+  fill: #c4342c;
+}
+
+.condition-svg-injury.is-stun {
+  fill: #f6b928;
+}
+
+.condition-svg-injury.is-deadly {
+  fill: var(--red);
+}
+
+.condition-svg-injury.is-treated {
+  stroke: #e8ecf5;
+  stroke-width: 1.2;
+}
+
+.condition-track {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.stress-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Shrinks rather than pushing the numbers out of a narrow panel. */
+.stress-bar {
+  position: relative;
+  flex: 0 1 44px;
+  min-width: 14px;
+  height: 6px;
+  border: 1px solid #e8ecf5;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* On the party cards the bar takes the card's whole width (designer request, 2026-10-15: longer Stress bars), clear of
+   the exploration card's info button in its bottom-right corner. */
+.party-info .condition-track {
+  width: 100%;
+}
+
+.explore-card .party-info .condition-track {
+  padding-right: 16px;
+}
+
+.party-info .stress-meter {
+  flex: 1 1 auto;
+}
+
+.party-info .stress-bar {
+  flex: 1 1 auto;
+}
+
+.stress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--red);
+}
+
+.stress-fill.is-fatigued {
+  background: #c4342c;
+}
+
+.stress-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.condition-category {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, #9aa6c2);
+}
+
+.combat-button.is-danger {
+  border-color: var(--red);
+  color: #ff9a92;
+}
+
+.roll-injury.is-deadly {
+  color: #ff9a92;
+}
+
+.roll-injury.is-stun {
+  color: #f6b928;
+}
+
+/* Portraits */
+.combat-portrait {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #0b1428;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+}
+
+.combat-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.combat-portrait-initial {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+/* Top-left HUD moved into the minimap column (matches exploration). */
+.combat-top-left {
+  display: none;
+}
+
+.objectives-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.objectives-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.objectives-box {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--yellow);
+}
+
+.objectives-item.is-complete .objectives-box {
+  background: var(--yellow);
+}
+
+.objectives-item.is-pending {
+  opacity: 0.45;
+}
+
+.resource-indicators {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.resource-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.resource-indicator strong {
+  color: var(--text);
+}
+
+.resource-light {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #26324b;
+}
+
+.resource-indicator.is-momentum.is-on {
+  border-color: #3d9bff;
+}
+
+.resource-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.resource-indicator.is-momentum .resource-light.is-filled {
+  background: #47a8ff;
+  box-shadow: 0 0 6px #47a8ff;
+}
+
+/* Momentum gained: each new pip pops in turn (delay set inline) and the bar flashes. */
+.resource-indicator.is-momentum.is-gaining {
+  animation: momentum-flash 0.9s ease-out;
+}
+
+.resource-indicator.is-momentum .resource-light.is-new {
+  animation: momentum-pip 0.6s ease-out both;
+}
+
+@keyframes momentum-flash {
+  0% {
+    background: rgba(71, 168, 255, 0.45);
+    box-shadow: 0 0 16px rgba(71, 168, 255, 0.9);
+    border-color: #bfe2ff;
+  }
+  100% {
+    background: var(--panel);
+    box-shadow: 0 0 0 rgba(71, 168, 255, 0);
+  }
+}
+
+@keyframes momentum-pip {
+  0% {
+    transform: scale(0.4);
+    background: #26324b;
+    box-shadow: none;
+  }
+  45% {
+    transform: scale(1.8);
+    background: #e6f4ff;
+    box-shadow: 0 0 12px 3px #8fd0ff;
+  }
+  100% {
+    transform: scale(1);
+    background: #47a8ff;
+    box-shadow: 0 0 6px #47a8ff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-indicator.is-momentum.is-gaining,
+  .resource-indicator.is-momentum .resource-light.is-new {
+    animation: none;
+  }
+}
+
+/* Buy d20s (BonusDicePicker) */
+.bonus-dice {
+  margin: 6px 0;
+  padding: 5px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: rgba(6, 12, 28, 0.6);
+  font-size: 11px;
+}
+
+.bonus-dice-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.bonus-dice-row > span:first-child {
+  min-width: 64px;
+  color: var(--text-muted);
+}
+
+.bonus-dice-pool,
+.bonus-dice-note {
+  color: var(--text-muted);
+}
+
+.bonus-dice-note {
+  margin: 2px 0 0;
+  font-size: 10px;
+}
+
+.bonus-dice-threat {
+  margin: 2px 0 0;
+}
+
+.bonus-dice-threat.is-on {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.resource-indicator.is-threat.is-on {
+  border-color: var(--red);
+}
+
+.resource-indicator.is-threat.is-on .resource-light {
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+
+/* Pressure bands (presentation only — Threat has no rules max). */
+.resource-threat-band {
+  margin-left: 1px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+}
+
+.resource-indicator.is-threat-low {
+  border-color: #c9a24a;
+  color: #e6d19a;
+}
+
+.resource-indicator.is-threat-low .resource-light {
+  background: #c9a24a;
+  box-shadow: 0 0 6px #c9a24a;
+}
+
+.resource-indicator.is-threat-low .resource-threat-band {
+  background: rgba(201, 162, 74, 0.25);
+  color: #f0d78a;
+}
+
+.resource-indicator.is-threat-rising {
+  border-color: #e07a3a;
+  color: #f0b48a;
+}
+
+.resource-indicator.is-threat-rising .resource-light {
+  background: #e07a3a;
+  box-shadow: 0 0 6px #e07a3a;
+}
+
+.resource-indicator.is-threat-rising .resource-threat-band {
+  background: rgba(224, 122, 58, 0.28);
+  color: #ffc49a;
+}
+
+.resource-indicator.is-threat-high {
+  border-color: var(--red);
+  color: #ffb0b0;
+}
+
+.resource-indicator.is-threat-high .resource-light {
+  background: var(--red);
+  box-shadow: 0 0 8px var(--red);
+}
+
+.resource-indicator.is-threat-high .resource-threat-band {
+  background: rgba(220, 60, 60, 0.35);
+  color: #ffd0d0;
+}
+
+/* A change to Threat (ResourceIndicators): float above the row so it never covers Momentum/Threat. */
+.resource-threat-change {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  z-index: 2;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid rgba(220, 60, 60, 0.7);
+  border-radius: 3px;
+  background: rgba(6, 12, 28, 0.94);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffb0b0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  animation: threat-change 4s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes threat-change {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  8%,
+  75% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes threat-change-fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-threat-change {
+    animation-name: threat-change-fade;
+  }
+}
+
+.resource-cancel {
+  padding: 1px 5px;
+  border: var(--ui-border) solid #3d9bff;
+  border-radius: var(--ui-radius);
+  background: none;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+

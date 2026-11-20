@@ -1,0 +1,113 @@
+/* The tactical HUD for combat and the exploration mode that reuses it (party cards, panels, condition
+   tracks, the isometric board). Loaded from main.jsx straight after styles.css, because
+   components/exploration/exploration.css deliberately overrides some of these rules (.explore-card over
+   .party-card, .explore-party-bar over .party-bar) and so has to come after. */
+
+/* ---------- Personal combat prototype (1024x576 stage, after the tactical mockup) ---------- */
+
+.combat-screen,
+.combat-setup {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--display-font);
+  background: radial-gradient(ellipse at 45% 50%, #142446 0%, #070d1d 60%, #03060e 100%);
+}
+
+/* Panels and buttons follow the character creator (.panel, .nav-button; styles/ui.css), at the game's own sizes. */
+.combat-panel {
+  background: var(--panel);
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  padding: 5px 7px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.combat-panel-title {
+  margin: 0 0 4px;
+  padding-bottom: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yellow);
+  border-bottom: var(--ui-border) solid var(--panel-border);
+}
+
+.combat-panel-empty {
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.combat-button {
+  padding: 6px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: var(--blue-deep);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.combat-button:hover:not(:disabled) {
+  border-color: #6a9cff;
+}
+
+.combat-button:disabled {
+  opacity: 0.45;
+}
+
+.combat-button.is-primary {
+  border-color: var(--yellow);
+  background: rgba(246, 185, 40, 0.15);
+  color: var(--yellow);
+}
+
+.combat-button.is-small {
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+/* Battlefield */
+/* Switched on (aria-pressed): the creator's selected look (.step-nav-item.is-active). */
+.combat-button[aria-pressed='true'] {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: #111;
+}
+
+.combat-button[aria-pressed='true']:hover:not(:disabled) {
+  background: #ffd76a;
+}
+
+.battlefield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Above Pixi + spike3d so rings, menus, tags and character FX receive input and paint on top. */
+  z-index: 2;
+  /* Lets a one-finger drag pan the map (useCamera.js) instead of scrolling or zooming the page. */
+  touch-action: none;
+}
+
+/* Screen HUD chrome: floor above the board SVG (2). Panels that need a higher stack keep their own z-index later. */
+.combat-screen > .party-bar,
+.combat-screen > .explore-party-bar,
+.combat-screen > .explore-bottom-right,
+.combat-screen > .explore-messages,
+.combat-screen > .combat-top-center,
+.combat-screen > .combat-bottom-left,
+.combat-screen > .explore-minimap-column,
+.combat-screen > .combat-modal-backdrop,
+.combat-screen > .debug-panel,
+.combat-screen > .explore-scan-report,
+.combat-screen > .explore-debug-column,
+.combat-screen > .edge-scroll-debug,
+.combat-screen > .world-combat-debug {
+  z-index: 10;
+}
+

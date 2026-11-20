@@ -1,0 +1,607 @@
+/* The interaction panel: approaches, performer / assistant, the character math, then the dice and result. It ends
+   above the menu buttons, which stay in the bottom-right corner while it is open. */
+.challenge-panel {
+  position: absolute;
+  right: 12px;
+  top: 84px;
+  bottom: 38px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 400px;
+  overflow: auto;
+  font-size: 12px;
+}
+
+/* An object's stats and log, as wide as the bottom-right stack: below the minimap column (toolbar panel, then the
+   readout; the stack ends 324px down) and above the Formation panel (75px tall, 8px from the bottom); the text scrolls. */
+.challenge-panel.is-docked {
+  top: 332px;
+  right: 8px;
+  bottom: 89px;
+  width: var(--explore-minimap-size);
+  padding: 6px 8px;
+  overflow: hidden;
+}
+
+/* A shown result fading out before the panel closes itself (RESULT_FADE_MS in ChallengePanel.jsx). */
+.challenge-panel.is-fading {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.challenge-panel.is-docked .challenge-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.challenge-panel.is-docked h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.challenge-panel.is-docked .challenge-actions {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+/* The stats and log window's contents sit flat in its one frame (designer request, 2026-10-11: no boxes inside the
+   box): each section of the task math or the result is set off by a single thin rule instead of its own border. The
+   shared task components keep their boxes in combat. */
+.challenge-panel.is-docked h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.challenge-panel.is-docked .challenge-math,
+.challenge-panel.is-docked .challenge-result,
+.challenge-panel.is-docked .tm-block,
+.challenge-panel.is-docked .tm-outcome {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 12px;
+}
+
+.challenge-panel.is-docked .tm-block,
+.challenge-panel.is-docked .tm-outcome {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(29, 74, 168, 0.6);
+}
+
+.challenge-panel.is-docked .tm-help,
+.challenge-panel.is-docked .tm-lines {
+  font-size: 11px;
+}
+
+/* A Difficulty opens its section, so its total needs no rule of its own above it. */
+.challenge-panel.is-docked .tm-difficulty .tm-total {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* The verdict and the Focus keep their colour in the text rather than a coloured border. */
+.challenge-panel.is-docked .tm-verdict {
+  margin: 2px 0;
+}
+
+.challenge-panel.is-docked .challenge-result-line {
+  margin: 4px 0 0;
+}
+
+/* The math opens with who rolls, ruled off from what comes before it; their sum follows straight on. */
+.challenge-panel.is-docked .challenge-math {
+  padding-top: 6px;
+  border-top: 1px solid rgba(29, 74, 168, 0.6);
+}
+
+.challenge-panel.is-docked .tm-performer {
+  margin: 0;
+}
+
+.challenge-panel.is-docked .challenge-math .tm-formula {
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: 0;
+}
+.objectives-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.objectives-show-all {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: var(--cursor-pointer);
+}
+
+.objectives-show-all:hover,
+.objectives-show-all[aria-pressed='true'] {
+  color: var(--yellow);
+}
+
+.challenge-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* A conversation (ConversationPanel.jsx) uses the interaction panel's frame. */
+/* Dialogue: its bottom lines up with the Formation panel, and the gap beside it is the same 6px
+   Objectives leaves before the minimap. The NPC's line stays put; the replies scroll. */
+.conversation-dock {
+  position: absolute;
+  right: calc(8px + 248px + 6px);
+  bottom: 8px;
+  z-index: 30;
+  width: 520px;
+  height: 200px;
+}
+
+.conversation-dock .conversation-panel {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  max-height: none;
+  gap: 4px;
+  padding: 5px 7px;
+  overflow: hidden;
+}
+
+.conversation-dock .challenge-header,
+.conversation-dock .conversation-line,
+.conversation-dock .challenge-actions {
+  flex: none;
+}
+
+.conversation-dock .conversation-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The replies' scrollbar narrows that column. Keep the NPC's line, and the rule under it, the same length. */
+.conversation-dock .conversation-line,
+.conversation-dock .conversation-separator {
+  box-sizing: border-box;
+  width: calc(100% - 8px);
+}
+
+.conversation-dock .conversation-separator {
+  flex: none;
+  height: 0;
+  margin: 0;
+  border-top: var(--ui-border) solid var(--panel-border);
+}
+
+.d20-icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+/* The NPC's line framed and set like the options under it (11px; the text bold), in a darker shade. */
+.conversation-line {
+  padding: 3px 7px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: rgba(3, 6, 14, 0.6);
+  font-size: 11px;
+  line-height: 1.25;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.conversation-line-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The NPC's own transparent art over the map's episode card (inline background-image), which is 16:9, so it is cropped. */
+.conversation-npc-portrait {
+  width: 40px;
+  height: 50px;
+  background-position: center;
+  background-size: cover;
+}
+
+.conversation-speaker {
+  margin: 0 0 1px;
+  color: var(--label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.conversation-text {
+  margin: 0;
+  font-weight: 700;
+}
+
+.conversation-options {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* The response's text, then the portrait of who would say it on the right. */
+.challenge-approach.conversation-option {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px 7px;
+}
+
+.conversation-option-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.conversation-option-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.conversation-option-speaker {
+  flex: none;
+  display: flex;
+}
+
+.conversation-option-portrait {
+  width: 40px;
+  height: 50px;
+}
+
+.conversation-option-check {
+  color: var(--yellow);
+}
+
+.challenge-panel h3,
+.challenge-panel h4 {
+  margin: 0;
+  color: var(--label);
+  font-family: var(--display-font);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.challenge-panel h3 {
+  font-size: 18px;
+}
+
+.challenge-panel h4 {
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.challenge-state {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+}
+
+.challenge-approach {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 9px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: rgba(16, 41, 95, 0.4);
+  color: var(--text);
+  text-align: left;
+  cursor: var(--cursor-pointer);
+}
+
+.challenge-approach:hover:not(:disabled) {
+  border-color: var(--yellow);
+}
+
+.challenge-approach:disabled {
+  opacity: 0.5;
+  cursor: var(--cursor-default);
+}
+
+.challenge-approach-detail {
+  color: var(--label);
+  text-transform: capitalize;
+}
+
+.challenge-approach-description {
+  color: var(--text-muted);
+}
+
+.challenge-math {
+  padding: 7px 9px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: rgba(3, 6, 14, 0.6);
+}
+
+.challenge-math-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.challenge-math-row.is-total {
+  margin-top: 2px;
+  color: var(--label);
+  font-weight: 700;
+}
+
+.challenge-math-row.is-detail {
+  padding-left: 10px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.challenge-math-note {
+  margin: 4px 0 0;
+}
+
+.challenge-math-note.is-inactive,
+.challenge-math-hint {
+  color: var(--text-muted);
+}
+
+.challenge-math-note.is-assist {
+  padding-top: 4px;
+  border-top: 1px solid rgba(29, 74, 168, 0.6);
+}
+
+.challenge-math-blocker {
+  margin: 4px 0 0;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.challenge-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 6px;
+  background: var(--panel);
+}
+
+.challenge-result {
+  padding: 7px 9px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+}
+
+.challenge-result.is-success {
+  border-color: #4fd6c4;
+}
+
+.challenge-result.is-failure {
+  border-color: var(--red);
+}
+
+.challenge-result p {
+  margin: 4px 0 0;
+}
+
+.challenge-result-verdict {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.challenge-result.is-success .challenge-result-verdict {
+  color: #4fd6c4;
+}
+
+.challenge-result.is-failure .challenge-result-verdict {
+  color: var(--red);
+}
+
+.challenge-result-line.is-complication {
+  color: #ff9a3c;
+  font-weight: 700;
+}
+
+.challenge-result-message {
+  font-style: italic;
+}
+
+.challenge-dice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.challenge-die {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 78px;
+}
+
+.challenge-die-tag {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.challenge-die-owner {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* The Roll button and the dice above an object's ring: drawn in the map's world pixels, so they scale with the ring. */
+.unit-ring-slot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* The latest scan's report (ScanReport.jsx), under the hint until closed. */
+.explore-scan-report {
+  position: absolute;
+  top: 118px;
+  left: 250px;
+  right: 180px;
+  margin: 0 auto;
+  width: 320px;
+  padding: 7px 11px 9px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-left: 4px solid #7cc4ff;
+  border-radius: var(--ui-radius);
+  background: rgba(6, 12, 28, 0.94);
+  font-size: 12px;
+  color: var(--text);
+  z-index: 5;
+}
+
+.explore-scan-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.explore-scan-report-header h2 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7cc4ff;
+}
+
+.explore-scan-report-close {
+  padding: 0 6px;
+  border: none;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: var(--cursor-pointer);
+}
+
+.explore-scan-report-close:hover {
+  color: var(--text);
+}
+
+.explore-scan-report-rows {
+  margin: 0;
+}
+
+.explore-scan-report-rows div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 0;
+}
+
+.explore-scan-report-rows dt {
+  color: var(--text-muted);
+}
+
+.explore-scan-report-rows dd {
+  margin: 0;
+  text-align: right;
+}
+
+.explore-scan-report-signs {
+  margin: 8px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--panel-border);
+  color: var(--text-muted);
+}
+
+.explore-scan-report.is-success .explore-scan-report-signs {
+  color: #4fd6c4;
+}
+
+.explore-scan-report-contacts {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #ff8a6a;
+}
+
+.explore-scan-report-contacts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 0;
+}
+
+.explore-scan-report-signs.has-enemies,
+.explore-scan-report.is-success .explore-scan-report-signs.has-enemies {
+  color: #ff8a6a;
+  font-weight: 600;
+}
+
+.explore-transporter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.explore-transporter-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 7px 2px 2px;
+  border: var(--ui-border) solid #3f6f78;
+  border-radius: var(--ui-radius);
+  background: rgba(16, 41, 95, 0.3);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: var(--cursor-pointer);
+}
+
+.explore-transporter-entry:hover {
+  border-color: #7fd0dc;
+}
+
+.explore-transporter-entry.is-selected {
+  border-color: #9fe6f0;
+  background: rgba(60, 140, 170, 0.45);
+}
+
+.explore-transporter-note {
+  margin-left: auto;
+  color: rgba(200, 225, 230, 0.6);
+  font-size: 11px;
+}
+

@@ -1,0 +1,449 @@
+/* Floating inventory window (exploration) — same tokens as combat-panel / character creator. */
+.inventory-panel {
+  position: absolute;
+  /* Above party rail / messages (26) so slots are not half-covered. */
+  z-index: 35;
+  width: 320px;
+  max-height: calc(100% - 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 0 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.inventory-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px;
+  padding: 0 0 3px;
+  cursor: var(--cursor-grab);
+  user-select: none;
+  border-bottom: var(--ui-border) solid var(--panel-border);
+}
+
+.inventory-titlebar:active,
+.inventory-titlebar.is-dragging {
+  cursor: var(--cursor-grabbing);
+}
+
+.inventory-drag-handle {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.inventory-drag-handle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.inventory-titlebar:hover .inventory-drag-handle,
+.inventory-titlebar.is-dragging .inventory-drag-handle {
+  color: var(--yellow);
+}
+
+.inventory-title {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+
+.inventory-close {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 3px;
+  color: var(--text);
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  cursor: var(--cursor-pointer);
+}
+
+.inventory-close:hover {
+  background: color-mix(in srgb, var(--blue) 35%, transparent);
+  color: var(--yellow);
+}
+
+.inventory-party-strip {
+  display: flex;
+  gap: 3px;
+  padding: 0 2px;
+  overflow-x: auto;
+}
+
+.inventory-party-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 36px;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: var(--cursor-pointer);
+}
+
+.inventory-party-card.is-selected {
+  border-color: var(--yellow);
+  background: color-mix(in srgb, var(--blue) 40%, transparent);
+}
+
+.inventory-party-card.is-drop-target {
+  outline: 1px dashed var(--text-muted);
+}
+
+/* The party card under the dragged item — clear “drop here” cue (world figures use the green ring). */
+.inventory-party-card.is-drop-target:hover {
+  outline: 2px solid #7fd07f;
+  border-color: #7fd07f;
+  background: color-mix(in srgb, #7fd07f 22%, var(--blue-deep));
+}
+
+.inventory-party-portrait {
+  width: 28px;
+  height: 28px;
+}
+
+.inventory-party-name {
+  max-width: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.inventory-body-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
+  gap: 4px;
+  align-items: center;
+  padding: 0 2px;
+  min-height: 0;
+  position: relative;
+}
+
+.inventory-slots-col {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  pointer-events: auto;
+}
+
+.inventory-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: var(--blue-deep);
+  pointer-events: auto;
+}
+
+.inventory-slot.is-empty {
+  border-style: dashed;
+}
+
+.inventory-slot.is-valid-target {
+  border-color: #7fd07f;
+  background: color-mix(in srgb, #2a6a38 55%, var(--blue-deep));
+}
+
+.inventory-slot.is-invalid-target {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 25%, var(--blue-deep));
+}
+
+.inventory-slot-label {
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--label);
+  pointer-events: none;
+}
+
+.inventory-slot.is-draggable {
+  cursor: var(--cursor-pointer);
+}
+
+/* The whole equipment slot lights up under the pointer, including its label, not only the icon. */
+.inventory-slot.is-filled:hover:not(.is-valid-target):not(.is-invalid-target):not(:has(.is-dimmed)) {
+  border-color: var(--yellow);
+}
+
+.inventory-slot.is-filled:hover:not(:has(.is-dimmed)) .inventory-item-cell {
+  border-color: var(--yellow);
+}
+
+.inventory-slot .inventory-item-cell {
+  width: 100%;
+  height: 40px;
+}
+
+.inventory-body-art {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 88px;
+  max-height: 88px;
+  overflow: hidden;
+  /* Portrait is decorative — must not steal clicks from body/sidearm slots or the bag. */
+  pointer-events: none;
+}
+
+.inventory-body-art img {
+  max-width: 72px;
+  max-height: 88px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.inventory-body-fallback {
+  width: 64px;
+  height: 64px;
+}
+
+.inventory-body-name {
+  margin: 3px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+
+.inventory-bag {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 2px;
+  min-height: 0;
+  flex: 1 1 auto;
+  pointer-events: auto;
+}
+
+/* Shared party bag sits above Carried; fixed height so personal bag keeps the flex remainder. */
+.inventory-party-bag {
+  flex: 0 0 auto;
+}
+
+.inventory-party-bag.is-invalid-target .inventory-item-cell.is-bag-cell {
+  border-color: color-mix(in srgb, #c44 55%, var(--panel-border));
+}
+
+.inventory-bag-label {
+  margin: 0;
+  padding-bottom: 1px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--yellow);
+  border-bottom: 1px solid var(--panel-border);
+  flex: 0 0 auto;
+}
+
+/* Fixed viewport (~BAG_VISIBLE_ROWS); remaining bag cells scroll. Cell 44px + gap 4px. */
+.inventory-bag-scroll {
+  --bag-cell: 44px;
+  --bag-gap: 4px;
+  max-height: calc(var(--bag-visible-rows, 4) * var(--bag-cell) + (var(--bag-visible-rows, 4) - 1) * var(--bag-gap));
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--yellow) 55%, var(--panel-border)) var(--panel);
+}
+
+.inventory-bag-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.inventory-bag-scroll::-webkit-scrollbar-track {
+  background: var(--panel);
+  border-radius: 3px;
+}
+
+.inventory-bag-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--yellow) 45%, var(--panel-border));
+  border-radius: 3px;
+  border: 1px solid var(--panel);
+}
+
+.inventory-bag-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--yellow) 70%, var(--panel-border));
+}
+
+.inventory-bag-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--bag-cols, 6), var(--bag-cell, 44px));
+  justify-content: space-between;
+  gap: var(--bag-gap, 4px);
+}
+
+.inventory-item-cell {
+  position: relative;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: var(--panel);
+  color: inherit;
+  /* Empty only: let drops hit the bag/slot under the cell. Filled must cover the full box. */
+  pointer-events: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.inventory-item-cell.is-empty {
+  pointer-events: none;
+}
+
+.inventory-bag-grid .inventory-item-cell.is-bag-cell {
+  pointer-events: auto;
+}
+
+.inventory-item-cell.is-filled,
+.inventory-item-cell.is-draggable {
+  pointer-events: auto;
+}
+
+.inventory-item-cell.is-draggable {
+  cursor: var(--cursor-pointer);
+}
+
+.inventory-item-cell.is-filled {
+  border-color: color-mix(in srgb, var(--blue) 70%, var(--panel-border));
+  background: var(--blue-deep);
+}
+
+.inventory-bag-grid .inventory-item-cell.is-filled:hover:not(.is-dimmed) {
+  border-color: var(--yellow);
+}
+
+.inventory-item-cell.is-selected,
+.inventory-item-cell.is-dimmed {
+  opacity: 0.45;
+}
+
+.inventory-item-cell img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.inventory-item-fallback {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.inventory-item-qty {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text);
+  text-shadow: 0 0 2px #000;
+}
+
+/* Cursor-as-item: hide the system cursor while an inventory/world item is grabbed. */
+body.is-item-dragging,
+body.is-item-dragging *,
+body.is-window-dragging,
+body.is-window-dragging * {
+  cursor: none !important;
+}
+
+.inventory-drag-ghost {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inventory-drag-ghost.is-ui {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border: 1px solid var(--yellow);
+  border-radius: 3px;
+  background: var(--panel);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.inventory-drag-ghost.is-ui img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.inventory-drag-ghost.is-world {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.inventory-drag-ghost.is-world img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.explore-place-preview {
+  pointer-events: none;
+  fill: rgba(90, 230, 140, 0.5);
+  stroke: #8dffb0;
+  stroke-width: 2.5;
+}
+
+.explore-place-preview.is-invalid {
+  fill: rgba(200, 70, 70, 0.4);
+  stroke: #e07070;
+}

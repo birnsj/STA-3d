@@ -1,0 +1,357 @@
+/* Action buttons around a clicked unit (UnitActionRing). */
+.unit-ring {
+  animation: unit-ring-in 0.15s ease-out;
+}
+
+@keyframes unit-ring-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.unit-ring-button {
+  cursor: var(--cursor-pointer);
+}
+
+.unit-ring-button circle {
+  fill: rgba(6, 12, 28, 0.92);
+  stroke: #47a8ff;
+  stroke-width: 1.5;
+}
+
+.unit-ring-button path {
+  fill: none;
+  stroke: #cfe3ff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.unit-ring-button text {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  fill: #e8ecf5;
+  paint-order: stroke;
+  stroke: #040a18;
+  stroke-width: 2.5px;
+}
+
+.unit-ring-button.is-deadly text {
+  fill: #ff8a84;
+}
+
+.unit-ring-button:not(.is-disabled):hover circle,
+.unit-ring-button.is-active circle {
+  fill: #10295f;
+  stroke: var(--yellow);
+}
+
+.unit-ring-button.is-stun circle {
+  stroke: #47a8ff;
+}
+
+.unit-ring-button.is-deadly circle {
+  stroke: var(--red);
+}
+
+.unit-ring-button.is-deadly path {
+  stroke: #ff8a84;
+}
+
+.unit-ring-button.is-disabled {
+  cursor: var(--cursor-default);
+  opacity: 0.4;
+}
+
+/* Already used this turn (Aim), or the AI's choice in Auto Combat: lit, not faded. */
+.unit-ring-button.is-disabled.is-active {
+  opacity: 1;
+}
+
+.unit-ring-button.is-active circle {
+  stroke: var(--yellow);
+  stroke-width: 2.5;
+}
+
+/* Auto Combat: the AI's choice is lit, then pressed (shrink and flash, with a ripple) just before it runs. Timed inside
+   the 0.9 s the choice is shown (CombatScreen AI_CHOICE_MS), scaled by the Auto Combat speed. */
+.unit-ring-face {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.unit-ring-face.is-pressed {
+  animation: unit-ring-press calc(320ms / var(--fx-speed, 1)) ease-in-out calc(420ms / var(--fx-speed, 1)) both;
+}
+
+.unit-ring-button .unit-ring-face.is-pressed circle {
+  animation: unit-ring-press-flash calc(320ms / var(--fx-speed, 1)) ease-in-out calc(420ms / var(--fx-speed, 1)) both;
+}
+
+@keyframes unit-ring-press {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(0.78);
+  }
+}
+
+@keyframes unit-ring-press-flash {
+  45% {
+    fill: #3c6fd0;
+  }
+}
+
+.unit-ring-button circle.unit-ring-ripple {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  pointer-events: none;
+  animation: unit-ring-ripple calc(450ms / var(--fx-speed, 1)) ease-out calc(560ms / var(--fx-speed, 1)) both;
+}
+
+@keyframes unit-ring-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unit-ring-face.is-pressed,
+  .unit-ring-button .unit-ring-face.is-pressed circle,
+  .unit-ring-button circle.unit-ring-ripple {
+    animation: none;
+  }
+}
+
+/* Every character menu (exploration and combat): framed by a panel band along its arc, so it reads over busy floors and walls. */
+.unit-ring-frame {
+  fill: rgba(6, 12, 28, 0.9);
+  stroke: #7cc4ff;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px rgba(71, 168, 255, 0.5));
+}
+
+.unit-ring.is-prominent .unit-ring-button.is-disabled {
+  opacity: 0.5;
+}
+
+/* Its smaller buttons: thicker icon lines (the icons are scaled down with the button) and smaller labels. */
+.unit-ring.is-prominent .unit-ring-button path {
+  stroke-width: 3;
+}
+
+.unit-ring.is-prominent .unit-ring-button text {
+  font-size: 6.5px;
+  stroke-width: 2px;
+}
+.unit-ring-info {
+  padding: 5px 7px;
+  background: rgba(6, 12, 28, 0.94);
+  background: var(--panel);
+  border: var(--ui-border) solid var(--panel-border);
+  border-left: 4px solid var(--yellow);
+  border-radius: var(--ui-radius);
+  font-size: 10px;
+  color: var(--text);
+}
+
+.unit-ring-info-title {
+  margin-bottom: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--yellow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unit-ring-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.unit-ring-info-row span:first-child {
+  color: var(--text-muted);
+}
+
+.unit-ring-info-row span:last-child {
+  text-align: right;
+}
+
+/* Tactical tips from a scan. */
+.unit-ring-info-tip {
+  margin-top: 3px;
+  padding-left: 6px;
+  border-left: 2px solid #7cc4ff;
+  color: #cfe6ff;
+  line-height: 1.25;
+}
+
+/* The info card's box is sized for the longest scan; only the card itself takes clicks. */
+/* NPC and object rings in exploration: the away team in a band outside the buttons. Teal marks who is best at the
+   button last hovered (as on the party cards); yellow, who is picked to do the next action. */
+.unit-ring-party-slice {
+  cursor: var(--cursor-pointer);
+}
+
+.unit-ring-party-band {
+  fill: rgba(6, 12, 28, 0.9);
+  stroke: #7cc4ff;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.unit-ring-party-portrait-back {
+  fill: #0b1834;
+}
+
+.unit-ring-party-portrait-rim {
+  fill: none;
+  stroke: #47a8ff;
+  stroke-width: 1.2;
+}
+
+.unit-ring-party-initial {
+  font-size: 9px;
+  font-weight: 700;
+  fill: #cfe3ff;
+}
+
+.unit-ring-party-label,
+.unit-ring-party-caption {
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  fill: #e8ecf5;
+  paint-order: stroke;
+  stroke: rgba(4, 8, 20, 0.95);
+  stroke-width: 2px;
+  pointer-events: none;
+}
+
+.unit-ring-party-caption {
+  fill: #9fd8ff;
+}
+
+.unit-ring-party-slice:hover .unit-ring-party-band {
+  fill: #10295f;
+}
+
+.unit-ring-party-slice.is-best .unit-ring-party-band {
+  stroke: #4fd6c4;
+  fill: rgba(10, 40, 46, 0.94);
+}
+
+.unit-ring-party-slice.is-best .unit-ring-party-portrait-rim {
+  stroke: #4fd6c4;
+}
+
+.unit-ring-party-slice.is-best .unit-ring-party-label {
+  fill: #b9fff4;
+}
+
+.unit-ring-party-slice.is-picked .unit-ring-party-band,
+.unit-ring-party-slice.is-picked .unit-ring-party-portrait-rim {
+  stroke: var(--yellow);
+  stroke-width: 2;
+}
+
+.unit-ring-party-slice.is-unavailable image,
+.unit-ring-party-slice.is-unavailable .unit-ring-party-initial {
+  opacity: 0.35;
+}
+
+/* An object ring's last arc, over the picked member: Roll (a d20), or a routine action's tick. */
+.unit-ring-roll {
+  cursor: var(--cursor-pointer);
+}
+
+.unit-ring-roll-band {
+  fill: rgba(6, 12, 28, 0.94);
+  stroke: var(--yellow);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.unit-ring-roll path:not(.unit-ring-roll-band) {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.unit-ring-roll:not(.is-disabled):hover .unit-ring-roll-band {
+  fill: #10295f;
+}
+
+.unit-ring-roll.is-disabled {
+  cursor: var(--cursor-default);
+  opacity: 0.45;
+}
+
+/* The object ring's next choice pulses, in order: an approach, then who does it, then Roll. */
+.unit-ring-button.is-pulsing circle,
+.unit-ring-party-slice.is-pulsing .unit-ring-party-band,
+.unit-ring-roll.is-pulsing .unit-ring-roll-band {
+  animation: unit-ring-pulse 1.2s ease-in-out infinite;
+}
+
+/* Softer pulse for a successful Scan reading (hover the button for the card). */
+.unit-ring-button.is-pulsing.is-pulse-dim circle {
+  animation: unit-ring-pulse-dim 1.8s ease-in-out infinite;
+}
+
+@keyframes unit-ring-pulse {
+  50% {
+    stroke: var(--yellow);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 4px rgba(255, 204, 51, 0.85));
+  }
+}
+
+@keyframes unit-ring-pulse-dim {
+  50% {
+    stroke: rgba(255, 204, 51, 0.55);
+    stroke-width: 1.75;
+    filter: drop-shadow(0 0 2px rgba(255, 204, 51, 0.35));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unit-ring-button.is-pulsing circle,
+  .unit-ring-party-slice.is-pulsing .unit-ring-party-band,
+  .unit-ring-roll.is-pulsing .unit-ring-roll-band {
+    animation: none;
+    stroke: var(--yellow);
+  }
+
+  .unit-ring-button.is-pulsing.is-pulse-dim circle {
+    stroke: rgba(255, 204, 51, 0.55);
+  }
+}
+
+.unit-ring foreignObject {
+  pointer-events: none;
+}
+
+.unit-ring-info {
+  pointer-events: auto;
+}
+

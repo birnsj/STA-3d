@@ -1,0 +1,571 @@
+/* Turn order, then the attacker and target, centred between the party rail and the minimap column. */
+.combat-top-center {
+  position: absolute;
+  top: 8px;
+  left: calc(8px + var(--combat-party-rail-width, 178px) + 12px);
+  right: calc(8px + var(--explore-minimap-size, 240px) + 12px);
+  z-index: 24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.combat-top-center > * {
+  pointer-events: none;
+}
+
+.turn-strip {
+  position: static;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.turn-strip-item.is-cut {
+  display: none;
+}
+
+.turn-strip-item {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.turn-strip-arrow {
+  width: 0;
+  height: 0;
+  margin: 0 3px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid var(--yellow);
+}
+
+.turn-strip-portrait {
+  width: 34px;
+  height: 40px;
+  border: var(--ui-border) solid #3d7bff;
+  border-radius: var(--ui-radius);
+}
+
+.turn-strip-item.is-enemy .turn-strip-portrait {
+  border-color: var(--red);
+}
+
+.turn-strip-item.is-current .turn-strip-portrait {
+  width: 42px;
+  height: 50px;
+  border-color: var(--yellow);
+  box-shadow: 0 0 10px rgba(246, 185, 40, 0.6);
+}
+
+.combat-top-right {
+  display: none;
+}
+
+/* Objectives under Momentum in the minimap column. */
+.combat-screen .explore-minimap-column .objectives-panel {
+  pointer-events: auto;
+  width: var(--explore-minimap-size, 240px);
+  box-sizing: border-box;
+}
+
+.combat-hint {
+  position: absolute;
+  top: 66px;
+  left: calc(8px + var(--combat-party-rail-width, 178px) + 12px);
+  right: calc(8px + var(--explore-minimap-size, 240px) + 12px);
+  margin: 0 auto;
+  width: fit-content;
+  max-width: 590px;
+  padding: 4px 11px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.combat-hint.is-player-turn {
+  border-color: var(--yellow);
+  color: var(--text);
+}
+
+/* On-screen messages fade out after MESSAGE_FADE_MS (useFadeAfter) and stop catching clicks. */
+.is-faded-out {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+.combat-modal.combat-help {
+  width: 600px;
+  padding: 14px 20px;
+  text-align: left;
+}
+
+.combat-help-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+
+.combat-help-body {
+  max-height: 440px;
+  margin-bottom: 12px;
+  overflow: auto;
+}
+
+.combat-help-section + .combat-help-section {
+  margin-top: 8px;
+}
+
+.combat-help-heading {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--label);
+}
+
+.combat-help-line {
+  margin: 0 0 3px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* Right column stretches under the minimap (sidebar is a child of .explore-minimap-column). */
+.combat-screen .explore-minimap-column {
+  bottom: 8px;
+  /* Tighter than exploration's 6px so Momentum / Threat sit closer under the minimap. */
+  gap: 2px;
+}
+
+.combat-screen .explore-minimap-column .combat-sidebar {
+  pointer-events: auto;
+}
+
+/* Right sidebar: under Momentum / toolbar, same width as the readout. */
+.combat-sidebar {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: var(--explore-minimap-size, 240px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: auto;
+  pointer-events: auto;
+}
+
+/* Attacker and target: party-card width under the carousel, so the Stress bar is the same length.
+   Stats stay closed until the insignia is pinned or the card is hovered. */
+.combat-matchup {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.combat-matchup-wrap {
+  position: relative;
+  flex: 0 0 178px;
+  width: 178px;
+  pointer-events: auto;
+}
+
+.combat-matchup-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 178px;
+  box-sizing: border-box;
+  padding: 3px 8px 3px 4px;
+}
+
+/* Injury / fatigue icons sit on the card so Attacker / Target headings are not needed. */
+.combat-matchup-conditions {
+  position: absolute;
+  top: 2px;
+  right: 26px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.combat-matchup-body {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.combat-matchup-card.is-enemy .combat-matchup-portrait {
+  border-color: var(--red);
+}
+
+.combat-matchup-portrait {
+  width: 36px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.combat-matchup-portrait.is-blank {
+  display: inline-block;
+  background: #0b1428;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+}
+
+.combat-matchup-card .party-info {
+  flex: 1;
+  gap: 2px;
+}
+
+.combat-matchup-card .party-name {
+  font-size: 11px;
+  color: var(--yellow);
+}
+
+.combat-matchup-card .party-weapon,
+.combat-matchup-quiet {
+  font-size: 9px;
+}
+
+.combat-matchup-quiet {
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Same Stress row as the party cards: the bar fills the column, and the number stays clear of the insignia. */
+.combat-matchup-card .party-info .condition-track {
+  width: 100%;
+  padding-right: 16px;
+}
+
+.combat-matchup-card .explore-card-info-toggle {
+  right: 5px;
+  bottom: 5px;
+}
+
+.combat-matchup-scores {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding: 4px 6px;
+  border: var(--ui-border) solid var(--panel-border);
+  border-radius: var(--ui-radius);
+  background: var(--panel);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.combat-matchup-scores > .ui-heading {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.combat-matchup-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.combat-matchup-scores ul {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.combat-matchup-scores .ui-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 13px;
+  text-transform: uppercase;
+}
+
+.combat-matchup-scores .ui-row strong {
+  color: var(--yellow);
+  font-size: 10px;
+}
+
+.combat-matchup-arrow {
+  align-self: center;
+  flex: none;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 11px solid var(--yellow);
+}
+
+.selected-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: flex-start;
+}
+
+/* Stress and condition badges under the portrait, across the whole card. */
+.panel-condition {
+  flex-basis: 100%;
+  min-width: 0;
+  font-size: 11px;
+}
+
+.selected-portrait {
+  flex: none;
+  width: 42px;
+  height: 50px;
+}
+
+.selected-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.selected-name {
+  margin: 0;
+  font-size: 13px;
+  color: var(--yellow);
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.selected-stats {
+  margin: 2px 0 0;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.actions-icon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.target-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.target-portrait {
+  flex: none;
+  width: 38px;
+  height: 46px;
+  border-color: var(--red);
+}
+
+.target-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  min-width: 0;
+}
+
+.target-name {
+  font-size: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.target-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+}
+
+.target-cover.is-covered {
+  color: #6fc1ff;
+}
+
+.target-status {
+  color: var(--red);
+}
+
+.task-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.task-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.task-line {
+  margin: 0 0 1px;
+  font-size: 12px;
+}
+
+.task-note {
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.task-sub {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.task-attack-mode {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 4px;
+  padding: 3px 6px;
+  border-left: 3px solid #47a8ff;
+  background: rgba(71, 168, 255, 0.1);
+}
+
+.task-attack-mode.is-deadly {
+  border-left-color: var(--red);
+  background: rgba(255, 74, 50, 0.12);
+}
+
+.task-attack-mode-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.task-attack-mode.is-deadly .task-attack-mode-name {
+  color: #ff8a84;
+}
+
+.task-attack-mode-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.task-warning {
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: #ff8a80;
+}
+
+.injury-toggle {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.injury-button {
+  flex: 1;
+  padding: 1px 0;
+  border: var(--ui-border) solid var(--blue);
+  border-radius: var(--ui-radius);
+  background: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.injury-button:hover:not(:disabled):not(.is-selected) {
+  background: var(--blue-deep);
+}
+
+.injury-button.is-stun.is-selected {
+  border-color: #47a8ff;
+  background: #47a8ff;
+  color: #111;
+}
+
+.injury-button.is-deadly.is-selected {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+.assist-allies {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.assist-ally {
+  padding: 2px 5px;
+  border: var(--ui-border) solid var(--blue);
+  border-radius: var(--ui-radius);
+  background: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.assist-ally:hover:not(:disabled):not(.is-selected) {
+  background: var(--blue-deep);
+}
+
+.assist-ally.is-selected {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: #111;
+}
+
+.task-assist {
+  color: #7fd3ff;
+}
+
+.task-confirm {
+  margin-top: 5px;
+  padding: 6px 0;
+  border: 2px solid var(--yellow);
+  border-radius: 4px;
+  background: rgba(246, 185, 40, 0.12);
+  color: var(--yellow);
+  font-size: 18px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.task-confirm:hover:not(:disabled) {
+  background: rgba(246, 185, 40, 0.28);
+}
+
+.task-confirm:disabled {
+  opacity: 0.35;
+}
+
