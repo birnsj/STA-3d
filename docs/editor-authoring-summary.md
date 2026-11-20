@@ -521,7 +521,7 @@ Editor shell
   EditorPalette.jsx, EditorPropertiesPanel.jsx, MapProperties.jsx,
   AssetProperties.jsx, EditorFloatWindow.jsx, EditorOverviewWindow.jsx,
   EditorLayersWindow.jsx, EditorLevelsWindow.jsx, EditorGridOptions.jsx,
-  EditorSubScreen.jsx, editorSubMenus.js, useEditorTools.js,
+  EditorSubScreen.jsx, editorSubMenus.js, editorTools/ (useEditorTools.js and its handler files),
   useMapDocument.js, EditorInspectors.jsx, EditorBoard.jsx
 
 Inspectors

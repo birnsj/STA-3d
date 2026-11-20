@@ -70,7 +70,7 @@ Columns: Runtime · Editor create · Configure · Place · Serialize · Reload �
 
 | # | Feature | Status | RT | Ed | Cfg | Pos | Ser | Rel | PT | Ep | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | Tile painting / palette | Complete | Y | Y | Y | Y | Y | Y | Y | Y | `EditorPalette.jsx`, `useEditorTools.js`, `mapFormat.js` |
+| 1 | Tile painting / palette | Complete | Y | Y | Y | Y | Y | Y | Y | Y | `EditorPalette.jsx`, `editorTools/useEditorTools.js`, `mapFormat.js` |
 | 2 | Tile rotation | Complete | Y | Y | Y | Y | Y | Y | Y | Y | `mapFormat` rotated; tests `mapRotation` |
 | 3 | Map resize / size presets | Complete | Y | Y | Y | — | Y | Y | Y | Y | `EditorToolbar.jsx`, `resizeMap` |
 | 4 | Location / biome / weather | Complete | Y | Y | Y | — | Y | Y | Y | Y | toolbar + `mapWeather.js` |
@@ -258,7 +258,7 @@ Columns: Runtime · Editor create · Configure · Place · Serialize · Reload �
 
 | Area | Files |
 |---|---|
-| Editor shell | `src/screens/MapEditorScreen.jsx`, `EditorToolbar.jsx`, `EditorPropertiesPanel.jsx`, `MapProperties.jsx`, `EditorPalette.jsx`, `useEditorTools.js`, `EditorInspectors.jsx` |
+| Editor shell | `src/screens/MapEditorScreen.jsx`, `EditorToolbar.jsx`, `EditorPropertiesPanel.jsx`, `MapProperties.jsx`, `EditorPalette.jsx`, `editorTools/useEditorTools.js`, `EditorInspectors.jsx` |
 | Inspectors | `NpcInspector.jsx` (response / perception / patrol), `HazardInspector.jsx`, `DestructibleInspector.jsx`, `GroundItemInspector.jsx`, `ObjectInspector.jsx`, `MarkerInspector.jsx` |
 | Sub-editors | `ObjectEditorScreen.jsx`, `ObjectActionFields.jsx`, `ObjectiveEditorScreen.jsx`, `ConversationEditorScreen.jsx`, `StoryEditorScreen.jsx` |
 | Format I/O | `src/maps/mapFormat.js`, `mapFiles.js`, `mapEdits.js` |
